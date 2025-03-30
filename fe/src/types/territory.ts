@@ -32,10 +32,26 @@ export interface Hotspot {
   income: number; // Income per hour
   pendingCollection: number;
   lastCollectionTime: string;
+  lastIncomeTime: string; // Time of last income generation
+  nextIncomeTime?: string; // Calculated field for next income time
   crew: number;
   weapons: number;
   vehicles: number;
   defenseStrength: number;
+}
+
+// Add these new interfaces
+export interface CollectResponse {
+  hotspotId: string;
+  hotspotName: string;
+  collectedAmount: number;
+  message: string;
+}
+
+export interface CollectAllResponse {
+  collectedAmount: number;
+  hotspotsCount: number;
+  message: string;
 }
 
 export enum HotspotType {

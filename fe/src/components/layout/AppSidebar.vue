@@ -85,9 +85,7 @@
     </div>
 
     <div class="sidebar-actions">
-      <button 
-        class="action-btn collect-all" 
-        @click="collectAllPending"
+      <button class="action-btn collect-all" @click="collectAllPending"
         :disabled="pendingCollections <= 0 || isLoading">
         <span class="icon">💼</span>
         <span>Collect All</span>
@@ -148,7 +146,6 @@ const isLoading = computed(() => playerStore.isLoading);
 // Collect all pending collections
 const collectAllPending = async () => {
   if (pendingCollections.value > 0 && !isLoading.value) {
-    // Use territory store instead of player store
     await territoryStore.collectAllHotspotIncome();
   }
 };
@@ -349,7 +346,7 @@ function formatNumber(value: number): string {
       &:disabled {
         opacity: 0.6;
         cursor: not-allowed;
-        
+
         &:hover {
           background-color: $secondary-color;
         }

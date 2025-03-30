@@ -32,8 +32,11 @@ type TerritoryRepository interface {
 	GetRecentActions(limit int) ([]model.TerritoryAction, error)
 	GetRecentActionsByPlayer(playerID string, limit int) ([]model.TerritoryAction, error)
 	UpdateHotspotPendingCollection(hotspotID string, amount int) error
-	UpdateHotspotLastIncomeTime(hotspotID string, timestamp time.Time) error
+
 	RefreshIllegalBusinesses() error
+
+	GetAllControlledLegalHotspots() ([]model.Hotspot, error)
+	UpdateHotspotLastIncomeTime(hotspotID string, lastIncomeTime time.Time) error
 }
 
 type territoryRepository struct {
@@ -298,11 +301,23 @@ func (r *territoryRepository) RefreshIllegalBusinesses() error {
 		}).Error
 }
 
+// GetAllControlledLegalHotspots retrieves all legal hotspots with controllers
+func (r *territoryRepository) GetAllControlledLegalHotspots() ([]model.Hotspot, error) {
+	var hotspots []model.Hotspot
+	if err := r.db.GetDB().
+		Where("is_legal = ? AND controller_id IS NOT NULL", true).
+		Find(&hotspots).Error; err != nil {
+		return nil, err
+	}
+
+	return hotspots, nil
+}
+
 // UpdateHotspotLastIncomeTime updates the last income time for a hotspot
-func (r *territoryRepository) UpdateHotspotLastIncomeTime(hotspotID string, timestamp time.Time) error {
+func (r *territoryRepository) UpdateHotspotLastIncomeTime(hotspotID string, lastIncomeTime time.Time) error {
 	return r.db.GetDB().Model(&model.Hotspot{}).
 		Where("id = ?", hotspotID).
 		Updates(map[string]interface{}{
-			"last_income_time": timestamp,
+			"last_income_time": lastIncomeTime,
 		}).Error
 }

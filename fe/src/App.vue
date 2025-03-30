@@ -14,8 +14,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute } from 'vue-router';
+import sseService from './services/sseService';
 import AppHeader from '@/components/layout/AppHeader.vue';
 import AppSidebar from '@/components/layout/AppSidebar.vue';
 import AppFooter from '@/components/layout/AppFooter.vue';
@@ -26,6 +27,18 @@ const route = useRoute();
 const isAuthRoute = computed(() => {
   return ['/login', '/register'].includes(route.path);
 });
+
+// Connect to SSE when component is mounted (if authenticated)
+onMounted(()=>{
+  if (!isAuthRoute.value && localStorage.getItem('auth_token')) {
+    sseService.connect();
+  }
+})
+
+// Disconnect from SSE when component in unmounted
+onBeforeUnmount(()=>{
+  sseService.disconnect();
+})
 </script>
 
 <style lang="scss">

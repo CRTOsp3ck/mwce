@@ -8,10 +8,10 @@ environment: development
 # Server settings
 server:
   port: 8000
-  timeout_read: 15
-  timeout_write: 15
-  timeout_idle: 60
-  timeout_shutdown: 30
+  timeout_read: 30      # 30 seconds for reading request body
+  timeout_write: 43200  # 12 hours for writing responses (for SSE)
+  timeout_idle: 43200   # 12 hours for idle connections (for SSE)
+  timeout_shutdown: 30  # 30 seconds for graceful shutdown
 
 # Database settings
 database:

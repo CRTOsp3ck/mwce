@@ -29,6 +29,7 @@ interface TerritoryState {
   recentActions: TerritoryAction[];
   isLoading: boolean;
   error: string | null;
+  incomeTimerInterval: number | null; // Add this for the timer
 }
 
 export const useTerritoryStore = defineStore("territory", {
@@ -45,6 +46,7 @@ export const useTerritoryStore = defineStore("territory", {
     recentActions: [],
     isLoading: false,
     error: null,
+    incomeTimerInterval: null, // Initialize to null
   }),
 
   getters: {
@@ -114,6 +116,9 @@ export const useTerritoryStore = defineStore("territory", {
 
         const hotspotsResponse = await territoryService.getHotspots();
         this.hotspots = hotspotsResponse.data;
+
+        // Calculate next income times
+        this.calculateNextIncomeTimes();
 
         // Set initial filtered hotspots
         this.updateFilteredHotspots();
@@ -283,7 +288,9 @@ export const useTerritoryStore = defineStore("territory", {
 
           // If takeover was successful, update controlled hotspots count
           if (actionType === TerritoryActionType.TAKEOVER) {
-            playerStore.profile.controlledHotspots += 1;
+            if (playerStore.profile) {
+              playerStore.profile.controlledHotspots += 1;
+            }
           }
         }
 
@@ -307,6 +314,227 @@ export const useTerritoryStore = defineStore("territory", {
         return null;
       } finally {
         this.isLoading = false;
+      }
+    },
+
+    // Calculate the next income time for each hotspot
+    calculateNextIncomeTimes() {
+      const now = new Date();
+
+      this.hotspots.forEach((hotspot) => {
+        if (hotspot.lastIncomeTime) {
+          const lastIncomeTime = new Date(hotspot.lastIncomeTime);
+          // Next income is exactly 1 hour after the last income
+          const nextIncomeTime = new Date(
+            lastIncomeTime.getTime() + 60 * 60 * 1000
+          );
+          hotspot.nextIncomeTime = nextIncomeTime.toISOString();
+        }
+      });
+    },
+
+    async collectHotspotIncome(hotspotId: string) {
+      this.isLoading = true;
+      this.error = null;
+
+      try {
+        const response = await territoryService.collectHotspotIncome(hotspotId);
+        const collectionResult = response.data;
+
+        // Update the hotspot's pending collection
+        const hotspot = this.hotspots.find((h) => h.id === hotspotId);
+        if (hotspot) {
+          hotspot.pendingCollection = 0;
+          hotspot.lastCollectionTime = new Date().toISOString();
+        }
+
+        // Update filtered hotspots as well
+        const filteredHotspot = this.filteredHotspots.find(
+          (h) => h.id === hotspotId
+        );
+        if (filteredHotspot) {
+          filteredHotspot.pendingCollection = 0;
+          filteredHotspot.lastCollectionTime = new Date().toISOString();
+        }
+
+        // Update player money
+        const playerStore = usePlayerStore();
+        if (playerStore.profile && collectionResult.collectedAmount > 0) {
+          playerStore.profile.money += collectionResult.collectedAmount;
+
+          // Update player's pending collections total
+          playerStore.profile.pendingCollections -=
+            collectionResult.collectedAmount;
+          if (playerStore.profile.pendingCollections < 0) {
+            playerStore.profile.pendingCollections = 0;
+          }
+        }
+
+        return collectionResult;
+      } catch (error) {
+        this.error = "Failed to collect hotspot income";
+        console.error("Error collecting hotspot income:", error);
+        return null;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    async collectAllHotspotIncome() {
+      this.isLoading = true;
+      this.error = null;
+
+      try {
+        const response = await territoryService.collectAllHotspotIncome();
+        const collectionResult = response.data;
+
+        // Update all controlled hotspots
+        const controlledHotspots = this.hotspots.filter(
+          (h) => h.controller === usePlayerStore().profile?.id
+        );
+        controlledHotspots.forEach((hotspot) => {
+          hotspot.pendingCollection = 0;
+          hotspot.lastCollectionTime = new Date().toISOString();
+        });
+
+        // Update filtered hotspots as well
+        const filteredControlledHotspots = this.filteredHotspots.filter(
+          (h) => h.controller === usePlayerStore().profile?.id
+        );
+        filteredControlledHotspots.forEach((hotspot) => {
+          hotspot.pendingCollection = 0;
+          hotspot.lastCollectionTime = new Date().toISOString();
+        });
+
+        // Update player money
+        const playerStore = usePlayerStore();
+        if (playerStore.profile && collectionResult.collectedAmount > 0) {
+          playerStore.profile.money += collectionResult.collectedAmount;
+          playerStore.profile.pendingCollections = 0;
+        }
+
+        return collectionResult;
+      } catch (error) {
+        this.error = "Failed to collect all hotspot income";
+        console.error("Error collecting all hotspot income:", error);
+        return null;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    // Add a method to start income timers that updates the nextIncomeTime countdown
+    startIncomeTimers() {
+      // Clear any existing timer
+      if (this.incomeTimerInterval) {
+        clearInterval(this.incomeTimerInterval);
+      }
+
+      // Update times immediately
+      this.updateIncomeTimes();
+
+      // Set interval to update times every minute
+      this.incomeTimerInterval = setInterval(() => {
+        this.updateIncomeTimes();
+      }, 60000); // Update every minute
+    },
+
+    // Method to update income times
+    updateIncomeTimes() {
+      const now = new Date();
+      const playerStore = usePlayerStore();
+      const playerId = playerStore.profile?.id;
+
+      // Only update for player's controlled hotspots
+      this.hotspots.forEach((hotspot) => {
+        if (hotspot.controller === playerId && hotspot.lastIncomeTime) {
+          const lastIncomeTime = new Date(hotspot.lastIncomeTime);
+          const nextIncomeTime = new Date(
+            lastIncomeTime.getTime() + 60 * 60 * 1000
+          ); // 1 hour after last income
+
+          // If next income time has passed, we should simulate income generation
+          if (nextIncomeTime <= now) {
+            // Calculate how many hours have passed since last income
+            const hoursPassed = Math.floor(
+              (now.getTime() - lastIncomeTime.getTime()) / (60 * 60 * 1000)
+            );
+
+            if (hoursPassed > 0) {
+              // Add income for each hour passed
+              const newIncome = hoursPassed * hotspot.income;
+              hotspot.pendingCollection += newIncome;
+
+              // Update the lastIncomeTime to the most recent hour boundary
+              const mostRecentHourBoundary = new Date(now);
+              mostRecentHourBoundary.setMinutes(0, 0, 0);
+              hotspot.lastIncomeTime = mostRecentHourBoundary.toISOString();
+
+              // Also update total pending collections for the player
+              if (playerStore.profile) {
+                playerStore.profile.pendingCollections += newIncome;
+              }
+            }
+          }
+
+          // Update the nextIncomeTime
+          hotspot.nextIncomeTime = new Date(
+            new Date(hotspot.lastIncomeTime).getTime() + 60 * 60 * 1000
+          ).toISOString();
+        }
+      });
+
+      // Also update filtered hotspots
+      this.updateFilteredHotspots();
+    },
+
+    /**
+     * Updates a hotspot's income details based on SSE event
+     */
+    updateHotspotIncome(
+      hotspotId: string,
+      newIncome: number,
+      pendingCollection: number,
+      lastIncomeTime: string,
+      nextIncomeTime: string
+    ) {
+      // Find the hotspot in the store
+      const hotspot = this.hotspots.find((h) => h.id === hotspotId);
+      if (hotspot) {
+        // Update the hotspot
+        hotspot.pendingCollection = pendingCollection;
+        hotspot.lastIncomeTime = lastIncomeTime;
+        hotspot.nextIncomeTime = nextIncomeTime;
+      }
+
+      // Also update in filteredHotspots if present
+      const filteredHotspot = this.filteredHotspots.find(
+        (h) => h.id === hotspotId
+      );
+      if (filteredHotspot) {
+        filteredHotspot.pendingCollection = pendingCollection;
+        filteredHotspot.lastIncomeTime = lastIncomeTime;
+        filteredHotspot.nextIncomeTime = nextIncomeTime;
+      }
+    },
+
+    /**
+     * Updates a hotspot's data with data from SSE event
+     */
+    updateHotspot(hotspotData: Hotspot) {
+      // Find the hotspot in the store
+      const index = this.hotspots.findIndex((h) => h.id === hotspotData.id);
+      if (index !== -1) {
+        // Update the hotspot
+        this.hotspots[index] = hotspotData;
+      }
+
+      // Also update in filteredHotspots if present
+      const filteredIndex = this.filteredHotspots.findIndex(
+        (h) => h.id === hotspotData.id
+      );
+      if (filteredIndex !== -1) {
+        this.filteredHotspots[filteredIndex] = hotspotData;
       }
     },
   },

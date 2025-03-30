@@ -117,5 +117,6 @@ type NotificationsResponse struct {
 // CollectAllResponse represents the response after collecting all pending resources
 type CollectAllResponse struct {
 	CollectedAmount int    `json:"collectedAmount"`
+	HotspotsCount   int    `json:"hotspotsCount"`
 	Message         string `json:"message"`
 }

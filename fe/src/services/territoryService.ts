@@ -9,7 +9,9 @@ import {
   TerritoryAction, 
   TerritoryActionType, 
   ActionResources,
-  ActionResult
+  ActionResult,
+  CollectResponse,
+  CollectAllResponse
 } from '@/types/territory';
 
 // Endpoints
@@ -149,5 +151,19 @@ export default {
    */
   defend(hotspotId: string, resources: ActionResources) {
     return this.performAction(TerritoryActionType.DEFEND, hotspotId, resources);
+  },
+
+  /**
+   * Collect income from a specific hotspot
+   */
+  collectHotspotIncome(hotspotId: string) {
+    return api.post<CollectResponse>(`${ENDPOINTS.HOTSPOTS}/${hotspotId}/collect`);
+  },
+  
+  /**
+   * Collect income from all controlled hotspots
+   */
+  collectAllHotspotIncome() {
+    return api.post<CollectAllResponse>(`${ENDPOINTS.HOTSPOTS}/collect-all`);
   }
 };

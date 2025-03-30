@@ -320,3 +320,105 @@ func (c *TerritoryController) PerformAction(w http.ResponseWriter, r *http.Reque
 		result.Message,
 	)
 }
+
+// CollectHotspotIncome handles collecting income from a specific hotspot
+func (c *TerritoryController) CollectHotspotIncome(w http.ResponseWriter, r *http.Request) {
+	// Get player ID from context
+	playerID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		util.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	// Get hotspot ID from URL
+	hotspotID := chi.URLParam(r, "id")
+	if hotspotID == "" {
+		util.RespondWithError(w, http.StatusBadRequest, "Hotspot ID is required")
+		return
+	}
+
+	// Collect income from the hotspot
+	response, err := c.territoryService.CollectHotspotIncome(playerID, hotspotID)
+	if err != nil {
+		c.logger.Error().Err(err).
+			Str("playerID", playerID).
+			Str("hotspotID", hotspotID).
+			Msg("Failed to collect hotspot income")
+		util.RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Return success response with game message
+	messageType := util.GameMessageTypeSuccess
+	if response.CollectedAmount <= 0 {
+		messageType = util.GameMessageTypeInfo
+	}
+
+	util.RespondWithGameMessage(
+		w,
+		http.StatusOK,
+		response,
+		messageType,
+		response.Message,
+	)
+
+	// Get updated hotspot
+	updatedHotspot, err := c.territoryService.GetHotspotByID(hotspotID)
+	if err == nil {
+		// Send SSE event to notify about the hotspot update
+		c.territoryService.GetSSEService().SendEventToPlayer(
+			playerID,
+			"hotspot_updated",
+			map[string]interface{}{
+				"hotspot": updatedHotspot,
+			},
+		)
+	}
+}
+
+// CollectAllHotspotIncome handles collecting income from all controlled hotspots
+func (c *TerritoryController) CollectAllHotspotIncome(w http.ResponseWriter, r *http.Request) {
+	// Get player ID from context
+	playerID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		util.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	// Collect income from all hotspots
+	response, err := c.territoryService.CollectAllHotspotIncome(playerID)
+	if err != nil {
+		c.logger.Error().Err(err).
+			Str("playerID", playerID).
+			Msg("Failed to collect all hotspot income")
+		util.RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Return success response with game message
+	messageType := util.GameMessageTypeSuccess
+	if response.CollectedAmount <= 0 {
+		messageType = util.GameMessageTypeInfo
+	}
+
+	util.RespondWithGameMessage(
+		w,
+		http.StatusOK,
+		response,
+		messageType,
+		response.Message,
+	)
+
+	// Get all controlled hotspots
+	controlledHotspots, err := c.territoryService.GetControlledHotspots(playerID)
+	if err == nil {
+		// Send SSE event to notify about all hotspot updates
+		c.territoryService.GetSSEService().SendEventToPlayer(
+			playerID,
+			"hotspots_updated",
+			map[string]interface{}{
+				"hotspots": controlledHotspots,
+			},
+		)
+	}
+}

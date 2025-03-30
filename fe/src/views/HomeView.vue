@@ -33,7 +33,7 @@
             <div class="pending-label">Available to collect:</div>
             <div class="pending-value">${{ formatNumber(pendingCollections) }}</div>
           </div>
-          <BaseButton variant="secondary" :disabled="pendingCollections <= 0" @click="collectAll">
+          <BaseButton variant="secondary" :disabled="pendingCollections <= 0" @click="collectAll" :loading="isLoading">
             Collect All
           </BaseButton>
         </div>
@@ -348,26 +348,18 @@ async function collectAll() {
   isLoading.value = true;
 
   try {
-    // Use the territory store instead of player store
-    await territoryStore.collectAllHotspotIncome();
+    // Use territory store instead of player store
+    const result = await territoryStore.collectAllHotspotIncome();
+    if (result) {
+      // Show a success message
+      // You could implement a toast notification system here
+    }
   } catch (error) {
     console.error('Failed to collect all pending resources:', error);
   } finally {
     isLoading.value = false;
   }
 }
-
-// async function collectAll() {
-//   isLoading.value = true;
-
-//   try {
-//     await playerStore.collectAllPending();
-//   } catch (error) {
-//     console.error('Failed to collect all pending resources:', error);
-//   } finally {
-//     isLoading.value = false;
-//   }
-// }
 </script>
 
 <style lang="scss">

@@ -35,11 +35,18 @@ type TerritoryService interface {
 	UpdateHotspotIncome() error
 	CollectHotspotIncome(playerID, hotspotID string) (*model.CollectResponse, error)
 	CollectAllHotspotIncome(playerID string) (*model.CollectAllResponse, error)
+
+	// Scheduled jobs
+	StartPeriodicIncomeGeneration()
+
+	// TEMP!!!
+	GetSSEService() SSEService
 }
 
 type territoryService struct {
 	territoryRepo repository.TerritoryRepository
 	playerRepo    repository.PlayerRepository
+	sseService    SSEService
 	gameConfig    config.GameConfig
 	logger        zerolog.Logger
 }
@@ -48,15 +55,22 @@ type territoryService struct {
 func NewTerritoryService(
 	territoryRepo repository.TerritoryRepository,
 	playerRepo repository.PlayerRepository,
+	sseService SSEService,
 	gameConfig config.GameConfig,
 	logger zerolog.Logger,
 ) TerritoryService {
 	return &territoryService{
 		territoryRepo: territoryRepo,
 		playerRepo:    playerRepo,
+		sseService:    sseService,
 		gameConfig:    gameConfig,
 		logger:        logger,
 	}
+}
+
+// TEMP!!!
+func (s *territoryService) GetSSEService() SSEService {
+	return s.sseService
 }
 
 // GetAllRegions retrieves all regions
@@ -187,131 +201,6 @@ func (s *territoryService) PerformAction(playerID, actionType string, request mo
 	}
 
 	return result, nil
-}
-
-// CollectHotspotIncome collects income from a specific hotspot
-func (s *territoryService) CollectHotspotIncome(playerID, hotspotID string) (*model.CollectResponse, error) {
-	// Get the player
-	_, err := s.playerRepo.GetPlayerByID(playerID)
-	if err != nil {
-		return nil, errors.New("failed to get player")
-	}
-
-	// Get the hotspot
-	hotspot, err := s.territoryRepo.GetHotspotByID(hotspotID)
-	if err != nil {
-		return nil, errors.New("hotspot not found")
-	}
-
-	// Check if player controls this hotspot
-	if hotspot.ControllerID == nil || *hotspot.ControllerID != playerID {
-		return nil, errors.New("you do not control this hotspot")
-	}
-
-	// Check if there's anything to collect
-	if hotspot.PendingCollection <= 0 {
-		return nil, errors.New("no pending collections available")
-	}
-
-	// Calculate money collected
-	moneyCollected := hotspot.PendingCollection
-
-	// Reset pending collection
-	hotspot.PendingCollection = 0
-	hotspot.LastCollectionTime = func() *time.Time {
-		now := time.Now()
-		return &now
-	}()
-
-	// Update the hotspot
-	if err := s.territoryRepo.UpdateHotspot(hotspot); err != nil {
-		s.logger.Error().Err(err).Msg("Failed to update hotspot after collection")
-		return nil, errors.New("failed to update hotspot")
-	}
-
-	// Add money to player
-	if err := s.playerRepo.UpdatePlayerResource(playerID, "money", moneyCollected); err != nil {
-		s.logger.Error().Err(err).Msg("Failed to update player money after collection")
-		return nil, errors.New("failed to update player money")
-	}
-
-	// Generate success message
-	message := fmt.Sprintf("Successfully collected $%s from %s.", formatMoney(moneyCollected), hotspot.Name)
-
-	// Add notification
-	if err := s.addNotification(playerID, message, util.NotificationTypeCollection); err != nil {
-		s.logger.Error().Err(err).Msg("Failed to add collection notification")
-	}
-
-	return &model.CollectResponse{
-		CollectedAmount: moneyCollected,
-		Message:         message,
-	}, nil
-}
-
-// CollectAllHotspotIncome collects income from all of a player's hotspots
-func (s *territoryService) CollectAllHotspotIncome(playerID string) (*model.CollectAllResponse, error) {
-	// Get all hotspots controlled by the player
-	hotspots, err := s.territoryRepo.GetControlledHotspots(playerID)
-	if err != nil {
-		return nil, errors.New("failed to get controlled hotspots")
-	}
-
-	totalCollected := 0
-	collectedHotspots := 0
-
-	// Collect from each hotspot with pending collection
-	for _, hotspot := range hotspots {
-		if hotspot.PendingCollection > 0 {
-			// Reset pending collection
-			oldPending := hotspot.PendingCollection
-			hotspot.PendingCollection = 0
-			hotspot.LastCollectionTime = func() *time.Time {
-				now := time.Now()
-				return &now
-			}()
-
-			// Update the hotspot
-			if err := s.territoryRepo.UpdateHotspot(&hotspot); err != nil {
-				s.logger.Error().Err(err).
-					Str("hotspotID", hotspot.ID).
-					Msg("Failed to update hotspot after collection")
-				continue
-			}
-
-			totalCollected += oldPending
-			collectedHotspots++
-		}
-	}
-
-	// Update player's money
-	if totalCollected > 0 {
-		if err := s.playerRepo.UpdatePlayerResource(playerID, "money", totalCollected); err != nil {
-			s.logger.Error().Err(err).Msg("Failed to update player money after collection")
-			return nil, errors.New("failed to update player money")
-		}
-	}
-
-	// Generate response message
-	var message string
-	if totalCollected > 0 {
-		message = fmt.Sprintf("Successfully collected $%s from %d controlled businesses.",
-			formatMoney(totalCollected), collectedHotspots)
-	} else {
-		message = "No resources available to collect at this time."
-	}
-
-	// Add notification if money was collected
-	if totalCollected > 0 {
-		if err := s.addNotification(playerID, message, util.NotificationTypeCollection); err != nil {
-			s.logger.Error().Err(err).Msg("Failed to add collection notification")
-		}
-	}
-
-	return &model.CollectAllResponse{
-		CollectedAmount: totalCollected,
-		Message:         message,
-	}, nil
 }
 
 // handleExtortion processes an extortion action
@@ -789,26 +678,186 @@ func (s *territoryService) handleDefend(player *model.Player, hotspot *model.Hot
 	return result, nil
 }
 
-// UpdateHotspotIncome updates the pending income for all controlled hotspots
+// CollectHotspotIncome collects pending income from a specific hotspot
+func (s *territoryService) CollectHotspotIncome(playerID, hotspotID string) (*model.CollectResponse, error) {
+	// Verify player owns the hotspot
+	hotspot, err := s.territoryRepo.GetHotspotByID(hotspotID)
+	if err != nil {
+		return nil, err
+	}
+
+	if hotspot.ControllerID == nil || *hotspot.ControllerID != playerID {
+		return nil, errors.New("you do not control this hotspot")
+	}
+
+	if hotspot.PendingCollection <= 0 {
+		return nil, errors.New("no resources available to collect")
+	}
+
+	// Get the collected amount
+	collectedAmount := hotspot.PendingCollection
+
+	// Reset pending collection
+	hotspot.PendingCollection = 0
+	hotspot.LastCollectionTime = func() *time.Time {
+		now := time.Now()
+		return &now
+	}()
+
+	// Update the hotspot
+	if err := s.territoryRepo.UpdateHotspot(hotspot); err != nil {
+		s.logger.Error().Err(err).
+			Str("hotspotID", hotspotID).
+			Msg("Failed to update hotspot after collection")
+		return nil, errors.New("failed to update hotspot")
+	}
+
+	// Update player's money
+	if err := s.playerRepo.UpdatePlayerResource(playerID, "money", collectedAmount); err != nil {
+		s.logger.Error().Err(err).
+			Str("playerID", playerID).
+			Str("resourceType", "money").
+			Int("amount", collectedAmount).
+			Msg("Failed to update player money after collection")
+		return nil, errors.New("failed to update player resources")
+	}
+
+	// Generate message
+	message := fmt.Sprintf("Successfully collected $%s from %s.", formatMoney(collectedAmount), hotspot.Name)
+
+	// Add notification to player
+	notification := &model.Notification{
+		PlayerID:  playerID,
+		Message:   message,
+		Type:      util.NotificationTypeCollection,
+		Timestamp: time.Now(),
+		Read:      false,
+	}
+	if err := s.playerRepo.AddNotification(notification); err != nil {
+		s.logger.Error().Err(err).Msg("Failed to add collection notification")
+	}
+
+	return &model.CollectResponse{
+		HotspotID:       hotspotID,
+		HotspotName:     hotspot.Name,
+		CollectedAmount: collectedAmount,
+		Message:         message,
+	}, nil
+}
+
+// CollectAllHotspotIncome collects pending income from all hotspots controlled by a player
+func (s *territoryService) CollectAllHotspotIncome(playerID string) (*model.CollectAllResponse, error) {
+	// Get all controlled hotspots
+	hotspots, err := s.territoryRepo.GetControlledHotspots(playerID)
+	if err != nil {
+		return nil, err
+	}
+
+	totalCollected := 0
+	collectedHotspots := 0
+
+	// Collect from each hotspot
+	for _, hotspot := range hotspots {
+		if hotspot.PendingCollection > 0 {
+			// Reset pending collection
+			collectedAmount := hotspot.PendingCollection
+			totalCollected += collectedAmount
+			collectedHotspots++
+
+			hotspot.PendingCollection = 0
+			hotspot.LastCollectionTime = func() *time.Time {
+				now := time.Now()
+				return &now
+			}()
+
+			// Update the hotspot
+			if err := s.territoryRepo.UpdateHotspot(&hotspot); err != nil {
+				s.logger.Error().Err(err).
+					Str("hotspotID", hotspot.ID).
+					Msg("Failed to update hotspot after collection")
+				// Continue with others even if one fails
+				continue
+			}
+		}
+	}
+
+	// Update player's money
+	if totalCollected > 0 {
+		if err := s.playerRepo.UpdatePlayerResource(playerID, "money", totalCollected); err != nil {
+			s.logger.Error().Err(err).
+				Str("playerID", playerID).
+				Str("resourceType", "money").
+				Int("amount", totalCollected).
+				Msg("Failed to update player money after collection")
+			return nil, errors.New("failed to update player resources")
+		}
+	}
+
+	// Generate response message
+	var message string
+	if totalCollected > 0 {
+		message = fmt.Sprintf("Successfully collected $%s from %d businesses.", formatMoney(totalCollected), collectedHotspots)
+	} else {
+		message = "No resources available to collect at this time."
+	}
+
+	// Add notification to player if resources were collected
+	if totalCollected > 0 {
+		notification := &model.Notification{
+			PlayerID:  playerID,
+			Message:   message,
+			Type:      util.NotificationTypeCollection,
+			Timestamp: time.Now(),
+			Read:      false,
+		}
+		if err := s.playerRepo.AddNotification(notification); err != nil {
+			s.logger.Error().Err(err).Msg("Failed to add collection notification")
+		}
+	}
+
+	return &model.CollectAllResponse{
+		CollectedAmount: totalCollected,
+		HotspotsCount:   collectedHotspots,
+		Message:         message,
+	}, nil
+}
+
+// Update the UpdateHotspotIncome method to send SSE events
 func (s *territoryService) UpdateHotspotIncome() error {
 	// Get all legal hotspots with controllers
-	var hotspots []model.Hotspot
-	if err := s.territoryRepo.GetDB().
-		Where("is_legal = ? AND controller_id IS NOT NULL", true).
-		Find(&hotspots).Error; err != nil {
+	hotspots, err := s.territoryRepo.GetAllControlledLegalHotspots()
+	if err != nil {
 		return err
 	}
 
+	currentTime := time.Now()
+
+	// Map to collect income updates by player
+	playerIncomeUpdates := make(map[string][]map[string]interface{})
+
 	// Update each hotspot's pending collection
 	for _, hotspot := range hotspots {
-		// Calculate time since last collection
-		timeSinceLastCollection := time.Since(*hotspot.LastCollectionTime)
-		hoursSinceLastCollection := timeSinceLastCollection.Hours()
+		if hotspot.ControllerID == nil {
+			continue
+		}
 
-		// Only update if at least an hour has passed since last collection or generation
-		if hoursSinceLastCollection >= 1.0 {
-			// Calculate number of full hours since last collection
-			fullHoursPassed := int(hoursSinceLastCollection)
+		playerID := *hotspot.ControllerID
+
+		// Calculate time since last income generation
+		timeSinceLastIncome := func() time.Duration {
+			if hotspot.LastIncomeTime != nil {
+				return currentTime.Sub(*hotspot.LastIncomeTime)
+			}
+
+			// NOTE: This should be time since last takeover
+			return currentTime.Sub(time.Now())
+		}()
+		hoursSinceLastIncome := timeSinceLastIncome.Hours()
+
+		// Only add income if at least one hour has passed
+		if hoursSinceLastIncome >= 1.0 {
+			// Calculate number of full hours that have passed
+			fullHoursPassed := int(hoursSinceLastIncome)
 
 			// Calculate new income (hourly rate * hours elapsed)
 			newIncome := hotspot.Income * fullHoursPassed
@@ -822,23 +871,67 @@ func (s *territoryService) UpdateHotspotIncome() error {
 				continue
 			}
 
-			// Update the lastIncomeTime to the most recent full hour
-			// This ensures we don't double-count income periods
-			lastFullHourTimestamp := hotspot.LastCollectionTime.Add(time.Duration(fullHoursPassed) * time.Hour)
-			if err := s.territoryRepo.UpdateHotspotLastIncomeTime(hotspot.ID, lastFullHourTimestamp); err != nil {
+			// Update last income time to the current time minus any partial hour
+			partialHour := timeSinceLastIncome - time.Duration(fullHoursPassed)*time.Hour
+			newLastIncomeTime := currentTime.Add(-partialHour)
+
+			if err := s.territoryRepo.UpdateHotspotLastIncomeTime(hotspot.ID, newLastIncomeTime); err != nil {
 				s.logger.Error().Err(err).
 					Str("hotspotID", hotspot.ID).
 					Msg("Failed to update hotspot last income time")
 			}
 
+			// Collect income update for SSE event
+			// Get the updated hotspot
+			updatedHotspot, err := s.territoryRepo.GetHotspotByID(hotspot.ID)
+			if err != nil {
+				s.logger.Error().Err(err).
+					Str("hotspotID", hotspot.ID).
+					Msg("Failed to get updated hotspot")
+				continue
+			}
+
+			// Add to player updates
+			if _, ok := playerIncomeUpdates[playerID]; !ok {
+				playerIncomeUpdates[playerID] = make([]map[string]interface{}, 0)
+			}
+
+			playerIncomeUpdates[playerID] = append(playerIncomeUpdates[playerID], map[string]interface{}{
+				"hotspotId":         updatedHotspot.ID,
+				"hotspotName":       updatedHotspot.Name,
+				"newIncome":         newIncome,
+				"pendingCollection": updatedHotspot.PendingCollection,
+				"lastIncomeTime":    updatedHotspot.LastIncomeTime,
+				"nextIncomeTime":    updatedHotspot.LastIncomeTime.Add(time.Hour),
+			})
+
 			// If significant amount accumulated, send notification to player
-			if newIncome > 1000 && hotspot.ControllerID != nil {
+			if newIncome > 1000 {
 				message := fmt.Sprintf("$%s is ready for collection at %s.", formatMoney(newIncome), hotspot.Name)
-				if err := s.addNotification(*hotspot.ControllerID, message, util.NotificationTypeCollection); err != nil {
+				if err := s.addNotification(playerID, message, util.NotificationTypeCollection); err != nil {
 					s.logger.Error().Err(err).Msg("Failed to add collection notification")
 				}
 			}
 		}
+	}
+
+	// Send SSE events to players
+	for playerID, updates := range playerIncomeUpdates {
+		// Calculate total pending collections
+		totalPending, err := s.playerRepo.CalculatePendingCollections(playerID)
+		if err != nil {
+			s.logger.Error().Err(err).
+				Str("playerID", playerID).
+				Msg("Failed to calculate pending collections")
+			continue
+		}
+
+		// Send the updates via SSE
+		s.sseService.SendEventToPlayer(playerID, "income_generated", map[string]interface{}{
+			"updates":      updates,
+			"totalPending": totalPending,
+			"timestamp":    currentTime,
+		})
 	}
 
 	return nil

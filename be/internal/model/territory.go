@@ -62,7 +62,6 @@ func (c *City) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-// Hotspot represents a location within a city that can be controlled
 type Hotspot struct {
 	ID                 string     `json:"id" gorm:"type:uuid;primary_key"`
 	Name               string     `json:"name" gorm:"not null"`
@@ -75,6 +74,8 @@ type Hotspot struct {
 	Income             int        `json:"income" gorm:"not null;default:0"` // Income per hour
 	PendingCollection  int        `json:"pendingCollection" gorm:"not null;default:0"`
 	LastCollectionTime *time.Time `json:"lastCollectionTime"`
+	LastIncomeTime     *time.Time `json:"lastIncomeTime"`          // Time of last income generation
+	NextIncomeTime     time.Time  `json:"nextIncomeTime" gorm:"-"` // Calculated field for next income time
 	Crew               int        `json:"crew" gorm:"not null;default:0"`
 	Weapons            int        `json:"weapons" gorm:"not null;default:0"`
 	Vehicles           int        `json:"vehicles" gorm:"not null;default:0"`
@@ -143,8 +144,10 @@ type PerformActionRequest struct {
 	Resources ActionResources `json:"resources" binding:"required"`
 }
 
-// CollectResponse represents the response after collecting from a single hotspot
+// CollectResponse represents the response after collecting income from a hotspot
 type CollectResponse struct {
+	HotspotID       string `json:"hotspotId"`
+	HotspotName     string `json:"hotspotName"`
 	CollectedAmount int    `json:"collectedAmount"`
 	Message         string `json:"message"`
 }

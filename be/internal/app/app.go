@@ -68,7 +68,7 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 
 	// CORS middleware
 	router.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"*"}, // Update this with your frontend domain in production
+		AllowedOrigins:   []string{"http://localhost:3000"}, // Update this with your frontend domain in production
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
@@ -84,17 +84,20 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 
 	// Initialize services
 	authService := service.NewAuthService(playerRepo, cfg.JWT, logger)
+	sseService := service.NewSSEService(logger)
 	playerService := service.NewPlayerService(playerRepo, logger)
-	territoryService := service.NewTerritoryService(territoryRepo, playerRepo, cfg.Game, logger)
+	territoryService := service.NewTerritoryService(territoryRepo, playerRepo, sseService, cfg.Game, logger)
 	operationsService := service.NewOperationsService(operationsRepo, playerRepo, playerService, cfg.Game, logger)
 	marketService := service.NewMarketService(marketRepo, playerRepo, playerService, cfg.Game, logger)
 
 	// Start scheduled jobs
 	operationsService.StartPeriodicOperationsRefresh()
 	marketService.StartPeriodicMarketPriceUpdates()
+	territoryService.StartPeriodicIncomeGeneration()
 
 	// Initialize controllers
 	authController := controller.NewAuthController(authService, logger)
+	sseControler := controller.NewSSEController(authService, sseService, logger)
 	playerController := controller.NewPlayerController(playerService, logger)
 	territoryController := controller.NewTerritoryController(territoryService, logger)
 	operationsController := controller.NewOperationsController(operationsService, logger)
@@ -110,6 +113,9 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 			r.Post("/auth/register", authController.Register)
 			r.Post("/auth/login", authController.Login)
 			r.Get("/auth/validate", authController.Validate)
+
+			// SSE route for real-time updates
+			r.Get("/sse", sseControler.HandleConnection)
 		})
 
 		// Protected routes
@@ -139,6 +145,8 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 				r.Get("/hotspots/controlled", territoryController.GetControlledHotspots)
 				r.Get("/actions", territoryController.GetRecentActions)
 				r.Post("/actions/{action}", territoryController.PerformAction)
+				r.Post("/hotspots/{id}/collect", territoryController.CollectHotspotIncome)
+				r.Post("/hotspots/collect-all", territoryController.CollectAllHotspotIncome)
 			})
 
 			// Operations routes
