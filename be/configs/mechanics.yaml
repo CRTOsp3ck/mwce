@@ -1,0 +1,174 @@
+# configs/mechanics.yaml
+
+# Game Mechanics Configuration for Mafia Wars: Criminal Empire
+
+# Action success chances
+success_chances:
+  # Territory actions
+  extortion:
+    base_chance: 70
+    resource_multiplier:
+      crew: 1.0
+      weapons: 1.5
+      vehicles: 2.0
+  takeover:
+    base_chance: 50
+    resource_multiplier:
+      crew: 1.0
+      weapons: 1.5
+      vehicles: 2.0
+  collection:
+    base_chance: 95
+    resource_multiplier:
+      crew: 1.0
+      weapons: 1.5
+      vehicles: 2.0
+  
+  # Operations
+  carjacking:
+    base_chance: 70
+    resource_multiplier:
+      crew: 1.0
+      weapons: 1.5
+      vehicles: 2.0
+  goods_smuggling:
+    base_chance: 75
+    resource_multiplier:
+      crew: 1.0
+      weapons: 1.5
+      vehicles: 2.0
+  drug_trafficking:
+    base_chance: 65
+    resource_multiplier:
+      crew: 1.0
+      weapons: 1.5
+      vehicles: 2.0
+  official_bribing:
+    base_chance: 85
+    resource_multiplier:
+      crew: 1.0
+      weapons: 0.5
+      vehicles: 0.5
+      money: 1.0
+  intelligence_gathering:
+    base_chance: 80
+    resource_multiplier:
+      crew: 1.0
+      weapons: 0.5
+      vehicles: 1.0
+  crew_recruitment:
+    base_chance: 90
+    resource_multiplier:
+      crew: 0.5
+      weapons: 1.0
+      vehicles: 1.0
+
+# Resource values used for defense strength calculation
+defense_values:
+  crew: 10
+  weapons: 15
+  vehicles: 20
+
+# Territory income generation
+income:
+  base_rates:
+    bar: 100
+    restaurant: 125
+    club: 150
+    casino: 200
+    hotel: 180
+    warehouse: 150
+    dock: 175
+    factory: 160
+    shop: 110
+    construction: 140
+  multipliers:
+    entertainment: 1.5
+    gambling: 2.0
+    protection: 1.3
+    smuggling: 1.8
+    black_market: 1.9
+    loan_sharking: 1.7
+    counterfeiting: 1.6
+    racketeering: 1.4
+
+# Market price fluctuation
+market:
+  price_fluctuation_range: 5 # Percentage
+  price_update_interval: 3600 # Seconds (1 hour)
+  base_prices:
+    crew: 1000
+    weapons: 2000
+    vehicles: 5000
+  min_prices:
+    crew: 500
+    weapons: 1000
+    vehicles: 2500
+  max_prices:
+    crew: 2000
+    weapons: 4000
+    vehicles: 10000
+
+# Player progression
+progression:
+  title_requirements:
+    soldier:
+      respect_influence: 20
+    capo:
+      respect_influence: 40
+    underboss:
+      respect_influence: 60
+    consigliere:
+      respect_influence: 80
+    boss:
+      respect_influence: 100
+    godfather:
+      respect_influence: 150
+  resource_cap_increases:
+    crew: 
+      per_influence: 0.5
+    weapons:
+      per_influence: 0.5
+    vehicles:
+      per_influence: 0.25
+
+# Heat mechanics
+heat:
+  decay_rate: 1 # Points per hour
+  max_heat: 100
+  effects:
+    police_response:
+      operation_success_penalty:
+        50: 5 # At 50 heat, -5% success chance
+        75: 10 # At 75 heat, -10% success chance
+        90: 20 # At 90 heat, -20% success chance
+      territory_action_penalty:
+        50: 5
+        75: 10
+        90: 20
+
+# Notification settings
+notifications:
+  max_unread: 50
+  max_total: 100
+
+# Operation generation settings
+operations:
+  duration_range:
+    min: 900 # 15 minutes
+    max: 14400 # 4 hours
+  reward_scaling:
+    money: 1000 # Base money reward
+    crew: 2 # Base crew reward
+    weapons: 2 # Base weapons reward
+    vehicles: 1 # Base vehicles reward
+    respect: 5 # Base respect reward
+    influence: 3 # Base influence reward
+  difficulty_multipliers:
+    easy: 0.8
+    medium: 1.0
+    hard: 1.5
+    very_hard: 2.0
+  special_operation_requirements:
+    min_influence: 30
+    max_heat: 50

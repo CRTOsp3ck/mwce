@@ -1,0 +1,3 @@
+- Create an event bus for the front-end so as an when the events occur, states can subscribe to the changes.
+- With every player joined, we can make a new system will generate a new hotspot.
+- Create a revenue scheduler

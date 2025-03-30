@@ -1,0 +1,48 @@
+# configs/app.yaml
+
+# Application Configuration for Mafia Wars: Criminal Empire
+
+# Environment (development, staging, production)
+environment: development
+
+# Server settings
+server:
+  port: 8000
+  timeout_read: 15
+  timeout_write: 15
+  timeout_idle: 60
+  timeout_shutdown: 30
+
+# Database settings
+database:
+  host: localhost
+  port: 5432
+  username: postgres
+  password: postgres
+  database: mwce
+  sslmode: disable
+  max_idle_conns: 10
+  max_open_conns: 100
+
+# JWT settings
+jwt:
+  secret: "your-secret-key-change-this-in-production" # Change this in production!
+  token_lifetime: 168h # 7 days
+
+# Game settings
+game:
+  mechanics_file: "./configs/mechanics.yaml"
+  territory_structure_file: "./configs/territory.yaml"
+  operations_file: "./configs/operations.yaml"
+  daily_operations_count: 10
+  special_operations_count: 5
+  operations_refresh_interval: 60 # in minutes
+  market_price_update_interval: 60 # in minutes
+  resource_limit:
+    initial_crew: 5
+    initial_weapons: 3
+    initial_vehicles: 1
+    initial_money: 10000
+    max_crew: 25
+    max_weapons: 30
+    max_vehicles: 12

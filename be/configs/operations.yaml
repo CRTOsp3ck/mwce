@@ -1,0 +1,455 @@
+# configs/operations.yaml
+
+# Operations Configuration for Mafia Wars: Criminal Empire
+
+# Pool of basic operations
+basic_operations:
+  - name: "Car Theft Ring"
+    description: "Steal luxury vehicles from a wealthy neighborhood for resale."
+    type: "carjacking"
+    resources:
+      crew: 2
+      weapons: 1
+      vehicles: 1
+      money: 0
+    rewards:
+      money: 2000
+      respect: 5
+      vehicles: 1
+    risks:
+      crew_loss: 1
+      weapons_loss: 1
+      heat_increase: 10
+    duration: 1800  # 30 minutes
+    success_rate: 70
+
+  - name: "Highway Interception"
+    description: "Intercept and hijack a vehicle transport on the highway."
+    type: "carjacking"
+    resources:
+      crew: 3
+      weapons: 2
+      vehicles: 2
+      money: 0
+    rewards:
+      money: 3500
+      respect: 8
+      vehicles: 2
+    risks:
+      crew_loss: 2
+      weapons_loss: 2
+      heat_increase: 15
+    duration: 2700  # 45 minutes
+    success_rate: 65
+
+  - name: "Local Smuggling"
+    description: "Move contraband across city lines avoiding checkpoints."
+    type: "goods_smuggling"
+    resources:
+      crew: 2
+      weapons: 1
+      vehicles: 2
+      money: 500
+    rewards:
+      money: 2500
+      respect: 6
+    risks:
+      crew_loss: 1
+      weapons_loss: 1
+      vehicles_loss: 1
+      heat_increase: 12
+    duration: 2400  # 40 minutes
+    success_rate: 75
+
+  - name: "Cross-Border Run"
+    description: "Transport goods across state lines with fake documentation."
+    type: "goods_smuggling"
+    resources:
+      crew: 3
+      weapons: 2
+      vehicles: 3
+      money: 1000
+    rewards:
+      money: 4500
+      respect: 10
+    risks:
+      crew_loss: 2
+      weapons_loss: 2
+      vehicles_loss: 1
+      heat_increase: 20
+    duration: 3600  # 60 minutes
+    success_rate: 65
+
+  - name: "Street Corner Takeover"
+    description: "Establish a presence in a new neighborhood for drug sales."
+    type: "drug_trafficking"
+    resources:
+      crew: 3
+      weapons: 3
+      vehicles: 1
+      money: 1500
+    rewards:
+      money: 3000
+      respect: 8
+      influence: 2
+    risks:
+      crew_loss: 2
+      weapons_loss: 2
+      heat_increase: 15
+    duration: 2700  # 45 minutes
+    success_rate: 70
+
+  - name: "Corrupt the Beat Cop"
+    description: "Bribe a patrol officer to look the other way during your operations."
+    type: "official_bribing"
+    resources:
+      crew: 1
+      weapons: 0
+      vehicles: 1
+      money: 2000
+    rewards:
+      heat_reduction: 15
+      influence: 3
+    risks:
+      money_loss: 2000
+      heat_increase: 25
+    duration: 1800  # 30 minutes
+    success_rate: 85
+
+  - name: "Traffic Court Fix"
+    description: "Pay off a court clerk to dismiss charges against your crew members."
+    type: "official_bribing"
+    resources:
+      crew: 1
+      weapons: 0
+      vehicles: 1
+      money: 3000
+    rewards:
+      crew: 1
+      heat_reduction: 20
+    risks:
+      money_loss: 3000
+      heat_increase: 30
+    duration: 2400  # 40 minutes
+    success_rate: 80
+
+  - name: "Rival Surveillance"
+    description: "Gather intelligence on a rival family's operations."
+    type: "intelligence_gathering"
+    resources:
+      crew: 2
+      weapons: 1
+      vehicles: 2
+      money: 500
+    rewards:
+      respect: 5
+      influence: 5
+    risks:
+      crew_loss: 1
+      weapons_loss: 1
+      heat_increase: 10
+    duration: 3600  # 60 minutes
+    success_rate: 80
+
+  - name: "Police Scanner Network"
+    description: "Set up a network of police scanners to monitor law enforcement activity."
+    type: "intelligence_gathering"
+    resources:
+      crew: 2
+      weapons: 0
+      vehicles: 2
+      money: 2000
+    rewards:
+      heat_reduction: 15
+      influence: 4
+    risks:
+      money_loss: 2000
+      vehicles_loss: 1
+      heat_increase: 5
+    duration: 4800  # 80 minutes
+    success_rate: 85
+
+  - name: "Street Recruitment"
+    description: "Recruit new members from local street gangs."
+    type: "crew_recruitment"
+    resources:
+      crew: 1
+      weapons: 1
+      vehicles: 1
+      money: 1000
+    rewards:
+      crew: 3
+      respect: 5
+    risks:
+      weapons_loss: 1
+      heat_increase: 8
+    duration: 2400  # 40 minutes
+    success_rate: 90
+
+  - name: "Prison Break"
+    description: "Break out valuable crew members from a minimum-security holding facility."
+    type: "crew_recruitment"
+    resources:
+      crew: 4
+      weapons: 3
+      vehicles: 2
+      money: 3000
+    rewards:
+      crew: 2
+      respect: 15
+      influence: 5
+    risks:
+      crew_loss: 2
+      weapons_loss: 2
+      vehicles_loss: 1
+      heat_increase: 30
+    duration: 5400  # 90 minutes
+    success_rate: 60
+
+  - name: "Warehouse Heist"
+    description: "Break into a commercial warehouse and steal valuable merchandise."
+    type: "carjacking"
+    resources:
+      crew: 4
+      weapons: 3
+      vehicles: 2
+      money: 0
+    rewards:
+      money: 6000
+      respect: 12
+    risks:
+      crew_loss: 2
+      weapons_loss: 3
+      heat_increase: 25
+    duration: 3600  # 60 minutes
+    success_rate: 65
+
+  - name: "Protection Racket"
+    description: "Convince local businesses to pay for your 'protection services'."
+    type: "goods_smuggling"
+    resources:
+      crew: 3
+      weapons: 2
+      vehicles: 1
+      money: 0
+    rewards:
+      money: 2000
+      influence: 5
+    risks:
+      crew_loss: 1
+      heat_increase: 15
+    duration: 2700  # 45 minutes
+    success_rate: 75
+
+  - name: "Street Racing Circuit"
+    description: "Organize illegal street races and skim profits from betting."
+    type: "drug_trafficking"
+    resources:
+      crew: 2
+      weapons: 1
+      vehicles: 3
+      money: 1500
+    rewards:
+      money: 4000
+      vehicles: 1
+      respect: 8
+    risks:
+      vehicles_loss: 2
+      heat_increase: 18
+    duration: 3600  # 60 minutes
+    success_rate: 70
+
+# Pool of special operations
+special_operations:
+  - name: "Armored Car Robbery"
+    description: "Hit an armored car during a cash transfer from a major bank."
+    type: "carjacking"
+    is_special: true
+    requirements:
+      min_influence: 30
+      max_heat: 50
+      min_title: "Capo"
+    resources:
+      crew: 5
+      weapons: 5
+      vehicles: 3
+      money: 0
+    rewards:
+      money: 15000
+      respect: 25
+      influence: 10
+    risks:
+      crew_loss: 3
+      weapons_loss: 4
+      vehicles_loss: 2
+      heat_increase: 40
+    duration: 7200  # 120 minutes
+    success_rate: 55
+
+  - name: "Casino Vault Heist"
+    description: "Break into the vault of a major casino during peak hours."
+    type: "carjacking"
+    is_special: true
+    requirements:
+      min_influence: 40
+      max_heat: 40
+      min_title: "Underboss"
+    resources:
+      crew: 6
+      weapons: 5
+      vehicles: 3
+      money: 5000
+    rewards:
+      money: 25000
+      respect: 35
+      influence: 15
+    risks:
+      crew_loss: 4
+      weapons_loss: 5
+      vehicles_loss: 2
+      heat_increase: 50
+    duration: 10800  # 180 minutes
+    success_rate: 45
+
+  - name: "International Smuggling Ring"
+    description: "Establish a global network for high-value contraband."
+    type: "goods_smuggling"
+    is_special: true
+    requirements:
+      min_influence: 35
+      max_heat: 45
+      min_title: "Capo"
+    resources:
+      crew: 5
+      weapons: 3
+      vehicles: 4
+      money: 8000
+    rewards:
+      money: 20000
+      respect: 30
+      influence: 15
+    risks:
+      crew_loss: 3
+      weapons_loss: 2
+      vehicles_loss: 2
+      heat_increase: 35
+    duration: 14400  # 240 minutes
+    success_rate: 60
+
+  - name: "Drug Lab Takeover"
+    description: "Seize control of a major drug production facility from rivals."
+    type: "drug_trafficking"
+    is_special: true
+    requirements:
+      min_influence: 40
+      max_heat: 50
+      min_title: "Capo"
+    resources:
+      crew: 7
+      weapons: 6
+      vehicles: 3
+      money: 5000
+    rewards:
+      money: 18000
+      respect: 40
+      influence: 20
+    risks:
+      crew_loss: 4
+      weapons_loss: 5
+      vehicles_loss: 1
+      heat_increase: 45
+    duration: 9000  # 150 minutes
+    success_rate: 55
+
+  - name: "Corrupt the Police Captain"
+    description: "Bribe a high-ranking police official to provide protection for all your operations."
+    type: "official_bribing"
+    is_special: true
+    requirements:
+      min_influence: 50
+      max_heat: 40
+      min_title: "Underboss"
+    resources:
+      crew: 2
+      weapons: 1
+      vehicles: 2
+      money: 15000
+    rewards:
+      heat_reduction: 50
+      influence: 25
+      respect: 20
+    risks:
+      money_loss: 15000
+      crew_loss: 2
+      heat_increase: 60
+    duration: 7200  # 120 minutes
+    success_rate: 70
+
+  - name: "Judge Blackmail Operation"
+    description: "Gather compromising information on a local judge to control court outcomes."
+    type: "intelligence_gathering"
+    is_special: true
+    requirements:
+      min_influence: 45
+      max_heat: 45
+      min_title: "Consigliere"
+    resources:
+      crew: 4
+      weapons: 2
+      vehicles: 3
+      money: 10000
+    rewards:
+      heat_reduction: 35
+      influence: 30
+      respect: 25
+    risks:
+      crew_loss: 3
+      money_loss: 10000
+      heat_increase: 55
+    duration: 12600  # 210 minutes
+    success_rate: 65
+
+  - name: "Rival Family Infiltration"
+    description: "Place spies within a rival family to gather vital intelligence."
+    type: "intelligence_gathering"
+    is_special: true
+    requirements:
+      min_influence: 35
+      max_heat: 35
+      min_title: "Capo"
+    resources:
+      crew: 5
+      weapons: 3
+      vehicles: 2
+      money: 8000
+    rewards:
+      influence: 25
+      respect: 20
+    risks:
+      crew_loss: 5
+      heat_increase: 30
+    duration: 18000  # 300 minutes
+    success_rate: 60
+
+  - name: "Prison Gang Alliance"
+    description: "Form an alliance with prison gangs to recruit experienced criminals upon release."
+    type: "crew_recruitment"
+    is_special: true
+    requirements:
+      min_influence: 30
+      max_heat: 60
+      min_title: "Capo"
+    resources:
+      crew: 3
+      weapons: 2
+      vehicles: 2
+      money: 12000
+    rewards:
+      crew: 8
+      respect: 25
+      influence: 15
+    risks:
+      money_loss: 12000
+      heat_increase: 25
+    duration: 8600  # 143 minutes
+    success_rate: 75
