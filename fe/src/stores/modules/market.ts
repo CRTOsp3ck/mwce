@@ -83,15 +83,23 @@ export const useMarketStore = defineStore("market", {
       this.error = null;
 
       try {
+        // Get listings
         const listingsResponse = await marketService.getListings();
-        this.listings = listingsResponse.data;
-        console.log('Listings response: ', listingsResponse.data)
+        if (listingsResponse.success && listingsResponse.data) {
+          this.listings = listingsResponse.data;
+        }
 
+        // Get transactions
         const transactionsResponse = await marketService.getTransactions();
-        this.transactions = transactionsResponse.data;
+        if (transactionsResponse.success && transactionsResponse.data) {
+          this.transactions = transactionsResponse.data;
+        }
 
+        // Get price history
         const historyResponse = await marketService.getPriceHistory();
-        this.priceHistory = historyResponse.data;
+        if (historyResponse.success && historyResponse.data) {
+          this.priceHistory = historyResponse.data;
+        }
       } catch (error) {
         this.error = "Failed to load market data";
         console.error("Error fetching market data:", error);
@@ -125,11 +133,22 @@ export const useMarketStore = defineStore("market", {
         }
 
         // Execute transaction
-        const response = await marketService.buyResource(
-          resourceType,
-          quantity
-        );
-        const transaction = response.data;
+        const response = await marketService.buyResource(resourceType, quantity);
+        
+        // Check for success and process the response
+        if (!response.success || !response.data) {
+          throw new Error("Transaction failed");
+        }
+        
+        const transactionData = response.data;
+        let transaction: MarketTransaction;
+        
+        // Handle different response formats (direct transaction or wrapped in result)
+        if ('result' in transactionData && transactionData.result) {
+          transaction = transactionData.result as MarketTransaction;
+        } else {
+          transaction = transactionData as unknown as MarketTransaction;
+        }
 
         // Update player resources
         playerStore.profile.money -= totalCost;
@@ -150,13 +169,15 @@ export const useMarketStore = defineStore("market", {
         this.transactions.unshift(transaction);
 
         // Update listing with new price (in case price changed)
-        const updatedListing = await marketService.getListing(resourceType);
-        const listingIndex = this.listings.findIndex(
-          (l) => l.type === resourceType
-        );
+        const updatedListingResponse = await marketService.getListing(resourceType);
+        if (updatedListingResponse.success && updatedListingResponse.data) {
+          const listingIndex = this.listings.findIndex(
+            (l) => l.type === resourceType
+          );
 
-        if (listingIndex !== -1) {
-          this.listings[listingIndex] = updatedListing.data;
+          if (listingIndex !== -1) {
+            this.listings[listingIndex] = updatedListingResponse.data;
+          }
         }
 
         return transaction;
@@ -208,11 +229,22 @@ export const useMarketStore = defineStore("market", {
         const totalValue = listing.price * quantity;
 
         // Execute transaction
-        const response = await marketService.sellResource(
-          resourceType,
-          quantity
-        );
-        const transaction = response.data;
+        const response = await marketService.sellResource(resourceType, quantity);
+        
+        // Check for success
+        if (!response.success || !response.data) {
+          throw new Error("Transaction failed");
+        }
+        
+        const transactionData = response.data;
+        let transaction: MarketTransaction;
+        
+        // Handle different response formats
+        if ('result' in transactionData && transactionData.result) {
+          transaction = transactionData.result as MarketTransaction;
+        } else {
+          transaction = transactionData as unknown as MarketTransaction;
+        }
 
         // Update player resources
         playerStore.profile.money += totalValue;
@@ -233,13 +265,15 @@ export const useMarketStore = defineStore("market", {
         this.transactions.unshift(transaction);
 
         // Update listing with new price (in case price changed)
-        const updatedListing = await marketService.getListing(resourceType);
-        const listingIndex = this.listings.findIndex(
-          (l) => l.type === resourceType
-        );
+        const updatedListingResponse = await marketService.getListing(resourceType);
+        if (updatedListingResponse.success && updatedListingResponse.data) {
+          const listingIndex = this.listings.findIndex(
+            (l) => l.type === resourceType
+          );
 
-        if (listingIndex !== -1) {
-          this.listings[listingIndex] = updatedListing.data;
+          if (listingIndex !== -1) {
+            this.listings[listingIndex] = updatedListingResponse.data;
+          }
         }
 
         return transaction;

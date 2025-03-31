@@ -1,6 +1,6 @@
 // src/services/authService.ts
 
-import api from './api';
+import api, { ApiResponse } from './api';
 
 // Define types
 export interface LoginRequest {
@@ -13,7 +13,6 @@ export interface RegisterRequest {
   email: string;
   password: string;
   confirmPassword: string;
-  territory: string;
 }
 
 export interface AuthResponse {
@@ -22,13 +21,27 @@ export interface AuthResponse {
     id: string;
     name: string;
     email: string;
+    title: string;
+    money: number;
+    crew: number;
+    maxCrew: number;
+    weapons: number;
+    maxWeapons: number;
+    vehicles: number;
+    maxVehicles: number;
+    respect: number;
+    influence: number;
+    heat: number;
+    createdAt: string;
+    lastActive: string;
   };
 }
 
 // Endpoints
 const ENDPOINTS = {
   REGISTER: '/auth/register',
-  LOGIN: '/auth/login'
+  LOGIN: '/auth/login',
+  VALIDATE: '/auth/validate'
 };
 
 export default {
@@ -36,14 +49,21 @@ export default {
    * Register a new user
    */
   register(data: RegisterRequest) {
-    return api.post<AuthResponse>(ENDPOINTS.REGISTER, data);
+    return api.post<ApiResponse<AuthResponse>>(ENDPOINTS.REGISTER, data);
   },
   
   /**
    * Login an existing user
    */
   login(data: LoginRequest) {
-    return api.post<AuthResponse>(ENDPOINTS.LOGIN, data);
+    return api.post<ApiResponse<AuthResponse>>(ENDPOINTS.LOGIN, data);
+  },
+  
+  /**
+   * Validate token
+   */
+  validate() {
+    return api.get<ApiResponse<{message: string; user_id: string}>>(ENDPOINTS.VALIDATE);
   },
   
   /**
@@ -59,5 +79,12 @@ export default {
    */
   isAuthenticated() {
     return !!localStorage.getItem('auth_token');
+  },
+  
+  /**
+   * Save token to localStorage
+   */
+  saveToken(token: string) {
+    localStorage.setItem('auth_token', token);
   }
 };

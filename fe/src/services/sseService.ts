@@ -3,6 +3,8 @@
 import { reactive } from 'vue';
 import { usePlayerStore } from '@/stores/modules/player';
 import { useTerritoryStore } from '@/stores/modules/territory';
+import { Hotspot } from '@/types/territory';
+import { Notification } from '@/types/player';
 
 // SSE event types
 export enum SSEEventType {
@@ -10,7 +12,36 @@ export enum SSEEventType {
   HEARTBEAT = 'heartbeat',
   INCOME_GENERATED = 'income_generated',
   HOTSPOT_UPDATED = 'hotspot_updated',
+  HOTSPOTS_UPDATED = 'hotspots_updated',
   NOTIFICATION = 'notification'
+}
+
+// Define SSE event payloads
+export interface IncomeUpdate {
+  hotspotId: string;
+  hotspotName: string;
+  newIncome: number;
+  pendingCollection: number;
+  lastIncomeTime: string;
+  nextIncomeTime: string;
+}
+
+export interface IncomeGeneratedEvent {
+  updates: IncomeUpdate[];
+  totalPending: number;
+  timestamp: string;
+}
+
+export interface HotspotUpdatedEvent {
+  hotspot: Hotspot;
+}
+
+export interface HotspotsUpdatedEvent {
+  hotspots: Hotspot[];
+}
+
+export interface NotificationEvent {
+  notification: Notification;
 }
 
 // SSE service state
@@ -39,7 +70,6 @@ function connect() {
   }
   
   // Create a new connection with token in the URL
-  // const url = `${import.meta.env.VITE_API_URL}/sse?token=${encodeURIComponent(token)}`;
   const url = `http://localhost:8000/api/sse?token=${encodeURIComponent(token)}`;
   state.eventSource = new EventSource(url);
   
@@ -95,13 +125,13 @@ function setupEventHandlers(eventSource: EventSource) {
   
   // Income generated event
   eventSource.addEventListener(SSEEventType.INCOME_GENERATED, (event) => {
-    const data = JSON.parse(event.data);
+    const data = JSON.parse(event.data) as IncomeGeneratedEvent;
     console.log('Income generated event:', data);
     
     // Process income updates
     if (data.updates && Array.isArray(data.updates)) {
       // Update hotspots
-      data.updates.forEach((update: any) => {
+      data.updates.forEach((update) => {
         territoryStore.updateHotspotIncome(
           update.hotspotId,
           update.newIncome,
@@ -120,7 +150,7 @@ function setupEventHandlers(eventSource: EventSource) {
   
   // Hotspot updated event
   eventSource.addEventListener(SSEEventType.HOTSPOT_UPDATED, (event) => {
-    const data = JSON.parse(event.data);
+    const data = JSON.parse(event.data) as HotspotUpdatedEvent;
     console.log('Hotspot updated event:', data);
     
     // Update the hotspot
@@ -129,9 +159,22 @@ function setupEventHandlers(eventSource: EventSource) {
     }
   });
   
+  // Hotspots updated event
+  eventSource.addEventListener(SSEEventType.HOTSPOTS_UPDATED, (event) => {
+    const data = JSON.parse(event.data) as HotspotsUpdatedEvent;
+    console.log('Hotspots updated event:', data);
+    
+    // Update all hotspots
+    if (data.hotspots && Array.isArray(data.hotspots)) {
+      data.hotspots.forEach(hotspot => {
+        territoryStore.updateHotspot(hotspot);
+      });
+    }
+  });
+  
   // Notification event
   eventSource.addEventListener(SSEEventType.NOTIFICATION, (event) => {
-    const data = JSON.parse(event.data);
+    const data = JSON.parse(event.data) as NotificationEvent;
     console.log('Notification event:', data);
     
     // Add notification

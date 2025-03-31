@@ -72,8 +72,11 @@ export const useOperationsStore = defineStore('operations', {
       
       try {
         const response = await operationsService.getAvailableOperations();
-        this.availableOperations = response.data;
-        console.log('Available operations', response.data)
+        if (response.success && response.data) {
+          this.availableOperations = response.data;
+        } else {
+          throw new Error('Failed to get operations data');
+        }
       } catch (error) {
         this.error = 'Failed to load available operations';
         console.error('Error fetching available operations:', error);
@@ -89,13 +92,17 @@ export const useOperationsStore = defineStore('operations', {
       this.isLoading = true;
       
       try {
+        // Get current operations
         const currentResponse = await operationsService.getCurrentOperations();
-        this.currentOperations = currentResponse.data;
-        console.log('Current operations', currentResponse.data)
+        if (currentResponse.success && currentResponse.data) {
+          this.currentOperations = currentResponse.data;
+        }
         
+        // Get completed operations
         const completedResponse = await operationsService.getCompletedOperations();
-        this.completedOperations = completedResponse.data;
-        console.log('Completed operations', completedResponse.data)
+        if (completedResponse.success && completedResponse.data) {
+          this.completedOperations = completedResponse.data;
+        }
       } catch (error) {
         console.error('Error fetching player operations:', error);
         
@@ -116,6 +123,10 @@ export const useOperationsStore = defineStore('operations', {
       
       try {
         const response = await operationsService.startOperation(operationId, resources);
+        if (!response.success || !response.data) {
+          throw new Error('Failed to start operation');
+        }
+        
         const newOperation = response.data;
         
         // Add to current operations
@@ -149,7 +160,10 @@ export const useOperationsStore = defineStore('operations', {
       this.error = null;
       
       try {
-        await operationsService.cancelOperation(operationId);
+        const response = await operationsService.cancelOperation(operationId);
+        if (!response.success) {
+          throw new Error('Failed to cancel operation');
+        }
         
         // Find the operation and update its status
         const operationIndex = this.currentOperations.findIndex(o => o.id === operationId);
@@ -177,7 +191,18 @@ export const useOperationsStore = defineStore('operations', {
       
       try {
         const response = await operationsService.collectOperation(operationId);
-        const result = response.data as OperationResult;
+        if (!response.success || !response.data) {
+          throw new Error('Failed to collect operation');
+        }
+        
+        let result: OperationResult;
+        
+        // Handle different response formats
+        if ('result' in response.data && response.data.result) {
+          result = response.data.result as OperationResult;
+        } else {
+          result = response.data as unknown as OperationResult;
+        }
         
         // Find the operation and update it
         const operationIndex = this.currentOperations.findIndex(o => o.id === operationId);

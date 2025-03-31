@@ -1,6 +1,7 @@
 // src/stores/modules/territory.ts
 
 import { defineStore } from "pinia";
+import { ApiResponse } from "@/services/api";
 import territoryService from "@/services/territoryService";
 import {
   Region,
@@ -29,7 +30,7 @@ interface TerritoryState {
   recentActions: TerritoryAction[];
   isLoading: boolean;
   error: string | null;
-  incomeTimerInterval: number | null; // Add this for the timer
+  incomeTimerInterval: number | null; // For the timer
 }
 
 export const useTerritoryStore = defineStore("territory", {
@@ -46,7 +47,7 @@ export const useTerritoryStore = defineStore("territory", {
     recentActions: [],
     isLoading: false,
     error: null,
-    incomeTimerInterval: null, // Initialize to null
+    incomeTimerInterval: null,
   }),
 
   getters: {
@@ -105,17 +106,29 @@ export const useTerritoryStore = defineStore("territory", {
       this.error = null;
 
       try {
+        // Get regions
         const regionsResponse = await territoryService.getRegions();
-        this.regions = regionsResponse.data;
+        if (regionsResponse.success && regionsResponse.data) {
+          this.regions = regionsResponse.data;
+        }
 
+        // Get districts
         const districtsResponse = await territoryService.getDistricts();
-        this.districts = districtsResponse.data;
+        if (districtsResponse.success && districtsResponse.data) {
+          this.districts = districtsResponse.data;
+        }
 
+        // Get cities
         const citiesResponse = await territoryService.getCities();
-        this.cities = citiesResponse.data;
+        if (citiesResponse.success && citiesResponse.data) {
+          this.cities = citiesResponse.data;
+        }
 
+        // Get hotspots
         const hotspotsResponse = await territoryService.getHotspots();
-        this.hotspots = hotspotsResponse.data;
+        if (hotspotsResponse.success && hotspotsResponse.data) {
+          this.hotspots = hotspotsResponse.data;
+        }
 
         // Calculate next income times
         this.calculateNextIncomeTimes();
@@ -135,7 +148,9 @@ export const useTerritoryStore = defineStore("territory", {
 
       try {
         const response = await territoryService.getRecentActions();
-        this.recentActions = response.data;
+        if (response.success && response.data) {
+          this.recentActions = response.data;
+        }
       } catch (error) {
         console.error("Error fetching recent actions:", error);
       } finally {
@@ -212,8 +227,20 @@ export const useTerritoryStore = defineStore("territory", {
           hotspotId,
           resources
         );
-        const result = response.data as ActionResult;
-
+        
+        if (!response.success || !response.data) {
+          throw new Error("Failed to perform territory action");
+        }
+        
+        // Extract the result from the response
+        let result: ActionResult;
+        
+        if ('result' in response.data) {
+          result = response.data.result as ActionResult;
+        } else {
+          result = response.data as unknown as ActionResult;
+        }
+        
         // Update player resources based on action result
         const playerStore = usePlayerStore();
         if (playerStore.profile) {
@@ -271,25 +298,27 @@ export const useTerritoryStore = defineStore("territory", {
 
         // Update hotspot data if action was successful
         if (result.success) {
-          const updatedHotspot = await territoryService.getHotspot(hotspotId);
-          const index = this.hotspots.findIndex((h) => h.id === hotspotId);
+          const updatedHotspotResponse = await territoryService.getHotspot(hotspotId);
+          if (updatedHotspotResponse.success && updatedHotspotResponse.data) {
+            const index = this.hotspots.findIndex((h) => h.id === hotspotId);
 
-          if (index !== -1) {
-            this.hotspots[index] = updatedHotspot.data;
+            if (index !== -1) {
+              this.hotspots[index] = updatedHotspotResponse.data;
 
-            // Also update in filtered hotspots
-            const filteredIndex = this.filteredHotspots.findIndex(
-              (h) => h.id === hotspotId
-            );
-            if (filteredIndex !== -1) {
-              this.filteredHotspots[filteredIndex] = updatedHotspot.data;
+              // Also update in filtered hotspots
+              const filteredIndex = this.filteredHotspots.findIndex(
+                (h) => h.id === hotspotId
+              );
+              if (filteredIndex !== -1) {
+                this.filteredHotspots[filteredIndex] = updatedHotspotResponse.data;
+              }
             }
-          }
 
-          // If takeover was successful, update controlled hotspots count
-          if (actionType === TerritoryActionType.TAKEOVER) {
-            if (playerStore.profile) {
-              playerStore.profile.controlledHotspots += 1;
+            // If takeover was successful, update controlled hotspots count
+            if (actionType === TerritoryActionType.TAKEOVER) {
+              if (playerStore.profile) {
+                playerStore.profile.controlledHotspots += 1;
+              }
             }
           }
         }
@@ -339,7 +368,17 @@ export const useTerritoryStore = defineStore("territory", {
 
       try {
         const response = await territoryService.collectHotspotIncome(hotspotId);
-        const collectionResult = response.data;
+        if (!response.success || !response.data) {
+          throw new Error("Failed to collect hotspot income");
+        }
+        
+        // Extract the collection result
+        let collectionResult;
+        if ('result' in response.data) {
+          collectionResult = response.data.result;
+        } else {
+          collectionResult = response.data;
+        }
 
         // Update the hotspot's pending collection
         const hotspot = this.hotspots.find((h) => h.id === hotspotId);
@@ -386,7 +425,17 @@ export const useTerritoryStore = defineStore("territory", {
 
       try {
         const response = await territoryService.collectAllHotspotIncome();
-        const collectionResult = response.data;
+        if (!response.success || !response.data) {
+          throw new Error("Failed to collect all hotspot income");
+        }
+        
+        // Extract the collection result
+        let collectionResult;
+        if ('result' in response.data) {
+          collectionResult = response.data.result;
+        } else {
+          collectionResult = response.data;
+        }
 
         // Update all controlled hotspots
         const controlledHotspots = this.hotspots.filter(
@@ -434,7 +483,7 @@ export const useTerritoryStore = defineStore("territory", {
       this.updateIncomeTimes();
 
       // Set interval to update times every minute
-      this.incomeTimerInterval = setInterval(() => {
+      this.incomeTimerInterval = window.setInterval(() => {
         this.updateIncomeTimes();
       }, 60000); // Update every minute
     },

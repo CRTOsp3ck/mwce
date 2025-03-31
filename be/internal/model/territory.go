@@ -140,8 +140,8 @@ type ActionResult struct {
 
 // PerformActionRequest represents a request to perform a territory action
 type PerformActionRequest struct {
-	HotspotID string          `json:"hotspotId" binding:"required"`
-	Resources ActionResources `json:"resources" binding:"required"`
+	HotspotID string          `json:"hotspotId"`
+	Resources ActionResources `json:"resources"`
 }
 
 // CollectResponse represents the response after collecting income from a hotspot

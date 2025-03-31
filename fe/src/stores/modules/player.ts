@@ -60,13 +60,17 @@ export const usePlayerStore = defineStore('player', {
       
       try {
         const response = await playerService.getProfile();
-        this.profile = response.data;
+        if (response.success && response.data) {
+          this.profile = response.data;
+        } else {
+          throw new Error('Failed to load profile');
+        }
       } catch (error) {
         this.error = 'Failed to load player profile';
         console.error('Error fetching player profile:', error);
         
         // For development purposes, set mock data
-        this.setMockProfile();
+        // this.setMockProfile();
       } finally {
         this.isLoading = false;
       }
@@ -78,13 +82,17 @@ export const usePlayerStore = defineStore('player', {
       
       try {
         const response = await playerService.getStats();
-        this.stats = response.data;
+        if (response.success && response.data) {
+          this.stats = response.data;
+        } else {
+          throw new Error('Failed to load stats');
+        }
       } catch (error) {
         this.error = 'Failed to load player stats';
         console.error('Error fetching player stats:', error);
         
         // For development purposes, set mock data
-        this.setMockStats();
+        // this.setMockStats();
       } finally {
         this.isLoading = false;
       }
@@ -96,13 +104,17 @@ export const usePlayerStore = defineStore('player', {
       
       try {
         const response = await playerService.getNotifications();
-        this.notifications = response.data;
+        if (response.success && response.data) {
+          this.notifications = response.data;
+        } else {
+          throw new Error('Failed to load notifications');
+        }
       } catch (error) {
         this.error = 'Failed to load notifications';
         console.error('Error fetching notifications:', error);
         
         // For development purposes, set mock data
-        this.setMockNotifications();
+        // this.setMockNotifications();
       } finally {
         this.isLoading = false;
       }
@@ -110,10 +122,12 @@ export const usePlayerStore = defineStore('player', {
     
     async markNotificationsAsRead() {
       try {
-        await playerService.markAllNotificationsAsRead();
-        this.notifications.forEach(notification => {
-          notification.read = true;
-        });
+        const response = await playerService.markAllNotificationsAsRead();
+        if (response.success) {
+          this.notifications.forEach(notification => {
+            notification.read = true;
+          });
+        }
       } catch (error) {
         console.error('Error marking notifications as read:', error);
       }
@@ -126,9 +140,21 @@ export const usePlayerStore = defineStore('player', {
       try {
         const response = await playerService.collectAllPending();
         
+        if (!response.success || !response.data) {
+          throw new Error('Failed to collect pending resources');
+        }
+        
+        // Handle different response structures
+        let collectedAmount = 0;
+        if ('result' in response.data) {
+          collectedAmount = response.data.result.collectedAmount;
+        } else {
+          collectedAmount = response.data.collectedAmount;
+        }
+        
         // Update player money
-        if (this.profile && response.data.collectedAmount) {
-          this.profile.money += response.data.collectedAmount;
+        if (this.profile && collectedAmount) {
+          this.profile.money += collectedAmount;
           this.profile.pendingCollections = 0;
         }
         
@@ -140,6 +166,11 @@ export const usePlayerStore = defineStore('player', {
       } finally {
         this.isLoading = false;
       }
+    },
+    
+    // Add a new notification to the list (used from SSE events)
+    addNotification(notification: Notification) {
+      this.notifications.unshift(notification);
     },
     
     // For development and testing - set mock data

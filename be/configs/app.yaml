@@ -39,10 +39,10 @@ game:
   operations_refresh_interval: 60 # in minutes
   market_price_update_interval: 60 # in minutes
   resource_limit:
-    initial_crew: 5
-    initial_weapons: 3
-    initial_vehicles: 1
-    initial_money: 10000
-    max_crew: 25
-    max_weapons: 30
-    max_vehicles: 12
+    initial_crew: 500 # Default value: 5
+    initial_weapons: 300 # Default value: 3
+    initial_vehicles: 1000 # Default value: 1
+    initial_money: 100000 # Default value: 10000
+    max_crew: 2500 # Default value: 25
+    max_weapons: 3000 # Default value: 30
+    max_vehicles: 1200 # Default value: 12

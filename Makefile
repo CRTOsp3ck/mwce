@@ -2,11 +2,11 @@
 
 # Build the application
 build:
-	go build -o ./bin/mwce-be ./cmd/server
+	go build -o ./be/bin/mwce-be ./be/cmd/server
 
 # Run the application
 run:
-	go run ./cmd/server/main.go
+	go run ./be/cmd/server/main.go
 
 # Run tests
 test:
@@ -14,15 +14,8 @@ test:
 
 # Clean build artifacts
 clean:
-	rm -rf ./bin
+	rm -rf ./be/bin
 
-# Seed territory data
-seed-territory:
-	go run ./cmd/seed/main.go
-
-# Seed operations data
-seed-operations:
-	go run ./cmd/seed/operations/main.go
-
-# Run both seed commands
-seed: seed-territory seed-operations
+# Seed data
+seed:
+	go run ./be/cmd/seed/main.go

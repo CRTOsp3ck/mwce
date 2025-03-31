@@ -2,6 +2,16 @@
 
 import axios from 'axios';
 
+// Define standard API response structure
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: {
+    code: string;
+    message: string;
+  };
+}
+
 // Create axios instance with default config
 const api = axios.create({
   baseURL: 'http://localhost:8000/api',
@@ -30,8 +40,17 @@ api.interceptors.request.use(
 // Response interceptor for API calls
 api.interceptors.response.use(
   (response) => {
-    // Returning the data from the axios response instead of the response itself
-    return response.data;
+    // Assuming backend returns { success: boolean, data: T, error?: {...} }
+    const apiResponse = response.data as ApiResponse<any>;
+    console.log(apiResponse)
+    
+    // If response is successful, return the data property
+    // if (apiResponse.success && apiResponse.data !== undefined) {
+    //   return apiResponse;
+    // }
+    
+    // Otherwise, return the whole response
+    return apiResponse;
   },
   async (error) => {
     const originalRequest = error.config;
@@ -41,7 +60,6 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       
       // For now, just redirect to login
-      // In the future, we might implement token refresh here
       // localStorage.removeItem('auth_token');
       // window.location.href = '/login';
       
