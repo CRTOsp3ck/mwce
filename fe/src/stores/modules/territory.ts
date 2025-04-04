@@ -347,19 +347,37 @@ export const useTerritoryStore = defineStore("territory", {
     },
 
     // Calculate the next income time for each hotspot
-    calculateNextIncomeTimes() {
-      const now = new Date();
-
+    calculateNextIncomeTimes() {    
       this.hotspots.forEach((hotspot) => {
-        if (hotspot.lastIncomeTime) {
+        if (!hotspot.nextIncomeTime && hotspot.lastIncomeTime) {
           const lastIncomeTime = new Date(hotspot.lastIncomeTime);
           // Next income is exactly 1 hour after the last income
-          const nextIncomeTime = new Date(
-            lastIncomeTime.getTime() + 60 * 60 * 1000
-          );
+          const nextIncomeTime = new Date(lastIncomeTime.getTime() + 60 * 60 * 1000);
           hotspot.nextIncomeTime = nextIncomeTime.toISOString();
         }
       });
+    },
+    
+    // Update the startIncomeTimers method:
+    startIncomeTimers() {
+      // Clear any existing timer
+      if (this.incomeTimerInterval) {
+        clearInterval(this.incomeTimerInterval);
+      }
+      
+      // This timer is ONLY for UI updates - not for actual income calculation
+      // It just refreshes the time display every minute
+      this.incomeTimerInterval = window.setInterval(() => {
+        // Force UI refresh by triggering reactivity
+        this.hotspots.forEach(hotspot => {
+          if (hotspot.nextIncomeTime) {
+            // Just trigger reactivity without actual calculation
+            // This will make the formatTimeRemaining function recalculate
+            const temp = hotspot.nextIncomeTime;
+            hotspot.nextIncomeTime = temp;
+          }
+        });
+      }, 60000); // Update every minute
     },
 
     async collectHotspotIncome(hotspotId: string) {
@@ -472,71 +490,6 @@ export const useTerritoryStore = defineStore("territory", {
       }
     },
 
-    // Add a method to start income timers that updates the nextIncomeTime countdown
-    startIncomeTimers() {
-      // Clear any existing timer
-      if (this.incomeTimerInterval) {
-        clearInterval(this.incomeTimerInterval);
-      }
-
-      // Update times immediately
-      this.updateIncomeTimes();
-
-      // Set interval to update times every minute
-      this.incomeTimerInterval = window.setInterval(() => {
-        this.updateIncomeTimes();
-      }, 60000); // Update every minute
-    },
-
-    // Method to update income times
-    updateIncomeTimes() {
-      const now = new Date();
-      const playerStore = usePlayerStore();
-      const playerId = playerStore.profile?.id;
-
-      // Only update for player's controlled hotspots
-      this.hotspots.forEach((hotspot) => {
-        if (hotspot.controller === playerId && hotspot.lastIncomeTime) {
-          const lastIncomeTime = new Date(hotspot.lastIncomeTime);
-          const nextIncomeTime = new Date(
-            lastIncomeTime.getTime() + 60 * 60 * 1000
-          ); // 1 hour after last income
-
-          // If next income time has passed, we should simulate income generation
-          if (nextIncomeTime <= now) {
-            // Calculate how many hours have passed since last income
-            const hoursPassed = Math.floor(
-              (now.getTime() - lastIncomeTime.getTime()) / (60 * 60 * 1000)
-            );
-
-            if (hoursPassed > 0) {
-              // Add income for each hour passed
-              const newIncome = hoursPassed * hotspot.income;
-              hotspot.pendingCollection += newIncome;
-
-              // Update the lastIncomeTime to the most recent hour boundary
-              const mostRecentHourBoundary = new Date(now);
-              mostRecentHourBoundary.setMinutes(0, 0, 0);
-              hotspot.lastIncomeTime = mostRecentHourBoundary.toISOString();
-
-              // Also update total pending collections for the player
-              if (playerStore.profile) {
-                playerStore.profile.pendingCollections += newIncome;
-              }
-            }
-          }
-
-          // Update the nextIncomeTime
-          hotspot.nextIncomeTime = new Date(
-            new Date(hotspot.lastIncomeTime).getTime() + 60 * 60 * 1000
-          ).toISOString();
-        }
-      });
-
-      // Also update filtered hotspots
-      this.updateFilteredHotspots();
-    },
-
     /**
      * Updates a hotspot's income details based on SSE event
      */
@@ -550,12 +503,19 @@ export const useTerritoryStore = defineStore("territory", {
       // Find the hotspot in the store
       const hotspot = this.hotspots.find((h) => h.id === hotspotId);
       if (hotspot) {
-        // Update the hotspot
+        // Update the hotspot with server-provided values
         hotspot.pendingCollection = pendingCollection;
         hotspot.lastIncomeTime = lastIncomeTime;
         hotspot.nextIncomeTime = nextIncomeTime;
+        
+        // Log the update for debugging
+        console.log(`Updated hotspot ${hotspot.name} income:`, {
+          pendingCollection,
+          lastIncomeTime,
+          nextIncomeTime
+        });
       }
-
+    
       // Also update in filteredHotspots if present
       const filteredHotspot = this.filteredHotspots.find(
         (h) => h.id === hotspotId
@@ -570,20 +530,40 @@ export const useTerritoryStore = defineStore("territory", {
     /**
      * Updates a hotspot's data with data from SSE event
      */
-    updateHotspot(hotspotData: Hotspot) {
+    updateHotspot(hotspotData: Hotspot | any) {
       // Find the hotspot in the store
       const index = this.hotspots.findIndex((h) => h.id === hotspotData.id);
+      
       if (index !== -1) {
-        // Update the hotspot
-        this.hotspots[index] = hotspotData;
+        // Handle both full Hotspot objects and partial updates
+        if (typeof hotspotData === 'object') {
+          // If it's a partial update, merge the properties
+          const updatedHotspot = {
+            ...this.hotspots[index],
+            ...hotspotData
+          };
+          this.hotspots[index] = updatedHotspot;
+        } else {
+          // If it's a complete hotspot object, replace it
+          this.hotspots[index] = hotspotData;
+        }
       }
-
+    
       // Also update in filteredHotspots if present
       const filteredIndex = this.filteredHotspots.findIndex(
         (h) => h.id === hotspotData.id
       );
+      
       if (filteredIndex !== -1) {
-        this.filteredHotspots[filteredIndex] = hotspotData;
+        if (typeof hotspotData === 'object') {
+          const updatedHotspot = {
+            ...this.filteredHotspots[filteredIndex],
+            ...hotspotData
+          };
+          this.filteredHotspots[filteredIndex] = updatedHotspot;
+        } else {
+          this.filteredHotspots[filteredIndex] = hotspotData;
+        }
       }
     },
   },

@@ -123,39 +123,73 @@ function setupEventHandlers(eventSource: EventSource) {
     state.error = null;
   });
   
-  // Income generated event
   eventSource.addEventListener(SSEEventType.INCOME_GENERATED, (event) => {
-    const data = JSON.parse(event.data) as IncomeGeneratedEvent;
-    console.log('Income generated event:', data);
-    
-    // Process income updates
-    if (data.updates && Array.isArray(data.updates)) {
-      // Update hotspots
-      data.updates.forEach((update) => {
-        territoryStore.updateHotspotIncome(
-          update.hotspotId,
-          update.newIncome,
-          update.pendingCollection,
-          update.lastIncomeTime,
-          update.nextIncomeTime
-        );
-      });
+    try {
+      const data = JSON.parse(event.data);
+      console.log('Income generated event:', data);
       
-      // Update total pending collections
-      if (playerStore.profile && typeof data.totalPending === 'number') {
-        playerStore.profile.pendingCollections = data.totalPending;
+      // Process hotspot update
+      if (data.hotspot) {
+        const update = data.hotspot;
+        
+        // Ensure the timestamp properties are proper ISO strings
+        if (update.lastIncomeTime && !(update.lastIncomeTime instanceof Date) && typeof update.lastIncomeTime !== 'string') {
+          update.lastIncomeTime = new Date(update.lastIncomeTime).toISOString();
+        }
+        
+        if (update.nextIncomeTime && !(update.nextIncomeTime instanceof Date) && typeof update.nextIncomeTime !== 'string') {
+          update.nextIncomeTime = new Date(update.nextIncomeTime).toISOString();
+        }
+        
+        console.log('Processing income update for hotspot:', update.id);
+        console.log('- Next income time:', update.nextIncomeTime);
+        
+        // Update the hotspot in the store
+        territoryStore.updateHotspot({
+          id: update.id,
+          pendingCollection: update.pendingCollection,
+          lastIncomeTime: update.lastIncomeTime,
+          nextIncomeTime: update.nextIncomeTime
+        });
+        
+        // Also update player's total pending collections
+        if (playerStore.profile) {
+          const totalPending = territoryStore.controlledHotspots.reduce(
+            (sum, hotspot) => sum + hotspot.pendingCollection, 0
+          );
+          playerStore.profile.pendingCollections = totalPending;
+        }
       }
+    } catch (error) {
+      console.error('Error processing income generated event:', error);
     }
   });
   
-  // Hotspot updated event
   eventSource.addEventListener(SSEEventType.HOTSPOT_UPDATED, (event) => {
-    const data = JSON.parse(event.data) as HotspotUpdatedEvent;
-    console.log('Hotspot updated event:', data);
-    
-    // Update the hotspot
-    if (data.hotspot) {
-      territoryStore.updateHotspot(data.hotspot);
+    try {
+      const data = JSON.parse(event.data);
+      console.log('Hotspot updated event:', data);
+      
+      if (data.hotspot) {
+        const hotspot = data.hotspot;
+        
+        // Ensure date fields are proper ISO strings
+        if (hotspot.lastIncomeTime && !(hotspot.lastIncomeTime instanceof Date) && typeof hotspot.lastIncomeTime !== 'string') {
+          hotspot.lastIncomeTime = new Date(hotspot.lastIncomeTime).toISOString();
+        }
+        
+        if (hotspot.nextIncomeTime && !(hotspot.nextIncomeTime instanceof Date) && typeof hotspot.nextIncomeTime !== 'string') {
+          hotspot.nextIncomeTime = new Date(hotspot.nextIncomeTime).toISOString();
+        }
+        
+        console.log('Processing hotspot update:', hotspot.id);
+        console.log('- Next income time:', hotspot.nextIncomeTime);
+        
+        // Update the hotspot in the store
+        territoryStore.updateHotspot(hotspot);
+      }
+    } catch (error) {
+      console.error('Error processing hotspot updated event:', error);
     }
   });
   

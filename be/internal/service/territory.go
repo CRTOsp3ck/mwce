@@ -402,6 +402,31 @@ func (s *territoryService) handleTakeover(player *model.Player, hotspot *model.H
 			return nil, errors.New("failed to update hotspot")
 		}
 
+		// Initialize income timing for the newly controlled hotspot
+		if err := s.initializeHotspotIncomeTime(hotspot); err != nil {
+			s.logger.Error().Err(err).
+				Str("hotspotID", hotspot.ID).
+				Msg("Failed to initialize hotspot income timing")
+		}
+
+		// Send SSE event to notify the player about the new hotspot with income timing
+		nextIncomeTime := hotspot.LastIncomeTime.Add(time.Hour)
+		s.sseService.SendEventToPlayer(player.ID, "hotspot_updated", map[string]interface{}{
+			"hotspot": map[string]interface{}{
+				"id":                hotspot.ID,
+				"controllerID":      hotspot.ControllerID,
+				"name":              hotspot.Name,
+				"income":            hotspot.Income,
+				"pendingCollection": 0,
+				"lastIncomeTime":    hotspot.LastIncomeTime,
+				"nextIncomeTime":    nextIncomeTime,
+				"defenseStrength":   hotspot.DefenseStrength,
+				"crew":              hotspot.Crew,
+				"weapons":           hotspot.Weapons,
+				"vehicles":          hotspot.Vehicles,
+			},
+		})
+
 		// Generate respect and influence
 		respectGained := 3 + rand.Intn(3)   // 3-5 respect
 		influenceGained := 2 + rand.Intn(3) // 2-4 influence
@@ -822,7 +847,7 @@ func (s *territoryService) CollectAllHotspotIncome(playerID string) (*model.Coll
 	}, nil
 }
 
-// Update the UpdateHotspotIncome method to send SSE events
+// UpdateHotspotIncome calculates and updates income for all controlled hotspots
 func (s *territoryService) UpdateHotspotIncome() error {
 	// Get all legal hotspots with controllers
 	hotspots, err := s.territoryRepo.GetAllControlledLegalHotspots()
@@ -832,10 +857,7 @@ func (s *territoryService) UpdateHotspotIncome() error {
 
 	currentTime := time.Now()
 
-	// Map to collect income updates by player
-	playerIncomeUpdates := make(map[string][]map[string]interface{})
-
-	// Update each hotspot's pending collection
+	// Process each hotspot
 	for _, hotspot := range hotspots {
 		if hotspot.ControllerID == nil {
 			continue
@@ -843,66 +865,58 @@ func (s *territoryService) UpdateHotspotIncome() error {
 
 		playerID := *hotspot.ControllerID
 
-		// Calculate time since last income generation
-		timeSinceLastIncome := func() time.Duration {
-			if hotspot.LastIncomeTime != nil {
-				return currentTime.Sub(*hotspot.LastIncomeTime)
+		// Handle case where LastIncomeTime is nil (newly taken over hotspot)
+		if hotspot.LastIncomeTime == nil {
+			// Initialize the hotspot with proper timing
+			if err := s.initializeHotspotIncomeTime(&hotspot); err != nil {
+				s.logger.Error().Err(err).
+					Str("hotspotID", hotspot.ID).
+					Msg("Failed to initialize hotspot income timing")
 			}
+			continue // Skip to next hotspot after initialization
+		}
 
-			// NOTE: This should be time since last takeover
-			return currentTime.Sub(time.Now())
-		}()
-		hoursSinceLastIncome := timeSinceLastIncome.Hours()
+		// Calculate time since last income generation
+		timeSinceLastIncome := currentTime.Sub(*hotspot.LastIncomeTime)
 
 		// Only add income if at least one hour has passed
-		if hoursSinceLastIncome >= 1.0 {
+		// NOTE: time.Hour should be a game config parameter
+		if timeSinceLastIncome >= time.Hour {
 			// Calculate number of full hours that have passed
-			fullHoursPassed := int(hoursSinceLastIncome)
+			fullHoursPassed := int(timeSinceLastIncome.Hours())
 
 			// Calculate new income (hourly rate * hours elapsed)
 			newIncome := hotspot.Income * fullHoursPassed
 
 			// Add new income to pending collection
-			if err := s.territoryRepo.UpdateHotspotPendingCollection(hotspot.ID, newIncome); err != nil {
+			hotspot.PendingCollection += newIncome
+
+			// Update last income time precisely: add exactly the number of hours we're paying for
+			newLastIncomeTime := hotspot.LastIncomeTime.Add(time.Duration(fullHoursPassed) * time.Hour)
+			hotspot.LastIncomeTime = &newLastIncomeTime
+
+			// Calculate next income time - exactly 1 hour after new last income time
+			nextIncomeTime := newLastIncomeTime.Add(time.Hour)
+
+			// Update the hotspot in the database
+			if err := s.territoryRepo.UpdateHotspot(&hotspot); err != nil {
 				s.logger.Error().Err(err).
 					Str("hotspotID", hotspot.ID).
-					Int("income", newIncome).
-					Msg("Failed to update hotspot pending collection")
+					Msg("Failed to update hotspot after income generation")
 				continue
 			}
 
-			// Update last income time to the current time minus any partial hour
-			partialHour := timeSinceLastIncome - time.Duration(fullHoursPassed)*time.Hour
-			newLastIncomeTime := currentTime.Add(-partialHour)
-
-			if err := s.territoryRepo.UpdateHotspotLastIncomeTime(hotspot.ID, newLastIncomeTime); err != nil {
-				s.logger.Error().Err(err).
-					Str("hotspotID", hotspot.ID).
-					Msg("Failed to update hotspot last income time")
-			}
-
-			// Collect income update for SSE event
-			// Get the updated hotspot
-			updatedHotspot, err := s.territoryRepo.GetHotspotByID(hotspot.ID)
-			if err != nil {
-				s.logger.Error().Err(err).
-					Str("hotspotID", hotspot.ID).
-					Msg("Failed to get updated hotspot")
-				continue
-			}
-
-			// Add to player updates
-			if _, ok := playerIncomeUpdates[playerID]; !ok {
-				playerIncomeUpdates[playerID] = make([]map[string]interface{}, 0)
-			}
-
-			playerIncomeUpdates[playerID] = append(playerIncomeUpdates[playerID], map[string]interface{}{
-				"hotspotId":         updatedHotspot.ID,
-				"hotspotName":       updatedHotspot.Name,
-				"newIncome":         newIncome,
-				"pendingCollection": updatedHotspot.PendingCollection,
-				"lastIncomeTime":    updatedHotspot.LastIncomeTime,
-				"nextIncomeTime":    updatedHotspot.LastIncomeTime.Add(time.Hour),
+			// Send SSE event with the updated information
+			s.sseService.SendEventToPlayer(playerID, "income_generated", map[string]interface{}{
+				"hotspot": map[string]interface{}{
+					"id":                hotspot.ID,
+					"name":              hotspot.Name,
+					"newIncome":         newIncome,
+					"pendingCollection": hotspot.PendingCollection,
+					"lastIncomeTime":    newLastIncomeTime,
+					"nextIncomeTime":    nextIncomeTime,
+				},
+				"timestamp": currentTime,
 			})
 
 			// If significant amount accumulated, send notification to player
@@ -915,22 +929,50 @@ func (s *territoryService) UpdateHotspotIncome() error {
 		}
 	}
 
-	// Send SSE events to players
-	for playerID, updates := range playerIncomeUpdates {
-		// Calculate total pending collections
-		totalPending, err := s.playerRepo.CalculatePendingCollections(playerID)
-		if err != nil {
-			s.logger.Error().Err(err).
-				Str("playerID", playerID).
-				Msg("Failed to calculate pending collections")
-			continue
-		}
+	return nil
+}
 
-		// Send the updates via SSE
-		s.sseService.SendEventToPlayer(playerID, "income_generated", map[string]interface{}{
-			"updates":      updates,
-			"totalPending": totalPending,
-			"timestamp":    currentTime,
+// initializeHotspotIncomeTime sets up initial income timing for a newly controlled hotspot
+func (s *territoryService) initializeHotspotIncomeTime(hotspot *model.Hotspot) error {
+	if hotspot.ControllerID == nil {
+		return errors.New("hotspot has no controller")
+	}
+
+	// Set initial LastIncomeTime to current time
+	now := time.Now()
+	hotspot.LastIncomeTime = &now
+
+	// Set nextIncomeTime to exactly 1 hour in the future
+	// nextIncomeTime := now.Add(time.Hour)
+
+	// Log exact times for debugging
+	s.logger.Info().
+		Str("hotspotID", hotspot.ID).
+		Time("lastIncomeTime", now).
+		// Time("nextIncomeTime", nextIncomeTime).
+		Msg("Initializing hotspot income timing")
+
+	// Update the hotspot in the database
+	if err := s.territoryRepo.UpdateHotspot(hotspot); err != nil {
+		return err
+	}
+
+	// Send explicit SSE event with ISO8601 formatted times to ensure consistency
+	if hotspot.ControllerID != nil {
+		s.sseService.SendEventToPlayer(*hotspot.ControllerID, "hotspot_updated", map[string]interface{}{
+			"hotspot": map[string]interface{}{
+				"id":             hotspot.ID,
+				"name":           hotspot.Name,
+				"lastIncomeTime": now.Format(time.RFC3339), // Use ISO8601 format
+				// "nextIncomeTime":    nextIncomeTime.Format(time.RFC3339), // Use ISO8601 format
+				"pendingCollection": 0,
+				// Include other fields as needed
+				"income":          hotspot.Income,
+				"defenseStrength": hotspot.DefenseStrength,
+				"crew":            hotspot.Crew,
+				"weapons":         hotspot.Weapons,
+				"vehicles":        hotspot.Vehicles,
+			},
 		})
 	}
 

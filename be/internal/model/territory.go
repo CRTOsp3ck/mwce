@@ -74,14 +74,14 @@ type Hotspot struct {
 	Income             int        `json:"income" gorm:"not null;default:0"` // Income per hour
 	PendingCollection  int        `json:"pendingCollection" gorm:"not null;default:0"`
 	LastCollectionTime *time.Time `json:"lastCollectionTime"`
-	LastIncomeTime     *time.Time `json:"lastIncomeTime"`          // Time of last income generation
-	NextIncomeTime     time.Time  `json:"nextIncomeTime" gorm:"-"` // Calculated field for next income time
-	Crew               int        `json:"crew" gorm:"not null;default:0"`
-	Weapons            int        `json:"weapons" gorm:"not null;default:0"`
-	Vehicles           int        `json:"vehicles" gorm:"not null;default:0"`
-	DefenseStrength    int        `json:"defenseStrength" gorm:"not null;default:0"` // Calculated from resources
-	CreatedAt          time.Time  `json:"-" gorm:"not null"`
-	UpdatedAt          time.Time  `json:"-" gorm:"not null"`
+	LastIncomeTime     *time.Time `json:"lastIncomeTime"` // Time of last income generation
+	// NextIncomeTime     *time.Time  `json:"nextIncomeTime"` // Calculated field for next income time
+	Crew            int       `json:"crew" gorm:"not null;default:0"`
+	Weapons         int       `json:"weapons" gorm:"not null;default:0"`
+	Vehicles        int       `json:"vehicles" gorm:"not null;default:0"`
+	DefenseStrength int       `json:"defenseStrength" gorm:"not null;default:0"` // Calculated from resources
+	CreatedAt       time.Time `json:"-" gorm:"not null"`
+	UpdatedAt       time.Time `json:"-" gorm:"not null"`
 }
 
 // BeforeCreate is a GORM hook to generate UUID before creating a new hotspot

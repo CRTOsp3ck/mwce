@@ -1,3 +1,1 @@
-You can only mint NFT of hotspots that you have controlled at least once!
-More advanced minting mechanics:-
-NFTs are minted in advanced and player that take control of a territory will automatically get that nft??
+- Each Hotspot will have an NFT. If you control said hotspot and said NFT, you will get bonus income generation + bonus resource generation as well as a prime location status for said hotspot (harder to takeover)

@@ -147,7 +147,9 @@
               <div class="detail-row income-timer">
                 <div class="detail-item">
                   <span class="detail-label">Next Income:</span>
-                  <span class="detail-value">{{ formatTimeRemaining(hotspot.nextIncomeTime) }}</span>
+                  <span class="detail-value countdown" :class="{ 'soon': isIncomeSoon(hotspot.id) }">
+                    {{ formatTimeRemaining(hotspot.id) }}
+                  </span>
                 </div>
                 <div class="detail-item" v-if="hotspot.pendingCollection > 0">
                   <span class="detail-label">Pending:</span>
@@ -695,7 +697,6 @@ import BaseButton from '@/components/ui/BaseButton.vue';
 import BaseModal from '@/components/ui/BaseModal.vue';
 import { usePlayerStore } from '@/stores/modules/player';
 import { useTerritoryStore } from '@/stores/modules/territory';
-import sseService from '@/services/sseService';
 import {
   Hotspot,
   TerritoryActionType,
@@ -711,7 +712,6 @@ const playerStore = usePlayerStore();
 const territoryStore = useTerritoryStore();
 
 // View state
-// const activeTab = ref<'empire' | 'explore' | 'recent'>('empire');
 const activeTab = computed(() => route.query.tab as string || 'empire');
 const viewMode = ref<'grid' | 'map'>('grid');
 const isLoading = ref(false);
@@ -951,25 +951,6 @@ const canPerformAction = computed(() => {
       actionResources.value.vehicles > 0);
 });
 
-// Load data when component is mounted
-onMounted(async () => {
-  isLoading.value = true;
-
-  if (!playerStore.profile) {
-    await playerStore.fetchProfile();
-  }
-
-  if (territoryStore.regions.length === 0) {
-    await territoryStore.fetchTerritoryData();
-  }
-
-  if (territoryStore.recentActions.length === 0) {
-    await territoryStore.fetchRecentActions();
-  }
-
-  isLoading.value = false;
-});
-
 // Watch for filter changes
 watch(selectedRegionId, (newValue) => {
   territoryStore.selectRegion(newValue);
@@ -985,6 +966,18 @@ watch(selectedDistrictId, (newValue) => {
 watch(selectedCityId, (newValue) => {
   territoryStore.selectCity(newValue);
 });
+
+// Watch for hotspot data loading to initialize timers
+watch(
+  () => territoryStore.hotspots,
+  (newHotspots) => {
+    if (newHotspots.length > 0) {
+      console.log('Hotspots loaded, initializing timers...');
+      initializeHotspotTimers();
+    }
+  },
+  { deep: true }
+);
 
 // Helper functions
 function formatNumber(value: number): string {
@@ -1330,25 +1323,12 @@ function navigateToTab(tab: 'empire' | 'explore' | 'recent') {
 const collectingHotspotId = ref<string | null>(null);
 
 // Helper function to format time remaining until next income
-function formatTimeRemaining(nextIncomeTimeISO: string | undefined): string {
-  if (!nextIncomeTimeISO) return 'Unknown';
-
-  const now = new Date();
-  const nextIncomeTime = new Date(nextIncomeTimeISO);
-
-  // If next income time is in the past, return "Now"
-  if (nextIncomeTime <= now) return 'Now';
-
-  const diffMs = nextIncomeTime.getTime() - now.getTime();
-  const diffMin = Math.floor(diffMs / 60000);
-  const minutes = diffMin % 60;
-  const hours = Math.floor(diffMin / 60);
-
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  } else {
-    return `${minutes}m`;
+function formatTimeRemaining(hotspotId: string): string {
+  if (hotspotTimers.value[hotspotId]) {
+    return hotspotTimers.value[hotspotId].remainingTime;
   }
+  return 'Initializing...';
+  // return hotspotTimers.value[hotspotId].remainingTime;
 }
 
 // Function to collect income from a specific hotspot
@@ -1378,30 +1358,145 @@ async function collectHotspotIncome(hotspotId: string) {
   }
 }
 
-// Update the collectAll function to use the territory service
-async function collectAll() {
-  if (isCollecting.value || collectableBusinesses.value.length === 0) return;
-
-  isCollecting.value = true;
+// Function to calculate the remaining time as a formatted string
+function calculateRemainingTime(nextIncomeTimeISO: string | undefined): string {
+  if (!nextIncomeTimeISO) {
+    return 'Unable to calculate remaining time...';
+  }
 
   try {
-    const result = await territoryStore.collectAllHotspotIncome();
+    const now = new Date();
+    const nextIncomeTime = new Date(nextIncomeTimeISO);
+    
+    // console.log('Time: ', now, " | Next income time: ", nextIncomeTimeISO)
 
-    if (result) {
-      actionResult.value = {
-        success: true,
-        moneyGained: result.collectedAmount,
-        message: result.message
-      };
+    // Check for invalid date
+    if (isNaN(nextIncomeTime.getTime())) {
+      return 'Initializing...';
+    }
 
-      actionSuccess.value = true;
-      showResultModal.value = true;
+    // Calculate time difference in milliseconds
+    const diffMs = nextIncomeTime.getTime() - now.getTime();
+
+    // If next income time has already passed, return "Now"
+    if (diffMs <= 0) {
+      return 'Now';
+    }
+
+    // Calculate hours, minutes, and seconds
+    const diffSec = Math.floor(diffMs / 1000);
+    const hours = Math.floor(diffSec / 3600);
+    const minutes = Math.floor((diffSec % 3600) / 60);
+    const seconds = diffSec % 60;
+
+    // Format the time remaining
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${seconds}s`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${seconds}s`;
+    } else {
+      return `${seconds}s`;
     }
   } catch (error) {
-    console.error('Error collecting all pending resources:', error);
-  } finally {
-    isCollecting.value = false;
+    console.error('Error calculating remaining time:', error, nextIncomeTimeISO);
+    return 'Error';
   }
+}
+
+function isIncomeSoon(hotspotId: string): boolean {
+  if (!hotspotTimers.value[hotspotId]) {
+    return false;
+  }
+
+  // Parse the remaining time to check if it's less than 5 minutes
+  const timeStr = hotspotTimers.value[hotspotId].remainingTime;
+
+  // If it's "Now", it's definitely soon
+  if (timeStr === 'Now') {
+    return true;
+  }
+
+  // If it contains hours, it's not soon
+  if (timeStr.includes('h')) {
+    return false;
+  }
+
+  // Check if it's just minutes and seconds
+  if (timeStr.includes('m')) {
+    const minutes = parseInt(timeStr.split('m')[0]);
+    return minutes < 5; // Less than 5 minutes is considered "soon"
+  }
+
+  // If it's just seconds, it's definitely soon
+  return true;
+}
+
+// Reactive variables for timer management
+const hotspotTimers = ref<{ [hotspotId: string]: { remainingTime: string } }>({});
+let timerInterval: number | null = null;
+
+
+
+// Separate initialization function that can be called both on mount and data load
+function initializeHotspotTimers() {
+  // Clear existing timers
+  hotspotTimers.value = {};
+  
+  // Initialize timers for all controlled hotspots
+  controlledHotspots.value.forEach(hotspot => {
+    if (hotspot.lastIncomeTime) {
+      // If we don't have nextIncomeTime but have lastIncomeTime, calculate it
+      try {
+        const lastTime = new Date(hotspot.lastIncomeTime);
+        if (!isNaN(lastTime.getTime())) {
+          // Calculate next income time as 1 hour after last income
+          const calculatedNextTime = new Date(lastTime.getTime() + 60 * 60 * 1000);
+          
+          // Use the calculated next time for the timer
+          hotspotTimers.value[hotspot.id] = {
+            remainingTime: calculateRemainingTime(calculatedNextTime.toISOString())
+          };
+        }
+      } catch (e) {
+        console.error(`Error calculating nextIncomeTime from lastIncomeTime for hotspot ${hotspot.id}:`, e);
+        hotspotTimers.value[hotspot.id] = {
+          remainingTime: 'Error'
+        };
+      }
+    } else {
+      // No timing data available
+      hotspotTimers.value[hotspot.id] = {
+        remainingTime: 'Initializing...'
+      };
+    }
+  });
+}
+
+// Function to start hotspot timers
+function startHotspotTimers() {
+  // Initialize timers first
+  initializeHotspotTimers();
+
+  // Clear any existing interval
+  if (timerInterval !== null) {
+    clearInterval(timerInterval);
+  }
+
+  // Update the timer every second
+  timerInterval = window.setInterval(() => {
+    controlledHotspots.value.forEach(hotspot => {
+      if (hotspotTimers.value[hotspot.id]) {
+        hotspotTimers.value[hotspot.id].remainingTime = calculateRemainingTime(hotspot.nextIncomeTime);
+      } else {
+        // If a timer doesn't exist yet (new hotspot), initialize it
+        if (hotspot.nextIncomeTime) {
+          hotspotTimers.value[hotspot.id] = {
+            remainingTime: calculateRemainingTime(hotspot.nextIncomeTime)
+          };
+        }
+      }
+    });
+  }, 1000); // Update every second
 }
 
 // OnMounted hook
@@ -1421,6 +1516,18 @@ onMounted(async () => {
   }
 
   isLoading.value = false;
+
+  // Start the hotspot timers
+  startHotspotTimers();
+});
+
+// Set up cleanup on component unmount
+onBeforeUnmount(() => {
+  if (timerInterval !== null) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+    console.log('Timer interval cleared during component unmount');
+  }
 });
 </script>
 
@@ -2517,6 +2624,29 @@ onMounted(async () => {
   .detail-value.income {
     color: $secondary-color;
     font-weight: 600;
+  }
+
+  .detail-value.countdown {
+    font-weight: 500;
+
+    &.soon {
+      color: $success-color;
+      animation: pulse 1s infinite;
+    }
+  }
+
+  @keyframes pulse {
+    0% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: 0.7;
+    }
+
+    100% {
+      opacity: 1;
+    }
   }
 
   /* Card-badge styling for pending collections */
