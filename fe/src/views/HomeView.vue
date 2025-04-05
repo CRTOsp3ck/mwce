@@ -1,161 +1,5 @@
 // src/views/HomeView.vue
 
-<template>
-  <div class="home-view">
-    <div class="page-title">
-      <h2>Dashboard</h2>
-      <p class="welcome-message">Welcome back, {{ playerName }}. What's your next move?</p>
-    </div>
-
-    <div class="dashboard-grid">
-      <!-- Overview Card -->
-      <BaseCard title="Empire Overview" class="overview-card" gold-border>
-        <div class="overview-stats">
-          <div class="stat-item">
-            <div class="stat-label">Total Money</div>
-            <div class="stat-value money">${{ formatNumber(playerMoney) }}</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-label">Hourly Income</div>
-            <div class="stat-value income">${{ formatNumber(hourlyRevenue) }}/hr</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-label">Controlled Territories</div>
-            <div class="stat-value territories">{{ controlledHotspots }} / {{ totalHotspots }}</div>
-          </div>
-        </div>
-      </BaseCard>
-
-      <!-- Pending Collections Card -->
-      <BaseCard title="Pending Collections" class="collections-card">
-        <div v-if="controlledHotspots > 0" class="collections-content">
-          <div class="total-pending">
-            <div class="pending-label">Available to collect:</div>
-            <div class="pending-value">${{ formatNumber(pendingCollections) }}</div>
-          </div>
-          <BaseButton variant="secondary" :disabled="pendingCollections <= 0" @click="collectAll" :loading="isLoading">
-            Collect All
-          </BaseButton>
-        </div>
-        <div v-else class="empty-state">
-          <p>You don't control any hotspots yet.</p>
-          <BaseButton variant="outline" @click="goToTerritory">
-            Expand Your Territory
-          </BaseButton>
-        </div>
-      </BaseCard>
-
-      <!-- Resources Card -->
-      <BaseCard title="Resources" class="resources-card">
-        <div class="resources-grid">
-          <div class="resource-item">
-            <div class="resource-icon">👥</div>
-            <div class="resource-details">
-              <div class="resource-name">Crew</div>
-              <div class="resource-value">{{ playerCrew }} / {{ maxCrew }}</div>
-            </div>
-            <div class="resource-actions">
-              <BaseButton variant="text" small @click="goToMarket(ResourceType.CREW)">
-                Buy
-              </BaseButton>
-            </div>
-          </div>
-          <div class="resource-item">
-            <div class="resource-icon">🔫</div>
-            <div class="resource-details">
-              <div class="resource-name">Weapons</div>
-              <div class="resource-value">{{ playerWeapons }} / {{ maxWeapons }}</div>
-            </div>
-            <div class="resource-actions">
-              <BaseButton variant="text" small @click="goToMarket(ResourceType.WEAPONS)">
-                Buy
-              </BaseButton>
-            </div>
-          </div>
-          <div class="resource-item">
-            <div class="resource-icon">🚗</div>
-            <div class="resource-details">
-              <div class="resource-name">Vehicles</div>
-              <div class="resource-value">{{ playerVehicles }} / {{ maxVehicles }}</div>
-            </div>
-            <div class="resource-actions">
-              <BaseButton variant="text" small @click="goToMarket(ResourceType.VEHICLES)">
-                Buy
-              </BaseButton>
-            </div>
-          </div>
-        </div>
-      </BaseCard>
-
-      <!-- Operations Card -->
-      <BaseCard title="Available Operations" class="operations-card">
-        <div v-if="availableOperations.length > 0" class="operations-list">
-          <div v-for="operation in visibleOperations" :key="operation.id" class="operation-item">
-            <div class="operation-details">
-              <div class="operation-name">{{ operation.name }}</div>
-              <div class="operation-type">Type: {{ formatOperationType(operation.type) }}</div>
-            </div>
-            <BaseButton variant="outline" small @click="goToOperations(operation.id)">
-              View
-            </BaseButton>
-          </div>
-          <div class="view-all-link">
-            <a @click.prevent="goToOperations()">View all operations</a>
-          </div>
-        </div>
-        <div v-else class="empty-state">
-          <p>No operations available right now.</p>
-          <BaseButton variant="outline" @click="goToOperations()">
-            Check Operations
-          </BaseButton>
-        </div>
-      </BaseCard>
-
-      <!-- Territory Card -->
-      <BaseCard title="Territory Status" class="territory-card">
-        <div class="territory-stats">
-          <div class="territory-region">
-            <div class="region-name">Most Controlled Region:</div>
-            <div class="region-value">{{ mostControlledRegion }}</div>
-          </div>
-          <div class="territory-progress">
-            <div class="progress-label">Overall Territorial Control:</div>
-            <div class="progress-bar">
-              <div class="progress-fill" :style="{ width: `${territorialControlPercentage}%` }"></div>
-            </div>
-            <div class="progress-value">{{ territorialControlPercentage }}%</div>
-          </div>
-        </div>
-        <div class="territory-actions">
-          <BaseButton variant="outline" @click="goToTerritory()">
-            Manage Territory
-          </BaseButton>
-        </div>
-      </BaseCard>
-
-      <!-- Recent Actions Card -->
-      <BaseCard title="Recent Activities" class="recent-actions-card">
-        <div v-if="recentActions.length > 0" class="actions-list">
-          <div v-for="action in visibleActions" :key="action.id" class="action-item"
-            :class="{ 'success': action.result && action.result.success, 'failure': action.result && !action.result.success }">
-            <div class="action-icon">
-              {{ getActionIcon(action.type) }}
-            </div>
-            <div class="action-details">
-              <div class="action-type">{{ formatActionType(action.type) }}</div>
-              <div class="action-result">{{ action.result ? action.result.message : 'In progress...' }}</div>
-              <div class="action-time">{{ formatTime(action.timestamp) }}</div>
-            </div>
-          </div>
-        </div>
-        <div v-else class="empty-state">
-          <p>No recent activities yet.</p>
-        </div>
-      </BaseCard>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
@@ -361,6 +205,162 @@ async function collectAll() {
   }
 }
 </script>
+
+<template>
+  <div class="home-view">
+    <div class="page-title">
+      <h2>Dashboard</h2>
+      <p class="welcome-message">Welcome back, {{ playerName }}. What's your next move?</p>
+    </div>
+
+    <div class="dashboard-grid">
+      <!-- Overview Card -->
+      <BaseCard title="Empire Overview" class="overview-card" gold-border>
+        <div class="overview-stats">
+          <div class="stat-item">
+            <div class="stat-label">Total Money</div>
+            <div class="stat-value money">${{ formatNumber(playerMoney) }}</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Hourly Income</div>
+            <div class="stat-value income">${{ formatNumber(hourlyRevenue) }}/hr</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Controlled Territories</div>
+            <div class="stat-value territories">{{ controlledHotspots }} / {{ totalHotspots }}</div>
+          </div>
+        </div>
+      </BaseCard>
+
+      <!-- Pending Collections Card -->
+      <BaseCard title="Pending Collections" class="collections-card">
+        <div v-if="controlledHotspots > 0" class="collections-content">
+          <div class="total-pending">
+            <div class="pending-label">Available to collect:</div>
+            <div class="pending-value">${{ formatNumber(pendingCollections) }}</div>
+          </div>
+          <BaseButton variant="secondary" :disabled="pendingCollections <= 0" @click="collectAll" :loading="isLoading">
+            Collect All
+          </BaseButton>
+        </div>
+        <div v-else class="empty-state">
+          <p>You don't control any hotspots yet.</p>
+          <BaseButton variant="outline" @click="goToTerritory">
+            Expand Your Territory
+          </BaseButton>
+        </div>
+      </BaseCard>
+
+      <!-- Resources Card -->
+      <BaseCard title="Resources" class="resources-card">
+        <div class="resources-grid">
+          <div class="resource-item">
+            <div class="resource-icon">👥</div>
+            <div class="resource-details">
+              <div class="resource-name">Crew</div>
+              <div class="resource-value">{{ playerCrew }} / {{ maxCrew }}</div>
+            </div>
+            <div class="resource-actions">
+              <BaseButton variant="text" small @click="goToMarket(ResourceType.CREW)">
+                Buy
+              </BaseButton>
+            </div>
+          </div>
+          <div class="resource-item">
+            <div class="resource-icon">🔫</div>
+            <div class="resource-details">
+              <div class="resource-name">Weapons</div>
+              <div class="resource-value">{{ playerWeapons }} / {{ maxWeapons }}</div>
+            </div>
+            <div class="resource-actions">
+              <BaseButton variant="text" small @click="goToMarket(ResourceType.WEAPONS)">
+                Buy
+              </BaseButton>
+            </div>
+          </div>
+          <div class="resource-item">
+            <div class="resource-icon">🚗</div>
+            <div class="resource-details">
+              <div class="resource-name">Vehicles</div>
+              <div class="resource-value">{{ playerVehicles }} / {{ maxVehicles }}</div>
+            </div>
+            <div class="resource-actions">
+              <BaseButton variant="text" small @click="goToMarket(ResourceType.VEHICLES)">
+                Buy
+              </BaseButton>
+            </div>
+          </div>
+        </div>
+      </BaseCard>
+
+      <!-- Operations Card -->
+      <BaseCard title="Available Operations" class="operations-card">
+        <div v-if="availableOperations.length > 0" class="operations-list">
+          <div v-for="operation in visibleOperations" :key="operation.id" class="operation-item">
+            <div class="operation-details">
+              <div class="operation-name">{{ operation.name }}</div>
+              <div class="operation-type">Type: {{ formatOperationType(operation.type) }}</div>
+            </div>
+            <BaseButton variant="outline" small @click="goToOperations(operation.id)">
+              View
+            </BaseButton>
+          </div>
+          <div class="view-all-link">
+            <a @click.prevent="goToOperations()">View all operations</a>
+          </div>
+        </div>
+        <div v-else class="empty-state">
+          <p>No operations available right now.</p>
+          <BaseButton variant="outline" @click="goToOperations()">
+            Check Operations
+          </BaseButton>
+        </div>
+      </BaseCard>
+
+      <!-- Territory Card -->
+      <BaseCard title="Territory Status" class="territory-card">
+        <div class="territory-stats">
+          <div class="territory-region">
+            <div class="region-name">Most Controlled Region:</div>
+            <div class="region-value">{{ mostControlledRegion }}</div>
+          </div>
+          <div class="territory-progress">
+            <div class="progress-label">Overall Territorial Control:</div>
+            <div class="progress-bar">
+              <div class="progress-fill" :style="{ width: `${territorialControlPercentage}%` }"></div>
+            </div>
+            <div class="progress-value">{{ territorialControlPercentage }}%</div>
+          </div>
+        </div>
+        <div class="territory-actions">
+          <BaseButton variant="outline" @click="goToTerritory()">
+            Manage Territory
+          </BaseButton>
+        </div>
+      </BaseCard>
+
+      <!-- Recent Actions Card -->
+      <BaseCard title="Recent Activities" class="recent-actions-card">
+        <div v-if="recentActions.length > 0" class="actions-list">
+          <div v-for="action in visibleActions" :key="action.id" class="action-item"
+            :class="{ 'success': action.result && action.result.success, 'failure': action.result && !action.result.success }">
+            <div class="action-icon">
+              {{ getActionIcon(action.type) }}
+            </div>
+            <div class="action-details">
+              <div class="action-type">{{ formatActionType(action.type) }}</div>
+              <div class="action-result">{{ action.result ? action.result.message : 'In progress...' }}</div>
+              <div class="action-time">{{ formatTime(action.timestamp) }}</div>
+            </div>
+          </div>
+        </div>
+        <div v-else class="empty-state">
+          <p>No recent activities yet.</p>
+        </div>
+      </BaseCard>
+    </div>
+  </div>
+</template>
 
 <style lang="scss">
 .home-view {

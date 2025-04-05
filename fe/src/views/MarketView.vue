@@ -1,5 +1,367 @@
 // src/views/MarketView.vue
 
+<script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import BaseCard from '@/components/ui/BaseCard.vue';
+import BaseButton from '@/components/ui/BaseButton.vue';
+import BaseModal from '@/components/ui/BaseModal.vue';
+import { usePlayerStore } from '@/stores/modules/player';
+import { useMarketStore } from '@/stores/modules/market';
+import { 
+  MarketListing, 
+  ResourceType,
+  PriceTrend,
+  TransactionType,
+  MarketTransaction
+} from '@/types/market';
+
+const route = useRoute();
+const router = useRouter();
+
+const playerStore = usePlayerStore();
+const marketStore = useMarketStore();
+
+// View state
+// const activeTab = ref<'buy' | 'sell' | 'history'>('buy');
+const activeTab = computed(()=> route.query.tab as string || 'buy')
+const isLoading = ref(false);
+const isBuying = ref<ResourceType | null>(null);
+const isSelling = ref<ResourceType | null>(null);
+const historyFilter = ref<'all' | 'buy' | 'sell'>('all');
+
+// Quantity inputs
+const buyQuantities = ref<Record<ResourceType, number>>({
+  [ResourceType.CREW]: 1,
+  [ResourceType.WEAPONS]: 1,
+  [ResourceType.VEHICLES]: 1
+});
+
+const sellQuantities = ref<Record<ResourceType, number>>({
+  [ResourceType.CREW]: 1,
+  [ResourceType.WEAPONS]: 1,
+  [ResourceType.VEHICLES]: 1
+});
+
+// Modals
+const showConfirmModal = ref(false);
+const showResultModal = ref(false);
+const selectedListing = ref<MarketListing | null>(null);
+const transactionType = ref<'buy' | 'sell' | null>(null);
+const transactionQuantity = ref(0);
+const transactionTotal = ref(0);
+const isConfirming = ref(false);
+const resultMessage = ref('');
+
+// Computed properties
+const playerMoney = computed(() => playerStore.playerMoney);
+const playerCrew = computed(() => playerStore.playerCrew);
+const playerWeapons = computed(() => playerStore.playerWeapons);
+const playerVehicles = computed(() => playerStore.playerVehicles);
+const maxCrew = computed(() => playerStore.maxCrew);
+const maxWeapons = computed(() => playerStore.maxWeapons);
+const maxVehicles = computed(() => playerStore.maxVehicles);
+
+const marketListings = computed(() => marketStore.listings);
+const transactions = computed(() => marketStore.transactions);
+
+const filteredTransactions = computed(() => {
+  if (historyFilter.value === 'all') {
+    return transactions.value;
+  } else if (historyFilter.value === 'buy') {
+    return transactions.value.filter(t => t.transactionType === TransactionType.BUY);
+  } else {
+    return transactions.value.filter(t => t.transactionType === TransactionType.SELL);
+  }
+});
+
+const confirmationTitle = computed(() => {
+  if (!transactionType.value || !selectedListing.value) return 'Confirm Transaction';
+  
+  return transactionType.value === 'buy' 
+    ? `Buy ${formatResourceType(selectedListing.value.type)}` 
+    : `Sell ${formatResourceType(selectedListing.value.type)}`;
+});
+
+const newBalance = computed(() => {
+  if (!transactionType.value || !transactionTotal.value) return playerMoney.value;
+  
+  return transactionType.value === 'buy'
+    ? playerMoney.value - transactionTotal.value
+    : playerMoney.value + transactionTotal.value;
+});
+
+// Load data when component is mounted
+onMounted(async () => {
+  isLoading.value = true;
+  
+  if (!playerStore.profile) {
+    await playerStore.fetchProfile();
+  }
+  
+  await marketStore.fetchMarketData();
+  
+  isLoading.value = false;
+});
+
+// Helper functions
+function formatNumber(value: number): string {
+  if (value >= 1000000) {
+    return (value / 1000000).toFixed(1) + 'M';
+  } else if (value >= 1000) {
+    return (value / 1000).toFixed(1) + 'K';
+  }
+  return value.toString();
+}
+
+function formatResourceType(resourceType: ResourceType): string {
+  switch (resourceType) {
+    case ResourceType.CREW:
+      return 'Crew Members';
+    case ResourceType.WEAPONS:
+      return 'Weapons';
+    case ResourceType.VEHICLES:
+      return 'Vehicles';
+    default:
+      return resourceType;
+  }
+}
+
+function formatDate(timestamp: string): string {
+  const date = new Date(timestamp);
+  return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function getTrendIcon(trend: PriceTrend): string {
+  switch (trend) {
+    case PriceTrend.UP:
+      return '↑';
+    case PriceTrend.DOWN:
+      return '↓';
+    case PriceTrend.STABLE:
+      return '→';
+    default:
+      return '';
+  }
+}
+
+function getResourceAmount(resourceType: ResourceType): number {
+  switch (resourceType) {
+    case ResourceType.CREW:
+      return playerCrew.value;
+    case ResourceType.WEAPONS:
+      return playerWeapons.value;
+    case ResourceType.VEHICLES:
+      return playerVehicles.value;
+    default:
+      return 0;
+  }
+}
+
+function getResourceMax(resourceType: ResourceType): number {
+  switch (resourceType) {
+    case ResourceType.CREW:
+      return maxCrew.value;
+    case ResourceType.WEAPONS:
+      return maxWeapons.value;
+    case ResourceType.VEHICLES:
+      return maxVehicles.value;
+    default:
+      return 0;
+  }
+}
+
+function getMaxBuyQuantity(listing: MarketListing): number {
+  // Calculate max based on money and resource capacity
+  const maxByMoney = Math.floor(playerMoney.value / listing.price);
+  const currentAmount = getResourceAmount(listing.type);
+  const maxCapacity = getResourceMax(listing.type);
+  const maxByCapacity = maxCapacity - currentAmount;
+  
+  return Math.max(0, Math.min(maxByMoney, maxByCapacity));
+}
+
+function getMaxSellQuantity(listing: MarketListing): number {
+  return getResourceAmount(listing.type);
+}
+
+function calculateTotalCost(listing: MarketListing): number {
+  return listing.price * buyQuantities.value[listing.type];
+}
+
+function calculateTotalValue(listing: MarketListing): number {
+  return listing.price * sellQuantities.value[listing.type];
+}
+
+function canBuyResource(listing: MarketListing): boolean {
+  const quantity = buyQuantities.value[listing.type];
+  if (quantity <= 0) return false;
+  
+  const totalCost = calculateTotalCost(listing);
+  if (totalCost > playerMoney.value) return false;
+  
+  const currentAmount = getResourceAmount(listing.type);
+  const maxCapacity = getResourceMax(listing.type);
+  if (currentAmount + quantity > maxCapacity) return false;
+  
+  return true;
+}
+
+function canSellResource(listing: MarketListing): boolean {
+  const quantity = sellQuantities.value[listing.type];
+  if (quantity <= 0) return false;
+  
+  const currentAmount = getResourceAmount(listing.type);
+  if (quantity > currentAmount) return false;
+  
+  return true;
+}
+
+function getTransactionWarning(listing: MarketListing, action: 'buy' | 'sell'): string {
+  if (action === 'buy') {
+    const quantity = buyQuantities.value[listing.type];
+    if (quantity <= 0) return 'Quantity must be greater than 0';
+    
+    const totalCost = calculateTotalCost(listing);
+    if (totalCost > playerMoney.value) return 'Not enough money';
+    
+    const currentAmount = getResourceAmount(listing.type);
+    const maxCapacity = getResourceMax(listing.type);
+    if (currentAmount + quantity > maxCapacity) return 'Exceeds maximum capacity';
+    
+    return '';
+  } else {
+    const quantity = sellQuantities.value[listing.type];
+    if (quantity <= 0) return 'Quantity must be greater than 0';
+    
+    const currentAmount = getResourceAmount(listing.type);
+    if (quantity > currentAmount) return 'Not enough resources to sell';
+    
+    return '';
+  }
+}
+
+function incrementQuantity(resourceType: ResourceType, action: 'buy' | 'sell' = 'buy'): void {
+  if (action === 'buy') {
+    const maxQuantity = getMaxBuyQuantity(
+      marketListings.value.find(l => l.type === resourceType) as MarketListing
+    );
+    
+    if (buyQuantities.value[resourceType] < maxQuantity) {
+      buyQuantities.value[resourceType]++;
+    }
+  } else {
+    const maxQuantity = getMaxSellQuantity(
+      marketListings.value.find(l => l.type === resourceType) as MarketListing
+    );
+    
+    if (sellQuantities.value[resourceType] < maxQuantity) {
+      sellQuantities.value[resourceType]++;
+    }
+  }
+}
+
+function decrementQuantity(resourceType: ResourceType, action: 'buy' | 'sell' = 'buy'): void {
+  if (action === 'buy') {
+    if (buyQuantities.value[resourceType] > 1) {
+      buyQuantities.value[resourceType]--;
+    }
+  } else {
+    if (sellQuantities.value[resourceType] > 1) {
+      sellQuantities.value[resourceType]--;
+    }
+  }
+}
+
+// Transaction functions
+function buyResource(listing: MarketListing): void {
+  if (!canBuyResource(listing)) return;
+  
+  selectedListing.value = listing;
+  transactionType.value = 'buy';
+  transactionQuantity.value = buyQuantities.value[listing.type];
+  transactionTotal.value = calculateTotalCost(listing);
+  
+  showConfirmModal.value = true;
+}
+
+function sellResource(listing: MarketListing): void {
+  if (!canSellResource(listing)) return;
+  
+  selectedListing.value = listing;
+  transactionType.value = 'sell';
+  transactionQuantity.value = sellQuantities.value[listing.type];
+  transactionTotal.value = calculateTotalValue(listing);
+  
+  showConfirmModal.value = true;
+}
+
+function closeConfirmModal(): void {
+  showConfirmModal.value = false;
+  selectedListing.value = null;
+  transactionType.value = null;
+  transactionQuantity.value = 0;
+  transactionTotal.value = 0;
+}
+
+async function confirmTransaction(): Promise<void> {
+  if (!selectedListing.value || !transactionType.value || isConfirming.value) return;
+  
+  isConfirming.value = true;
+  
+  try {
+    let result;
+    
+    if (transactionType.value === 'buy') {
+      isBuying.value = selectedListing.value.type;
+      result = await marketStore.buyResource(
+        selectedListing.value.type, 
+        transactionQuantity.value
+      );
+    } else {
+      isSelling.value = selectedListing.value.type;
+      result = await marketStore.sellResource(
+        selectedListing.value.type, 
+        transactionQuantity.value
+      );
+    }
+    
+    if (result) {
+      // Set result message
+      resultMessage.value = transactionType.value === 'buy'
+        ? `You successfully purchased ${transactionQuantity.value} ${formatResourceType(selectedListing.value.type)} for $${formatNumber(transactionTotal.value)}.`
+        : `You successfully sold ${transactionQuantity.value} ${formatResourceType(selectedListing.value.type)} for $${formatNumber(transactionTotal.value)}.`;
+      
+      // Close confirm modal and show result
+      showConfirmModal.value = false;
+      showResultModal.value = true;
+      
+      // Reset quantities
+      if (transactionType.value === 'buy') {
+        buyQuantities.value[selectedListing.value.type] = 1;
+      } else {
+        sellQuantities.value[selectedListing.value.type] = 1;
+      }
+    }
+  } catch (error) {
+    console.error('Transaction error:', error);
+  } finally {
+    isConfirming.value = false;
+    isBuying.value = null;
+    isSelling.value = null;
+  }
+}
+
+function closeResultModal(): void {
+  showResultModal.value = false;
+  resultMessage.value = '';
+}
+
+function navigateToTab(tab:'buy' | 'sell' | 'history'){
+  router.push({ path:'/market', query: { tab }})
+}
+</script>
+
 <template>
     <div class="market-view">
       <div class="page-title">
@@ -391,368 +753,6 @@
     </BaseModal>
   </div>
 </template>
-
-<script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import BaseCard from '@/components/ui/BaseCard.vue';
-import BaseButton from '@/components/ui/BaseButton.vue';
-import BaseModal from '@/components/ui/BaseModal.vue';
-import { usePlayerStore } from '@/stores/modules/player';
-import { useMarketStore } from '@/stores/modules/market';
-import { 
-  MarketListing, 
-  ResourceType,
-  PriceTrend,
-  TransactionType,
-  MarketTransaction
-} from '@/types/market';
-
-const route = useRoute();
-const router = useRouter();
-
-const playerStore = usePlayerStore();
-const marketStore = useMarketStore();
-
-// View state
-// const activeTab = ref<'buy' | 'sell' | 'history'>('buy');
-const activeTab = computed(()=> route.query.tab as string || 'buy')
-const isLoading = ref(false);
-const isBuying = ref<ResourceType | null>(null);
-const isSelling = ref<ResourceType | null>(null);
-const historyFilter = ref<'all' | 'buy' | 'sell'>('all');
-
-// Quantity inputs
-const buyQuantities = ref<Record<ResourceType, number>>({
-  [ResourceType.CREW]: 1,
-  [ResourceType.WEAPONS]: 1,
-  [ResourceType.VEHICLES]: 1
-});
-
-const sellQuantities = ref<Record<ResourceType, number>>({
-  [ResourceType.CREW]: 1,
-  [ResourceType.WEAPONS]: 1,
-  [ResourceType.VEHICLES]: 1
-});
-
-// Modals
-const showConfirmModal = ref(false);
-const showResultModal = ref(false);
-const selectedListing = ref<MarketListing | null>(null);
-const transactionType = ref<'buy' | 'sell' | null>(null);
-const transactionQuantity = ref(0);
-const transactionTotal = ref(0);
-const isConfirming = ref(false);
-const resultMessage = ref('');
-
-// Computed properties
-const playerMoney = computed(() => playerStore.playerMoney);
-const playerCrew = computed(() => playerStore.playerCrew);
-const playerWeapons = computed(() => playerStore.playerWeapons);
-const playerVehicles = computed(() => playerStore.playerVehicles);
-const maxCrew = computed(() => playerStore.maxCrew);
-const maxWeapons = computed(() => playerStore.maxWeapons);
-const maxVehicles = computed(() => playerStore.maxVehicles);
-
-const marketListings = computed(() => marketStore.listings);
-const transactions = computed(() => marketStore.transactions);
-
-const filteredTransactions = computed(() => {
-  if (historyFilter.value === 'all') {
-    return transactions.value;
-  } else if (historyFilter.value === 'buy') {
-    return transactions.value.filter(t => t.transactionType === TransactionType.BUY);
-  } else {
-    return transactions.value.filter(t => t.transactionType === TransactionType.SELL);
-  }
-});
-
-const confirmationTitle = computed(() => {
-  if (!transactionType.value || !selectedListing.value) return 'Confirm Transaction';
-  
-  return transactionType.value === 'buy' 
-    ? `Buy ${formatResourceType(selectedListing.value.type)}` 
-    : `Sell ${formatResourceType(selectedListing.value.type)}`;
-});
-
-const newBalance = computed(() => {
-  if (!transactionType.value || !transactionTotal.value) return playerMoney.value;
-  
-  return transactionType.value === 'buy'
-    ? playerMoney.value - transactionTotal.value
-    : playerMoney.value + transactionTotal.value;
-});
-
-// Load data when component is mounted
-onMounted(async () => {
-  isLoading.value = true;
-  
-  if (!playerStore.profile) {
-    await playerStore.fetchProfile();
-  }
-  
-  await marketStore.fetchMarketData();
-  
-  isLoading.value = false;
-});
-
-// Helper functions
-function formatNumber(value: number): string {
-  if (value >= 1000000) {
-    return (value / 1000000).toFixed(1) + 'M';
-  } else if (value >= 1000) {
-    return (value / 1000).toFixed(1) + 'K';
-  }
-  return value.toString();
-}
-
-function formatResourceType(resourceType: ResourceType): string {
-  switch (resourceType) {
-    case ResourceType.CREW:
-      return 'Crew Members';
-    case ResourceType.WEAPONS:
-      return 'Weapons';
-    case ResourceType.VEHICLES:
-      return 'Vehicles';
-    default:
-      return resourceType;
-  }
-}
-
-function formatDate(timestamp: string): string {
-  const date = new Date(timestamp);
-  return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
-function getTrendIcon(trend: PriceTrend): string {
-  switch (trend) {
-    case PriceTrend.UP:
-      return '↑';
-    case PriceTrend.DOWN:
-      return '↓';
-    case PriceTrend.STABLE:
-      return '→';
-    default:
-      return '';
-  }
-}
-
-function getResourceAmount(resourceType: ResourceType): number {
-  switch (resourceType) {
-    case ResourceType.CREW:
-      return playerCrew.value;
-    case ResourceType.WEAPONS:
-      return playerWeapons.value;
-    case ResourceType.VEHICLES:
-      return playerVehicles.value;
-    default:
-      return 0;
-  }
-}
-
-function getResourceMax(resourceType: ResourceType): number {
-  switch (resourceType) {
-    case ResourceType.CREW:
-      return maxCrew.value;
-    case ResourceType.WEAPONS:
-      return maxWeapons.value;
-    case ResourceType.VEHICLES:
-      return maxVehicles.value;
-    default:
-      return 0;
-  }
-}
-
-function getMaxBuyQuantity(listing: MarketListing): number {
-  // Calculate max based on money and resource capacity
-  const maxByMoney = Math.floor(playerMoney.value / listing.price);
-  const currentAmount = getResourceAmount(listing.type);
-  const maxCapacity = getResourceMax(listing.type);
-  const maxByCapacity = maxCapacity - currentAmount;
-  
-  return Math.max(0, Math.min(maxByMoney, maxByCapacity));
-}
-
-function getMaxSellQuantity(listing: MarketListing): number {
-  return getResourceAmount(listing.type);
-}
-
-function calculateTotalCost(listing: MarketListing): number {
-  return listing.price * buyQuantities.value[listing.type];
-}
-
-function calculateTotalValue(listing: MarketListing): number {
-  return listing.price * sellQuantities.value[listing.type];
-}
-
-function canBuyResource(listing: MarketListing): boolean {
-  const quantity = buyQuantities.value[listing.type];
-  if (quantity <= 0) return false;
-  
-  const totalCost = calculateTotalCost(listing);
-  if (totalCost > playerMoney.value) return false;
-  
-  const currentAmount = getResourceAmount(listing.type);
-  const maxCapacity = getResourceMax(listing.type);
-  if (currentAmount + quantity > maxCapacity) return false;
-  
-  return true;
-}
-
-function canSellResource(listing: MarketListing): boolean {
-  const quantity = sellQuantities.value[listing.type];
-  if (quantity <= 0) return false;
-  
-  const currentAmount = getResourceAmount(listing.type);
-  if (quantity > currentAmount) return false;
-  
-  return true;
-}
-
-function getTransactionWarning(listing: MarketListing, action: 'buy' | 'sell'): string {
-  if (action === 'buy') {
-    const quantity = buyQuantities.value[listing.type];
-    if (quantity <= 0) return 'Quantity must be greater than 0';
-    
-    const totalCost = calculateTotalCost(listing);
-    if (totalCost > playerMoney.value) return 'Not enough money';
-    
-    const currentAmount = getResourceAmount(listing.type);
-    const maxCapacity = getResourceMax(listing.type);
-    if (currentAmount + quantity > maxCapacity) return 'Exceeds maximum capacity';
-    
-    return '';
-  } else {
-    const quantity = sellQuantities.value[listing.type];
-    if (quantity <= 0) return 'Quantity must be greater than 0';
-    
-    const currentAmount = getResourceAmount(listing.type);
-    if (quantity > currentAmount) return 'Not enough resources to sell';
-    
-    return '';
-  }
-}
-
-function incrementQuantity(resourceType: ResourceType, action: 'buy' | 'sell' = 'buy'): void {
-  if (action === 'buy') {
-    const maxQuantity = getMaxBuyQuantity(
-      marketListings.value.find(l => l.type === resourceType) as MarketListing
-    );
-    
-    if (buyQuantities.value[resourceType] < maxQuantity) {
-      buyQuantities.value[resourceType]++;
-    }
-  } else {
-    const maxQuantity = getMaxSellQuantity(
-      marketListings.value.find(l => l.type === resourceType) as MarketListing
-    );
-    
-    if (sellQuantities.value[resourceType] < maxQuantity) {
-      sellQuantities.value[resourceType]++;
-    }
-  }
-}
-
-function decrementQuantity(resourceType: ResourceType, action: 'buy' | 'sell' = 'buy'): void {
-  if (action === 'buy') {
-    if (buyQuantities.value[resourceType] > 1) {
-      buyQuantities.value[resourceType]--;
-    }
-  } else {
-    if (sellQuantities.value[resourceType] > 1) {
-      sellQuantities.value[resourceType]--;
-    }
-  }
-}
-
-// Transaction functions
-function buyResource(listing: MarketListing): void {
-  if (!canBuyResource(listing)) return;
-  
-  selectedListing.value = listing;
-  transactionType.value = 'buy';
-  transactionQuantity.value = buyQuantities.value[listing.type];
-  transactionTotal.value = calculateTotalCost(listing);
-  
-  showConfirmModal.value = true;
-}
-
-function sellResource(listing: MarketListing): void {
-  if (!canSellResource(listing)) return;
-  
-  selectedListing.value = listing;
-  transactionType.value = 'sell';
-  transactionQuantity.value = sellQuantities.value[listing.type];
-  transactionTotal.value = calculateTotalValue(listing);
-  
-  showConfirmModal.value = true;
-}
-
-function closeConfirmModal(): void {
-  showConfirmModal.value = false;
-  selectedListing.value = null;
-  transactionType.value = null;
-  transactionQuantity.value = 0;
-  transactionTotal.value = 0;
-}
-
-async function confirmTransaction(): Promise<void> {
-  if (!selectedListing.value || !transactionType.value || isConfirming.value) return;
-  
-  isConfirming.value = true;
-  
-  try {
-    let result;
-    
-    if (transactionType.value === 'buy') {
-      isBuying.value = selectedListing.value.type;
-      result = await marketStore.buyResource(
-        selectedListing.value.type, 
-        transactionQuantity.value
-      );
-    } else {
-      isSelling.value = selectedListing.value.type;
-      result = await marketStore.sellResource(
-        selectedListing.value.type, 
-        transactionQuantity.value
-      );
-    }
-    
-    if (result) {
-      // Set result message
-      resultMessage.value = transactionType.value === 'buy'
-        ? `You successfully purchased ${transactionQuantity.value} ${formatResourceType(selectedListing.value.type)} for $${formatNumber(transactionTotal.value)}.`
-        : `You successfully sold ${transactionQuantity.value} ${formatResourceType(selectedListing.value.type)} for $${formatNumber(transactionTotal.value)}.`;
-      
-      // Close confirm modal and show result
-      showConfirmModal.value = false;
-      showResultModal.value = true;
-      
-      // Reset quantities
-      if (transactionType.value === 'buy') {
-        buyQuantities.value[selectedListing.value.type] = 1;
-      } else {
-        sellQuantities.value[selectedListing.value.type] = 1;
-      }
-    }
-  } catch (error) {
-    console.error('Transaction error:', error);
-  } finally {
-    isConfirming.value = false;
-    isBuying.value = null;
-    isSelling.value = null;
-  }
-}
-
-function closeResultModal(): void {
-  showResultModal.value = false;
-  resultMessage.value = '';
-}
-
-function navigateToTab(tab:'buy' | 'sell' | 'history'){
-  router.push({ path:'/market', query: { tab }})
-}
-</script>
 
 <style lang="scss">
 .market-view {

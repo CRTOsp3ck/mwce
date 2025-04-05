@@ -1,5 +1,435 @@
 // src/views/OperationsView.vue
 
+<script setup lang="ts">
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import BaseCard from '@/components/ui/BaseCard.vue';
+import BaseButton from '@/components/ui/BaseButton.vue';
+import BaseModal from '@/components/ui/BaseModal.vue';
+import { usePlayerStore } from '@/stores/modules/player';
+import { useOperationsStore } from '@/stores/modules/operations';
+import { 
+  Operation, 
+  OperationType, 
+  OperationStatus, 
+  OperationAttempt,
+  OperationResources
+} from '@/types/operations';
+import { PlayerTitle } from '@/types/player';
+
+const route = useRoute();
+const router = useRouter();
+const playerStore = usePlayerStore();
+const operationsStore = useOperationsStore();
+
+// View state
+// const activeTab = ref<'available' | 'in-progress' | 'completed'>('available');
+const activeTab = computed(()=> route.query.tab as string || 'available')
+const typeFilter = ref<'all' | 'basic' | 'special'>('all');
+const searchQuery = ref('');
+const isLoading = ref(false);
+
+// Modals
+const showStartModal = ref(false);
+const showCancelModal = ref(false);
+const selectedOperation = ref<Operation | null>(null);
+const selectedOperationAttempt = ref<OperationAttempt | null>(null);
+const isStartingOperation = ref(false);
+const isCancellingOperation = ref(false);
+
+// Timer for checking operation status
+let statusCheckTimer: number | null = null;
+
+// Computed properties
+const playerMoney = computed(() => playerStore.playerMoney);
+const playerCrew = computed(() => playerStore.playerCrew);
+const playerWeapons = computed(() => playerStore.playerWeapons);
+const playerVehicles = computed(() => playerStore.playerVehicles);
+const playerInfluence = computed(() => playerStore.playerInfluence);
+const playerHeat = computed(() => playerStore.playerHeat);
+const playerTitle = computed(() => playerStore.playerTitle);
+
+const availableOperations = computed(() => operationsStore.availableOperations);
+const inProgressOperations = computed(() => operationsStore.inProgressOperations);
+const completedOperations = computed(() => operationsStore.completedOperations);
+
+const filteredOperations = computed(() => {
+  let result = [...availableOperations.value];
+  
+  // Apply type filter
+  if (typeFilter.value === 'basic') {
+    result = result.filter(op => !op.isSpecial);
+  } else if (typeFilter.value === 'special') {
+    result = result.filter(op => op.isSpecial);
+  }
+  
+  // Apply search filter
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase();
+    result = result.filter(op => 
+      op.name.toLowerCase().includes(query) || 
+      op.description.toLowerCase().includes(query) ||
+      formatOperationType(op.type).toLowerCase().includes(query)
+    );
+  }
+  
+  return result;
+});
+
+const canStartSelectedOperation = computed(() => {
+  if (!selectedOperation.value) return false;
+  
+  return canStartOperation(selectedOperation.value);
+});
+
+const confirmationWarning = computed(() => {
+  if (!selectedOperation.value) return '';
+  
+  if (selectedOperation.value.resources.crew > playerCrew.value) {
+    return 'You don\'t have enough crew members for this operation.';
+  }
+  
+  if (selectedOperation.value.resources.weapons > playerWeapons.value) {
+    return 'You don\'t have enough weapons for this operation.';
+  }
+  
+  if (selectedOperation.value.resources.vehicles > playerVehicles.value) {
+    return 'You don\'t have enough vehicles for this operation.';
+  }
+  
+  if (selectedOperation.value.resources.money && selectedOperation.value.resources.money > playerMoney.value) {
+    return 'You don\'t have enough money for this operation.';
+  }
+  
+  if (selectedOperation.value.requirements.minInfluence && selectedOperation.value.requirements.minInfluence > playerInfluence.value) {
+    return 'Your influence is too low for this operation.';
+  }
+  
+  if (selectedOperation.value.requirements.maxHeat && selectedOperation.value.requirements.maxHeat < playerHeat.value) {
+    return 'Your heat level is too high for this operation.';
+  }
+  
+  if (selectedOperation.value.requirements.minTitle && !meetsMinimumTitle(selectedOperation.value.requirements.minTitle)) {
+    return `You need to be at least a ${selectedOperation.value.requirements.minTitle} to start this operation.`;
+  }
+  
+  return '';
+});
+
+// Load data when component is mounted
+onMounted(async () => {
+  isLoading.value = true;
+  
+  if (!playerStore.profile) {
+    await playerStore.fetchProfile();
+  }
+  
+  if (operationsStore.availableOperations.length === 0) {
+    await operationsStore.fetchAvailableOperations();
+  }
+  
+  await operationsStore.fetchPlayerOperations();
+  
+  isLoading.value = false;
+  
+  // Check if there's an operation ID in the query params
+  const operationId = route.query.operation as string;
+  if (operationId) {
+    const operation = availableOperations.value.find(op => op.id === operationId);
+    if (operation) {
+      startOperation(operation);
+    }
+  }
+  
+  // Set up timer to check operation status
+  statusCheckTimer = window.setInterval(() => {
+    operationsStore.checkOperationStatus();
+  }, 10000); // Check every 10 seconds
+});
+
+// Clean up timer on component unmount
+onBeforeUnmount(() => {
+  if (statusCheckTimer) {
+    clearInterval(statusCheckTimer);
+  }
+});
+
+// Helper functions
+function formatNumber(value: number): string {
+  if (value >= 1000000) {
+    return (value / 1000000).toFixed(1) + 'M';
+  } else if (value >= 1000) {
+    return (value / 1000).toFixed(1) + 'K';
+  }
+  return value.toString();
+}
+
+function formatOperationType(type: OperationType): string {
+  switch (type) {
+    case OperationType.CARJACKING:
+      return 'Carjacking';
+    case OperationType.GOODS_SMUGGLING:
+      return 'Goods Smuggling';
+    case OperationType.DRUG_TRAFFICKING:
+      return 'Drug Trafficking';
+    case OperationType.OFFICIAL_BRIBING:
+      return 'Official Bribing';
+    case OperationType.INTELLIGENCE_GATHERING:
+      return 'Intelligence Gathering';
+    case OperationType.CREW_RECRUITMENT:
+      return 'Crew Recruitment';
+    default:
+      return type;
+  }
+}
+
+function formatDuration(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  } else {
+    return `${minutes}m`;
+  }
+}
+
+function formatDate(dateString: string | undefined): string {
+  if (!dateString) return 'Unknown';
+  
+  const date = new Date(dateString);
+  const now = new Date();
+  const diff = Math.floor((now.getTime() - date.getTime()) / 60000); // difference in minutes
+  
+  if (diff < 1) return 'Just now';
+  if (diff < 60) return `${diff} min ago`;
+  if (diff < 1440) return `${Math.floor(diff / 60)} hours ago`;
+  
+  return date.toLocaleDateString();
+}
+
+function hasRequirements(operation: Operation): boolean {
+  return !!(
+    operation.requirements.minInfluence ||
+    operation.requirements.maxHeat ||
+    operation.requirements.minTitle
+  );
+}
+
+function meetsMinimumTitle(requiredTitle: string): boolean {
+  const titleRanks = {
+    [PlayerTitle.ASSOCIATE]: 1,
+    [PlayerTitle.SOLDIER]: 2,
+    [PlayerTitle.CAPO]: 3,
+    [PlayerTitle.UNDERBOSS]: 4,
+    [PlayerTitle.CONSIGLIERE]: 5,
+    [PlayerTitle.BOSS]: 6,
+    [PlayerTitle.GODFATHER]: 7
+  };
+  
+  const requiredRank = titleRanks[requiredTitle as PlayerTitle] || 0;
+  const playerRank = titleRanks[playerTitle.value] || 0;
+  
+  return playerRank >= requiredRank;
+}
+
+function canStartOperation(operation: Operation): boolean {
+  // Check if player has enough resources
+  if (operation.resources.crew > playerCrew.value) return false;
+  if (operation.resources.weapons > playerWeapons.value) return false;
+  if (operation.resources.vehicles > playerVehicles.value) return false;
+  if (operation.resources.money && operation.resources.money > playerMoney.value) return false;
+  
+  // Check if player meets requirements
+  if (operation.requirements.minInfluence && operation.requirements.minInfluence > playerInfluence.value) return false;
+  if (operation.requirements.maxHeat && operation.requirements.maxHeat < playerHeat.value) return false;
+  if (operation.requirements.minTitle && !meetsMinimumTitle(operation.requirements.minTitle)) return false;
+  
+  return true;
+}
+
+function getOperationWarning(operation: Operation): string {
+  if (operation.resources.crew > playerCrew.value) {
+    return 'Not enough crew';
+  }
+  
+  if (operation.resources.weapons > playerWeapons.value) {
+    return 'Not enough weapons';
+  }
+  
+  if (operation.resources.vehicles > playerVehicles.value) {
+    return 'Not enough vehicles';
+  }
+  
+  if (operation.resources.money && operation.resources.money > playerMoney.value) {
+    return 'Not enough money';
+  }
+  
+  if (operation.requirements.minInfluence && operation.requirements.minInfluence > playerInfluence.value) {
+    return `Requires ${operation.requirements.minInfluence} influence`;
+  }
+  
+  if (operation.requirements.maxHeat && operation.requirements.maxHeat < playerHeat.value) {
+    return `Heat too high (max ${operation.requirements.maxHeat})`;
+  }
+  
+  if (operation.requirements.minTitle && !meetsMinimumTitle(operation.requirements.minTitle)) {
+    return `Requires ${operation.requirements.minTitle} rank`;
+  }
+  
+  return '';
+}
+
+function getOperationName(operationAttempt: OperationAttempt): string {
+  const operation = availableOperations.value.find(op => op.id === operationAttempt.operationId);
+  return operation ? operation.name : 'Unknown Operation';
+}
+
+function getOperationType(operationAttempt: OperationAttempt): string {
+  const operation = availableOperations.value.find(op => op.id === operationAttempt.operationId);
+  return operation ? formatOperationType(operation.type) : 'Unknown Type';
+}
+
+function getTimeRemaining(operationAttempt: OperationAttempt): string {
+  if (!operationAttempt || operationAttempt.status !== OperationStatus.IN_PROGRESS) {
+    return 'Completed';
+  }
+  
+  const operation = availableOperations.value.find(op => op.id === operationAttempt.operationId);
+  if (!operation) return 'Unknown';
+  
+  const startTime = new Date(operationAttempt.timestamp);
+  const endTime = new Date(startTime.getTime() + (operation.duration * 1000));
+  const now = new Date();
+  
+  if (now >= endTime) {
+    return 'Ready to collect';
+  }
+  
+  const remainingSeconds = Math.floor((endTime.getTime() - now.getTime()) / 1000);
+  return formatDuration(remainingSeconds);
+}
+
+function getEstimatedCompletion(operationAttempt: OperationAttempt): string {
+  if (!operationAttempt || operationAttempt.status !== OperationStatus.IN_PROGRESS) {
+    return 'Completed';
+  }
+  
+  const operation = availableOperations.value.find(op => op.id === operationAttempt.operationId);
+  if (!operation) return 'Unknown';
+  
+  const startTime = new Date(operationAttempt.timestamp);
+  const endTime = new Date(startTime.getTime() + (operation.duration * 1000));
+  
+  const hours = endTime.getHours().toString().padStart(2, '0');
+  const minutes = endTime.getMinutes().toString().padStart(2, '0');
+  
+  return `${hours}:${minutes}`;
+}
+
+function getProgressPercentage(operationAttempt: OperationAttempt): number {
+  if (!operationAttempt || operationAttempt.status !== OperationStatus.IN_PROGRESS) {
+    return 100;
+  }
+  
+  const operation = availableOperations.value.find(op => op.id === operationAttempt.operationId);
+  if (!operation) return 0;
+  
+  const startTime = new Date(operationAttempt.timestamp);
+  const endTime = new Date(startTime.getTime() + (operation.duration * 1000));
+  const now = new Date();
+  
+  if (now >= endTime) {
+    return 100;
+  }
+  
+  const totalDuration = operation.duration * 1000;
+  const elapsed = now.getTime() - startTime.getTime();
+  
+  return Math.floor((elapsed / totalDuration) * 100);
+}
+
+function isSuccessfulOperation(operation: OperationAttempt): boolean {
+  return operation.status === OperationStatus.COMPLETED && operation.result && operation.result.success;
+}
+
+function isFailedOperation(operation: OperationAttempt): boolean {
+  return operation.status === OperationStatus.FAILED || (operation.result && !operation.result.success);
+}
+
+// Action functions
+function resetFilters() {
+  typeFilter.value = 'all';
+  searchQuery.value = '';
+}
+
+function startOperation(operation: Operation) {
+  selectedOperation.value = operation;
+  showStartModal.value = true;
+}
+
+function closeStartModal() {
+  showStartModal.value = false;
+  selectedOperation.value = null;
+}
+
+async function confirmStartOperation() {
+  if (!selectedOperation.value || isStartingOperation.value) return;
+  
+  isStartingOperation.value = true;
+  
+  try {
+    await operationsStore.startOperation(
+      selectedOperation.value.id, 
+      selectedOperation.value.resources
+    );
+    
+    // Switch to in-progress tab
+    activeTab.value = 'in-progress';
+    
+    // Close modal
+    showStartModal.value = false;
+    selectedOperation.value = null;
+  } catch (error) {
+    console.error('Error starting operation:', error);
+  } finally {
+    isStartingOperation.value = false;
+  }
+}
+
+function cancelOperation(operation: OperationAttempt) {
+  selectedOperationAttempt.value = operation;
+  showCancelModal.value = true;
+}
+
+function closeCancelModal() {
+  showCancelModal.value = false;
+  selectedOperationAttempt.value = null;
+}
+
+async function confirmCancelOperation() {
+  if (!selectedOperationAttempt.value || isCancellingOperation.value) return;
+  
+  isCancellingOperation.value = true;
+  
+  try {
+    await operationsStore.cancelOperation(selectedOperationAttempt.value.id);
+    
+    // Close modal
+    showCancelModal.value = false;
+    selectedOperationAttempt.value = null;
+  } catch (error) {
+    console.error('Error cancelling operation:', error);
+  } finally {
+    isCancellingOperation.value = false;
+  }
+}
+
+function navigateToTab(tab:'available' | 'in-progress' | 'completed'){
+  router.push({ path:'/operations', query: { tab }})
+}
+</script>
+
 <template>
     <div class="operations-view">
       <div class="page-title">
@@ -659,436 +1089,6 @@
     </BaseModal>
   </div>
 </template>
-
-<script setup lang="ts">
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import BaseCard from '@/components/ui/BaseCard.vue';
-import BaseButton from '@/components/ui/BaseButton.vue';
-import BaseModal from '@/components/ui/BaseModal.vue';
-import { usePlayerStore } from '@/stores/modules/player';
-import { useOperationsStore } from '@/stores/modules/operations';
-import { 
-  Operation, 
-  OperationType, 
-  OperationStatus, 
-  OperationAttempt,
-  OperationResources
-} from '@/types/operations';
-import { PlayerTitle } from '@/types/player';
-
-const route = useRoute();
-const router = useRouter();
-const playerStore = usePlayerStore();
-const operationsStore = useOperationsStore();
-
-// View state
-// const activeTab = ref<'available' | 'in-progress' | 'completed'>('available');
-const activeTab = computed(()=> route.query.tab as string || 'available')
-const typeFilter = ref<'all' | 'basic' | 'special'>('all');
-const searchQuery = ref('');
-const isLoading = ref(false);
-
-// Modals
-const showStartModal = ref(false);
-const showCancelModal = ref(false);
-const selectedOperation = ref<Operation | null>(null);
-const selectedOperationAttempt = ref<OperationAttempt | null>(null);
-const isStartingOperation = ref(false);
-const isCancellingOperation = ref(false);
-
-// Timer for checking operation status
-let statusCheckTimer: number | null = null;
-
-// Computed properties
-const playerMoney = computed(() => playerStore.playerMoney);
-const playerCrew = computed(() => playerStore.playerCrew);
-const playerWeapons = computed(() => playerStore.playerWeapons);
-const playerVehicles = computed(() => playerStore.playerVehicles);
-const playerInfluence = computed(() => playerStore.playerInfluence);
-const playerHeat = computed(() => playerStore.playerHeat);
-const playerTitle = computed(() => playerStore.playerTitle);
-
-const availableOperations = computed(() => operationsStore.availableOperations);
-const inProgressOperations = computed(() => operationsStore.inProgressOperations);
-const completedOperations = computed(() => operationsStore.completedOperations);
-
-const filteredOperations = computed(() => {
-  let result = [...availableOperations.value];
-  
-  // Apply type filter
-  if (typeFilter.value === 'basic') {
-    result = result.filter(op => !op.isSpecial);
-  } else if (typeFilter.value === 'special') {
-    result = result.filter(op => op.isSpecial);
-  }
-  
-  // Apply search filter
-  if (searchQuery.value.trim()) {
-    const query = searchQuery.value.toLowerCase();
-    result = result.filter(op => 
-      op.name.toLowerCase().includes(query) || 
-      op.description.toLowerCase().includes(query) ||
-      formatOperationType(op.type).toLowerCase().includes(query)
-    );
-  }
-  
-  return result;
-});
-
-const canStartSelectedOperation = computed(() => {
-  if (!selectedOperation.value) return false;
-  
-  return canStartOperation(selectedOperation.value);
-});
-
-const confirmationWarning = computed(() => {
-  if (!selectedOperation.value) return '';
-  
-  if (selectedOperation.value.resources.crew > playerCrew.value) {
-    return 'You don\'t have enough crew members for this operation.';
-  }
-  
-  if (selectedOperation.value.resources.weapons > playerWeapons.value) {
-    return 'You don\'t have enough weapons for this operation.';
-  }
-  
-  if (selectedOperation.value.resources.vehicles > playerVehicles.value) {
-    return 'You don\'t have enough vehicles for this operation.';
-  }
-  
-  if (selectedOperation.value.resources.money && selectedOperation.value.resources.money > playerMoney.value) {
-    return 'You don\'t have enough money for this operation.';
-  }
-  
-  if (selectedOperation.value.requirements.minInfluence && selectedOperation.value.requirements.minInfluence > playerInfluence.value) {
-    return 'Your influence is too low for this operation.';
-  }
-  
-  if (selectedOperation.value.requirements.maxHeat && selectedOperation.value.requirements.maxHeat < playerHeat.value) {
-    return 'Your heat level is too high for this operation.';
-  }
-  
-  if (selectedOperation.value.requirements.minTitle && !meetsMinimumTitle(selectedOperation.value.requirements.minTitle)) {
-    return `You need to be at least a ${selectedOperation.value.requirements.minTitle} to start this operation.`;
-  }
-  
-  return '';
-});
-
-// Load data when component is mounted
-onMounted(async () => {
-  isLoading.value = true;
-  
-  if (!playerStore.profile) {
-    await playerStore.fetchProfile();
-  }
-  
-  if (operationsStore.availableOperations.length === 0) {
-    await operationsStore.fetchAvailableOperations();
-  }
-  
-  await operationsStore.fetchPlayerOperations();
-  
-  isLoading.value = false;
-  
-  // Check if there's an operation ID in the query params
-  const operationId = route.query.operation as string;
-  if (operationId) {
-    const operation = availableOperations.value.find(op => op.id === operationId);
-    if (operation) {
-      startOperation(operation);
-    }
-  }
-  
-  // Set up timer to check operation status
-  statusCheckTimer = window.setInterval(() => {
-    operationsStore.checkOperationStatus();
-  }, 10000); // Check every 10 seconds
-});
-
-// Clean up timer on component unmount
-onBeforeUnmount(() => {
-  if (statusCheckTimer) {
-    clearInterval(statusCheckTimer);
-  }
-});
-
-// Helper functions
-function formatNumber(value: number): string {
-  if (value >= 1000000) {
-    return (value / 1000000).toFixed(1) + 'M';
-  } else if (value >= 1000) {
-    return (value / 1000).toFixed(1) + 'K';
-  }
-  return value.toString();
-}
-
-function formatOperationType(type: OperationType): string {
-  switch (type) {
-    case OperationType.CARJACKING:
-      return 'Carjacking';
-    case OperationType.GOODS_SMUGGLING:
-      return 'Goods Smuggling';
-    case OperationType.DRUG_TRAFFICKING:
-      return 'Drug Trafficking';
-    case OperationType.OFFICIAL_BRIBING:
-      return 'Official Bribing';
-    case OperationType.INTELLIGENCE_GATHERING:
-      return 'Intelligence Gathering';
-    case OperationType.CREW_RECRUITMENT:
-      return 'Crew Recruitment';
-    default:
-      return type;
-  }
-}
-
-function formatDuration(seconds: number): string {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  } else {
-    return `${minutes}m`;
-  }
-}
-
-function formatDate(dateString: string | undefined): string {
-  if (!dateString) return 'Unknown';
-  
-  const date = new Date(dateString);
-  const now = new Date();
-  const diff = Math.floor((now.getTime() - date.getTime()) / 60000); // difference in minutes
-  
-  if (diff < 1) return 'Just now';
-  if (diff < 60) return `${diff} min ago`;
-  if (diff < 1440) return `${Math.floor(diff / 60)} hours ago`;
-  
-  return date.toLocaleDateString();
-}
-
-function hasRequirements(operation: Operation): boolean {
-  return !!(
-    operation.requirements.minInfluence ||
-    operation.requirements.maxHeat ||
-    operation.requirements.minTitle
-  );
-}
-
-function meetsMinimumTitle(requiredTitle: string): boolean {
-  const titleRanks = {
-    [PlayerTitle.ASSOCIATE]: 1,
-    [PlayerTitle.SOLDIER]: 2,
-    [PlayerTitle.CAPO]: 3,
-    [PlayerTitle.UNDERBOSS]: 4,
-    [PlayerTitle.CONSIGLIERE]: 5,
-    [PlayerTitle.BOSS]: 6,
-    [PlayerTitle.GODFATHER]: 7
-  };
-  
-  const requiredRank = titleRanks[requiredTitle as PlayerTitle] || 0;
-  const playerRank = titleRanks[playerTitle.value] || 0;
-  
-  return playerRank >= requiredRank;
-}
-
-function canStartOperation(operation: Operation): boolean {
-  // Check if player has enough resources
-  if (operation.resources.crew > playerCrew.value) return false;
-  if (operation.resources.weapons > playerWeapons.value) return false;
-  if (operation.resources.vehicles > playerVehicles.value) return false;
-  if (operation.resources.money && operation.resources.money > playerMoney.value) return false;
-  
-  // Check if player meets requirements
-  if (operation.requirements.minInfluence && operation.requirements.minInfluence > playerInfluence.value) return false;
-  if (operation.requirements.maxHeat && operation.requirements.maxHeat < playerHeat.value) return false;
-  if (operation.requirements.minTitle && !meetsMinimumTitle(operation.requirements.minTitle)) return false;
-  
-  return true;
-}
-
-function getOperationWarning(operation: Operation): string {
-  if (operation.resources.crew > playerCrew.value) {
-    return 'Not enough crew';
-  }
-  
-  if (operation.resources.weapons > playerWeapons.value) {
-    return 'Not enough weapons';
-  }
-  
-  if (operation.resources.vehicles > playerVehicles.value) {
-    return 'Not enough vehicles';
-  }
-  
-  if (operation.resources.money && operation.resources.money > playerMoney.value) {
-    return 'Not enough money';
-  }
-  
-  if (operation.requirements.minInfluence && operation.requirements.minInfluence > playerInfluence.value) {
-    return `Requires ${operation.requirements.minInfluence} influence`;
-  }
-  
-  if (operation.requirements.maxHeat && operation.requirements.maxHeat < playerHeat.value) {
-    return `Heat too high (max ${operation.requirements.maxHeat})`;
-  }
-  
-  if (operation.requirements.minTitle && !meetsMinimumTitle(operation.requirements.minTitle)) {
-    return `Requires ${operation.requirements.minTitle} rank`;
-  }
-  
-  return '';
-}
-
-function getOperationName(operationAttempt: OperationAttempt): string {
-  const operation = availableOperations.value.find(op => op.id === operationAttempt.operationId);
-  return operation ? operation.name : 'Unknown Operation';
-}
-
-function getOperationType(operationAttempt: OperationAttempt): string {
-  const operation = availableOperations.value.find(op => op.id === operationAttempt.operationId);
-  return operation ? formatOperationType(operation.type) : 'Unknown Type';
-}
-
-function getTimeRemaining(operationAttempt: OperationAttempt): string {
-  if (!operationAttempt || operationAttempt.status !== OperationStatus.IN_PROGRESS) {
-    return 'Completed';
-  }
-  
-  const operation = availableOperations.value.find(op => op.id === operationAttempt.operationId);
-  if (!operation) return 'Unknown';
-  
-  const startTime = new Date(operationAttempt.timestamp);
-  const endTime = new Date(startTime.getTime() + (operation.duration * 1000));
-  const now = new Date();
-  
-  if (now >= endTime) {
-    return 'Ready to collect';
-  }
-  
-  const remainingSeconds = Math.floor((endTime.getTime() - now.getTime()) / 1000);
-  return formatDuration(remainingSeconds);
-}
-
-function getEstimatedCompletion(operationAttempt: OperationAttempt): string {
-  if (!operationAttempt || operationAttempt.status !== OperationStatus.IN_PROGRESS) {
-    return 'Completed';
-  }
-  
-  const operation = availableOperations.value.find(op => op.id === operationAttempt.operationId);
-  if (!operation) return 'Unknown';
-  
-  const startTime = new Date(operationAttempt.timestamp);
-  const endTime = new Date(startTime.getTime() + (operation.duration * 1000));
-  
-  const hours = endTime.getHours().toString().padStart(2, '0');
-  const minutes = endTime.getMinutes().toString().padStart(2, '0');
-  
-  return `${hours}:${minutes}`;
-}
-
-function getProgressPercentage(operationAttempt: OperationAttempt): number {
-  if (!operationAttempt || operationAttempt.status !== OperationStatus.IN_PROGRESS) {
-    return 100;
-  }
-  
-  const operation = availableOperations.value.find(op => op.id === operationAttempt.operationId);
-  if (!operation) return 0;
-  
-  const startTime = new Date(operationAttempt.timestamp);
-  const endTime = new Date(startTime.getTime() + (operation.duration * 1000));
-  const now = new Date();
-  
-  if (now >= endTime) {
-    return 100;
-  }
-  
-  const totalDuration = operation.duration * 1000;
-  const elapsed = now.getTime() - startTime.getTime();
-  
-  return Math.floor((elapsed / totalDuration) * 100);
-}
-
-function isSuccessfulOperation(operation: OperationAttempt): boolean {
-  return operation.status === OperationStatus.COMPLETED && operation.result && operation.result.success;
-}
-
-function isFailedOperation(operation: OperationAttempt): boolean {
-  return operation.status === OperationStatus.FAILED || (operation.result && !operation.result.success);
-}
-
-// Action functions
-function resetFilters() {
-  typeFilter.value = 'all';
-  searchQuery.value = '';
-}
-
-function startOperation(operation: Operation) {
-  selectedOperation.value = operation;
-  showStartModal.value = true;
-}
-
-function closeStartModal() {
-  showStartModal.value = false;
-  selectedOperation.value = null;
-}
-
-async function confirmStartOperation() {
-  if (!selectedOperation.value || isStartingOperation.value) return;
-  
-  isStartingOperation.value = true;
-  
-  try {
-    await operationsStore.startOperation(
-      selectedOperation.value.id, 
-      selectedOperation.value.resources
-    );
-    
-    // Switch to in-progress tab
-    activeTab.value = 'in-progress';
-    
-    // Close modal
-    showStartModal.value = false;
-    selectedOperation.value = null;
-  } catch (error) {
-    console.error('Error starting operation:', error);
-  } finally {
-    isStartingOperation.value = false;
-  }
-}
-
-function cancelOperation(operation: OperationAttempt) {
-  selectedOperationAttempt.value = operation;
-  showCancelModal.value = true;
-}
-
-function closeCancelModal() {
-  showCancelModal.value = false;
-  selectedOperationAttempt.value = null;
-}
-
-async function confirmCancelOperation() {
-  if (!selectedOperationAttempt.value || isCancellingOperation.value) return;
-  
-  isCancellingOperation.value = true;
-  
-  try {
-    await operationsStore.cancelOperation(selectedOperationAttempt.value.id);
-    
-    // Close modal
-    showCancelModal.value = false;
-    selectedOperationAttempt.value = null;
-  } catch (error) {
-    console.error('Error cancelling operation:', error);
-  } finally {
-    isCancellingOperation.value = false;
-  }
-}
-
-function navigateToTab(tab:'available' | 'in-progress' | 'completed'){
-  router.push({ path:'/operations', query: { tab }})
-}
-</script>
 
 <style lang="scss">
 .operations-view {

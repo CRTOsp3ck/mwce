@@ -1,97 +1,5 @@
 // src/views/LoginView.vue
 
-<template>
-  <div class="login-view">
-    <div class="auth-container">
-      <div class="auth-card">
-        <div class="auth-header">
-          <h2>Mafia Wars: <span class="gold-text">Criminal Empire</span></h2>
-          <p class="auth-subtitle">Sign in to continue your criminal empire</p>
-        </div>
-
-        <div class="auth-form">
-          <div class="form-group" :class="{ 'has-error': errors.email }">
-            <label for="email">Email</label>
-            <input 
-              type="email" 
-              id="email" 
-              v-model="email" 
-              placeholder="Enter your email"
-              @input="validateEmail"
-            />
-            <div class="error-message" v-if="errors.email">{{ errors.email }}</div>
-          </div>
-
-          <div class="form-group" :class="{ 'has-error': errors.password }">
-            <label for="password">Password</label>
-            <div class="password-input">
-              <input 
-                :type="showPassword ? 'text' : 'password'" 
-                id="password" 
-                v-model="password" 
-                placeholder="Enter your password"
-                @input="validatePassword"
-              />
-              <button 
-                type="button" 
-                class="password-toggle" 
-                @click="togglePasswordVisibility"
-              >
-                {{ showPassword ? '👁️' : '👁️‍🗨️' }}
-              </button>
-            </div>
-            <div class="error-message" v-if="errors.password">{{ errors.password }}</div>
-          </div>
-
-          <div class="form-options">
-            <div class="remember-me">
-              <input type="checkbox" id="remember" v-model="rememberMe" />
-              <label for="remember">Remember me</label>
-            </div>
-            <router-link to="/forgot-password" class="forgot-password">Forgot password?</router-link>
-          </div>
-
-          <div class="auth-actions">
-            <BaseButton 
-              variant="secondary" 
-              class="login-btn" 
-              :disabled="!isFormValid || isLoading"
-              :loading="isLoading"
-              @click="login"
-            >
-              Sign In
-            </BaseButton>
-          </div>
-
-          <div class="auth-divider">
-            <span>OR</span>
-          </div>
-
-          <div class="social-login">
-            <button class="social-btn google">
-              Google
-            </button>
-            <button class="social-btn facebook">
-              Facebook
-            </button>
-          </div>
-        </div>
-
-        <div class="auth-footer">
-          <p>Don't have an account? <router-link to="/register" class="register-link">Sign Up</router-link></p>
-        </div>
-      </div>
-    </div>
-
-    <BaseNotification 
-      v-if="showNotification" 
-      :type="notificationType" 
-      :message="notificationMessage" 
-      @close="closeNotification"
-    />
-  </div>
-</template>
-
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
@@ -212,6 +120,100 @@ function closeNotification() {
   showNotification.value = false;
 }
 </script>
+
+<template>
+  <div class="login-view">
+    <div class="auth-container">
+      <div class="auth-card">
+        <div class="auth-header">
+          <h2>Mafia Wars: <span class="gold-text">Criminal Empire</span></h2>
+          <p class="auth-subtitle">Sign in to continue your criminal empire</p>
+        </div>
+
+        <div class="auth-form">
+          <div class="form-group" :class="{ 'has-error': errors.email }">
+            <label for="email">Email</label>
+            <input 
+              type="email" 
+              id="email" 
+              v-model="email" 
+              placeholder="Enter your email"
+              @input="validateEmail"
+            />
+            <div class="error-message" v-if="errors.email">{{ errors.email }}</div>
+          </div>
+
+          <div class="form-group" :class="{ 'has-error': errors.password }">
+            <label for="password">Password</label>
+            <div class="password-input">
+              <input 
+                :type="showPassword ? 'text' : 'password'" 
+                id="password" 
+                v-model="password" 
+                placeholder="Enter your password"
+                @input="validatePassword"
+              />
+              <button 
+                type="button" 
+                class="password-toggle" 
+                @click="togglePasswordVisibility"
+              >
+                {{ showPassword ? '👁️' : '👁️‍🗨️' }}
+              </button>
+            </div>
+            <div class="error-message" v-if="errors.password">{{ errors.password }}</div>
+          </div>
+
+          <div class="form-options">
+            <div class="remember-me">
+              <input type="checkbox" id="remember" v-model="rememberMe" />
+              <label for="remember">Remember me</label>
+            </div>
+            <router-link to="/forgot-password" class="forgot-password">Forgot password?</router-link>
+          </div>
+
+          <div class="auth-actions">
+            <BaseButton 
+              variant="secondary" 
+              class="login-btn" 
+              :disabled="!isFormValid || isLoading"
+              :loading="isLoading"
+              @click="login"
+            >
+              Sign In
+            </BaseButton>
+          </div>
+
+          <div class="auth-divider">
+            <span>OR</span>
+          </div>
+
+          <div class="social-login">
+            <button class="social-btn google">
+              Google
+            </button>
+            <button class="social-btn facebook">
+              Facebook
+            </button>
+          </div>
+        </div>
+
+        <div class="auth-footer">
+          <p>Don't have an account? <router-link to="/register" class="register-link">Sign Up</router-link></p>
+        </div>
+      </div>
+    </div>
+
+    <BaseNotification 
+      v-if="showNotification" 
+      :type="notificationType" 
+      :message="notificationMessage" 
+      @close="closeNotification"
+    />
+  </div>
+</template>
+
+
 
 <style lang="scss">
 .login-view {

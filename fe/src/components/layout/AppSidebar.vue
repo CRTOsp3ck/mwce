@@ -1,5 +1,71 @@
 // src/components/layout/AppSidebar.vue
 
+<script setup lang="ts">
+import { computed, onMounted } from 'vue';
+import { usePlayerStore } from '@/stores/modules/player';
+// Import territory store
+import { useTerritoryStore } from '@/stores/modules/territory';
+
+// Access the territory store
+const territoryStore = useTerritoryStore();
+
+// Access the player store
+const playerStore = usePlayerStore();
+
+// Load player data on component mount
+onMounted(async () => {
+  if (!playerStore.profile) {
+    await playerStore.fetchProfile();
+  }
+});
+
+// Get player basic info from player store
+const playerName = computed(() => playerStore.profile?.name || 'Unnamed Boss');
+const playerTitle = computed(() => playerStore.profile?.title || 'Associate');
+
+// Get player resources from player store
+const playerMoney = computed(() => playerStore.playerMoney);
+const playerCrew = computed(() => playerStore.playerCrew);
+const playerWeapons = computed(() => playerStore.playerWeapons);
+const playerVehicles = computed(() => playerStore.playerVehicles);
+
+// Get player max resources from player store
+const maxCrew = computed(() => playerStore.profile?.maxCrew || 0);
+const maxWeapons = computed(() => playerStore.profile?.maxWeapons || 0);
+const maxVehicles = computed(() => playerStore.profile?.maxVehicles || 0);
+
+// Get player stats from player store
+const playerRespect = computed(() => playerStore.playerRespect);
+const playerInfluence = computed(() => playerStore.playerInfluence);
+const playerHeat = computed(() => playerStore.playerHeat);
+
+// Get territory control data from player store
+const controlledHotspots = computed(() => playerStore.profile?.controlledHotspots || 0);
+const totalHotspots = computed(() => playerStore.profile?.totalHotspotCount || 0);
+const hourlyRevenue = computed(() => playerStore.profile?.hourlyRevenue || 0);
+const pendingCollections = computed(() => playerStore.profile?.pendingCollections || 0);
+
+// Get loading state
+const isLoading = computed(() => playerStore.isLoading);
+
+// Collect all pending collections
+const collectAllPending = async () => {
+  if (pendingCollections.value > 0 && !isLoading.value) {
+    await territoryStore.collectAllHotspotIncome();
+  }
+};
+
+// Helper function to format numbers
+function formatNumber(value: number): string {
+  if (value >= 1000000) {
+    return (value / 1000000).toFixed(1) + 'M';
+  } else if (value >= 1000) {
+    return (value / 1000).toFixed(1) + 'K';
+  }
+  return value.toString();
+}
+</script>
+
 <template>
   <aside class="app-sidebar">
     <div class="player-profile">
@@ -95,71 +161,7 @@
   </aside>
 </template>
 
-<script setup lang="ts">
-import { computed, onMounted } from 'vue';
-import { usePlayerStore } from '@/stores/modules/player';
-// Import territory store
-import { useTerritoryStore } from '@/stores/modules/territory';
 
-// Access the territory store
-const territoryStore = useTerritoryStore();
-
-// Access the player store
-const playerStore = usePlayerStore();
-
-// Load player data on component mount
-onMounted(async () => {
-  if (!playerStore.profile) {
-    await playerStore.fetchProfile();
-  }
-});
-
-// Get player basic info from player store
-const playerName = computed(() => playerStore.profile?.name || 'Unnamed Boss');
-const playerTitle = computed(() => playerStore.profile?.title || 'Associate');
-
-// Get player resources from player store
-const playerMoney = computed(() => playerStore.playerMoney);
-const playerCrew = computed(() => playerStore.playerCrew);
-const playerWeapons = computed(() => playerStore.playerWeapons);
-const playerVehicles = computed(() => playerStore.playerVehicles);
-
-// Get player max resources from player store
-const maxCrew = computed(() => playerStore.profile?.maxCrew || 0);
-const maxWeapons = computed(() => playerStore.profile?.maxWeapons || 0);
-const maxVehicles = computed(() => playerStore.profile?.maxVehicles || 0);
-
-// Get player stats from player store
-const playerRespect = computed(() => playerStore.playerRespect);
-const playerInfluence = computed(() => playerStore.playerInfluence);
-const playerHeat = computed(() => playerStore.playerHeat);
-
-// Get territory control data from player store
-const controlledHotspots = computed(() => playerStore.profile?.controlledHotspots || 0);
-const totalHotspots = computed(() => playerStore.profile?.totalHotspotCount || 0);
-const hourlyRevenue = computed(() => playerStore.profile?.hourlyRevenue || 0);
-const pendingCollections = computed(() => playerStore.profile?.pendingCollections || 0);
-
-// Get loading state
-const isLoading = computed(() => playerStore.isLoading);
-
-// Collect all pending collections
-const collectAllPending = async () => {
-  if (pendingCollections.value > 0 && !isLoading.value) {
-    await territoryStore.collectAllHotspotIncome();
-  }
-};
-
-// Helper function to format numbers
-function formatNumber(value: number): string {
-  if (value >= 1000000) {
-    return (value / 1000000).toFixed(1) + 'M';
-  } else if (value >= 1000) {
-    return (value / 1000).toFixed(1) + 'K';
-  }
-  return value.toString();
-}
-</script>
 
 <style lang="scss">
 .app-sidebar {

@@ -1,133 +1,6 @@
 // src/components/layout/AppHeader.vue
 
-<template>
-    <header class="app-header">
-        <div class="logo">
-            <router-link to="/">
-                <h1>Mafia Wars: <span class="gold-text">Criminal Empire</span></h1>
-            </router-link>
-        </div>
 
-        <nav class="main-nav">
-            <router-link v-for="item in navItems" :key="item.path" :to="item.path" class="nav-item"
-                :class="{ active: currentRoute === item.path }">
-                {{ item.name }}
-            </router-link>
-        </nav>
-
-        <div class="user-controls">
-            <div class="user-menu" v-if="isLoggedIn">
-                <div class="profile-link" @click="toggleProfileMenu">
-                    <div class="user-avatar">{{ playerAvatar }}</div>
-                    <span class="user-name">{{ playerName }}</span>
-                    <span class="menu-toggle" :class="{ open: showProfileMenu }">▼</span>
-
-                    <div v-if="showProfileMenu" class="profile-dropdown">
-                        <div class="dropdown-header">
-                            <div class="user-info">
-                                <div class="user-avatar large">{{ playerAvatar }}</div>
-                                <div class="user-details">
-                                    <div class="user-name">{{ playerName }}</div>
-                                    <div class="user-title">{{ playerTitle }}</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="dropdown-menu">
-                            <router-link to="/profile" class="menu-item" @click="showProfileMenu = false">
-                                <span class="item-icon">👤</span>
-                                <span>My Profile</span>
-                            </router-link>
-                            <router-link to="/settings" class="menu-item" @click="showProfileMenu = false">
-                                <span class="item-icon">⚙️</span>
-                                <span>Settings</span>
-                            </router-link>
-                            <div class="divider"></div>
-                            <div @click="logout" class="menu-item">
-                                <span class="item-icon">🚪</span>
-                                <span>Sign Out</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="notification-bell" @click="toggleNotifications">
-                <div class="bell-icon">
-                    <i class="notification-icon">🔔</i>
-                    <span v-if="unreadNotifications" class="notification-badge">{{ unreadNotifications }}</span>
-                </div>
-
-                <div v-if="showNotifications" class="notifications-dropdown">
-                    <div class="notifications-header">
-                        <h4>Notifications</h4>
-                        <button @click.stop="markAllAsRead" class="mark-read-btn">Mark all as read</button>
-                    </div>
-
-                    <div class="notifications-tabs">
-                        <button class="tab-btn" :class="{ active: activeNotifTab === 'all' }"
-                            @click.stop="activeNotifTab = 'all'">
-                            All
-                        </button>
-                        <button class="tab-btn" :class="{ active: activeNotifTab === 'territory' }"
-                            @click.stop="activeNotifTab = 'territory'">
-                            Territory
-                        </button>
-                        <button class="tab-btn" :class="{ active: activeNotifTab === 'operations' }"
-                            @click.stop="activeNotifTab = 'operations'">
-                            Operations
-                        </button>
-                    </div>
-
-                    <div class="notifications-list" v-if="filteredNotifications.length > 0">
-                        <div v-for="notification in filteredNotifications" :key="notification.id"
-                            class="notification-item" :class="{
-                                'unread': !notification.read,
-                                'territory': notification.type === 'territory',
-                                'operation': notification.type === 'operation',
-                                'collection': notification.type === 'collection',
-                                'heat': notification.type === 'heat',
-                                'system': notification.type === 'system'
-                            }">
-                            <div class="notification-icon">
-                                {{ getNotificationIcon(notification.type) }}
-                            </div>
-                            <div class="notification-content">
-                                <p>{{ notification.message }}</p>
-                                <span class="notification-time">{{ formatTime(notification.timestamp) }}</span>
-                            </div>
-                            <div class="notification-actions">
-                                <button v-if="!notification.read" class="action-btn mark-read"
-                                    @click.stop="markAsRead(notification.id)">
-                                    ✓
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div v-else class="empty-notifications">
-                        <div class="empty-icon">🔍</div>
-                        <p>No notifications</p>
-                    </div>
-
-                    <div class="notifications-footer">
-                        <router-link to="/notifications" class="view-all-link" @click="showNotifications = false">
-                            View All Notifications
-                        </router-link>
-                    </div>
-                </div>
-            </div>
-
-            <div class="action-buttons" v-if="!isLoggedIn">
-                <router-link to="/login" class="login-btn">
-                    Sign In
-                </router-link>
-                <router-link to="/register" class="register-btn">
-                    Sign Up
-                </router-link>
-            </div>
-        </div>
-    </header>
-</template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
@@ -295,6 +168,135 @@ async function logout() {
     router.push('/login');
 }
 </script>
+
+<template>
+    <header class="app-header">
+        <div class="logo">
+            <router-link to="/">
+                <h1>Mafia Wars: <span class="gold-text">Criminal Empire</span></h1>
+            </router-link>
+        </div>
+
+        <nav class="main-nav">
+            <router-link v-for="item in navItems" :key="item.path" :to="item.path" class="nav-item"
+                :class="{ active: currentRoute === item.path }">
+                {{ item.name }}
+            </router-link>
+        </nav>
+
+        <div class="user-controls">
+            <div class="user-menu" v-if="isLoggedIn">
+                <div class="profile-link" @click="toggleProfileMenu">
+                    <div class="user-avatar">{{ playerAvatar }}</div>
+                    <span class="user-name">{{ playerName }}</span>
+                    <span class="menu-toggle" :class="{ open: showProfileMenu }">▼</span>
+
+                    <div v-if="showProfileMenu" class="profile-dropdown">
+                        <div class="dropdown-header">
+                            <div class="user-info">
+                                <div class="user-avatar large">{{ playerAvatar }}</div>
+                                <div class="user-details">
+                                    <div class="user-name">{{ playerName }}</div>
+                                    <div class="user-title">{{ playerTitle }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="dropdown-menu">
+                            <router-link to="/profile" class="menu-item" @click="showProfileMenu = false">
+                                <span class="item-icon">👤</span>
+                                <span>My Profile</span>
+                            </router-link>
+                            <router-link to="/settings" class="menu-item" @click="showProfileMenu = false">
+                                <span class="item-icon">⚙️</span>
+                                <span>Settings</span>
+                            </router-link>
+                            <div class="divider"></div>
+                            <div @click="logout" class="menu-item">
+                                <span class="item-icon">🚪</span>
+                                <span>Sign Out</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="notification-bell" @click="toggleNotifications">
+                <div class="bell-icon">
+                    <i class="notification-icon">🔔</i>
+                    <span v-if="unreadNotifications" class="notification-badge">{{ unreadNotifications }}</span>
+                </div>
+
+                <div v-if="showNotifications" class="notifications-dropdown">
+                    <div class="notifications-header">
+                        <h4>Notifications</h4>
+                        <button @click.stop="markAllAsRead" class="mark-read-btn">Mark all as read</button>
+                    </div>
+
+                    <div class="notifications-tabs">
+                        <button class="tab-btn" :class="{ active: activeNotifTab === 'all' }"
+                            @click.stop="activeNotifTab = 'all'">
+                            All
+                        </button>
+                        <button class="tab-btn" :class="{ active: activeNotifTab === 'territory' }"
+                            @click.stop="activeNotifTab = 'territory'">
+                            Territory
+                        </button>
+                        <button class="tab-btn" :class="{ active: activeNotifTab === 'operations' }"
+                            @click.stop="activeNotifTab = 'operations'">
+                            Operations
+                        </button>
+                    </div>
+
+                    <div class="notifications-list" v-if="filteredNotifications.length > 0">
+                        <div v-for="notification in filteredNotifications" :key="notification.id"
+                            class="notification-item" :class="{
+                                'unread': !notification.read,
+                                'territory': notification.type === 'territory',
+                                'operation': notification.type === 'operation',
+                                'collection': notification.type === 'collection',
+                                'heat': notification.type === 'heat',
+                                'system': notification.type === 'system'
+                            }">
+                            <div class="notification-icon">
+                                {{ getNotificationIcon(notification.type) }}
+                            </div>
+                            <div class="notification-content">
+                                <p>{{ notification.message }}</p>
+                                <span class="notification-time">{{ formatTime(notification.timestamp) }}</span>
+                            </div>
+                            <div class="notification-actions">
+                                <button v-if="!notification.read" class="action-btn mark-read"
+                                    @click.stop="markAsRead(notification.id)">
+                                    ✓
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-else class="empty-notifications">
+                        <div class="empty-icon">🔍</div>
+                        <p>No notifications</p>
+                    </div>
+
+                    <div class="notifications-footer">
+                        <router-link to="/notifications" class="view-all-link" @click="showNotifications = false">
+                            View All Notifications
+                        </router-link>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-buttons" v-if="!isLoggedIn">
+                <router-link to="/login" class="login-btn">
+                    Sign In
+                </router-link>
+                <router-link to="/register" class="register-btn">
+                    Sign Up
+                </router-link>
+            </div>
+        </div>
+    </header>
+</template>
 
 <style lang="scss">
 .app-header {

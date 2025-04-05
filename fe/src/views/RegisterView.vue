@@ -1,199 +1,5 @@
 // src/views/RegisterView.vue
 
-<template>
-  <div class="register-view">
-    <div class="auth-container">
-      <div class="auth-card">
-        <div class="auth-header">
-          <h2>Mafia Wars: <span class="gold-text">Criminal Empire</span></h2>
-          <p class="auth-subtitle">Create your criminal empire</p>
-        </div>
-
-        <div class="auth-steps">
-          <div 
-            v-for="(step, index) in steps" 
-            :key="index" 
-            class="step" 
-            :class="{ 
-              'active': currentStep === index, 
-              'completed': currentStep > index 
-            }"
-          >
-            <div class="step-number">{{ index + 1 }}</div>
-            <div class="step-label">{{ step }}</div>
-          </div>
-        </div>
-
-        <div class="auth-form">
-          <!-- Step 1: Account Information -->
-          <div v-if="currentStep === 0" class="step-content slide-in">
-            <div class="form-group" :class="{ 'has-error': errors.email }">
-              <label for="email">Email</label>
-              <input 
-                type="email" 
-                id="email" 
-                v-model="formData.email" 
-                placeholder="Enter your email"
-                @input="validateEmail"
-              />
-              <div class="error-message" v-if="errors.email">{{ errors.email }}</div>
-            </div>
-
-            <div class="form-group" :class="{ 'has-error': errors.password }">
-              <label for="password">Password</label>
-              <div class="password-input">
-                <input 
-                  :type="showPassword ? 'text' : 'password'" 
-                  id="password" 
-                  v-model="formData.password" 
-                  placeholder="Create a password"
-                  @input="validatePassword"
-                />
-                <button 
-                  type="button" 
-                  class="password-toggle" 
-                  @click="togglePasswordVisibility"
-                >
-                  {{ showPassword ? '👁️' : '👁️‍🗨️' }}
-                </button>
-              </div>
-              <div class="error-message" v-if="errors.password">{{ errors.password }}</div>
-            </div>
-
-            <div class="form-group" :class="{ 'has-error': errors.confirmPassword }">
-              <label for="confirm-password">Confirm Password</label>
-              <input 
-                type="password" 
-                id="confirm-password" 
-                v-model="formData.confirmPassword" 
-                placeholder="Confirm your password"
-                @input="validateConfirmPassword"
-              />
-              <div class="error-message" v-if="errors.confirmPassword">{{ errors.confirmPassword }}</div>
-            </div>
-          </div>
-
-          <!-- Step 2: Personal Information -->
-          <div v-if="currentStep === 1" class="step-content slide-in">
-            <div class="form-group" :class="{ 'has-error': errors.name }">
-              <label for="name">Crime Boss Name</label>
-              <input 
-                type="text" 
-                id="name" 
-                v-model="formData.name" 
-                placeholder="Enter your boss name"
-                @input="validateName"
-              />
-              <div class="error-message" v-if="errors.name">{{ errors.name }}</div>
-            </div>
-
-            <div class="form-group">
-              <label for="avatar">Avatar</label>
-              <div class="avatar-selection">
-                <div 
-                  v-for="(avatar, index) in avatarOptions" 
-                  :key="index"
-                  class="avatar-option"
-                  :class="{ selected: formData.avatar === avatar }"
-                  @click="selectAvatar(avatar)"
-                >
-                  <div class="avatar-icon">{{ avatar }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Step 3: Starting Territory -->
-          <div v-if="currentStep === 2" class="step-content slide-in">
-            <h3 class="step-title">Choose Your Starting Territory</h3>
-            <p class="step-description">Select the district where your criminal empire will begin:</p>
-
-            <div class="territory-options">
-              <div 
-                v-for="(territory, index) in territoryOptions" 
-                :key="index"
-                class="territory-option"
-                :class="{ selected: formData.territory === territory.id }"
-                @click="selectTerritory(territory.id)"
-              >
-                <div class="territory-icon">{{ territory.icon }}</div>
-                <div class="territory-info">
-                  <div class="territory-name">{{ territory.name }}</div>
-                  <div class="territory-description">{{ territory.description }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Step 4: Terms and Conditions -->
-          <div v-if="currentStep === 3" class="step-content slide-in">
-            <h3 class="step-title">Terms of Service</h3>
-            <div class="terms-container">
-              <p>By creating an account, you agree to the following terms:</p>
-              <ol>
-                <li>You are responsible for maintaining the confidentiality of your account.</li>
-                <li>You will not use the service for any illegal activities (in real life).</li>
-                <li>Sharing account credentials is prohibited.</li>
-                <li>The game administrators reserve the right to terminate accounts that violate the terms.</li>
-                <li>All in-game purchases are final and non-refundable.</li>
-              </ol>
-            </div>
-
-            <div class="form-group checkbox">
-              <input type="checkbox" id="terms" v-model="formData.agreedToTerms" />
-              <label for="terms">I agree to the Terms of Service and Privacy Policy</label>
-              <div class="error-message" v-if="errors.agreedToTerms">{{ errors.agreedToTerms }}</div>
-            </div>
-          </div>
-
-          <!-- Error message for server errors -->
-          <div v-if="errors.server" class="server-error-message">
-            {{ errors.server }}
-          </div>
-
-          <div class="auth-actions">
-            <BaseButton 
-              v-if="currentStep > 0" 
-              variant="outline" 
-              @click="prevStep"
-            >
-              Back
-            </BaseButton>
-            <BaseButton 
-              v-if="currentStep < steps.length - 1" 
-              variant="primary" 
-              @click="nextStep"
-              :disabled="!canProceed"
-            >
-              Continue
-            </BaseButton>
-            <BaseButton 
-              v-if="currentStep === steps.length - 1" 
-              variant="secondary" 
-              :disabled="!canRegister || isLoading"
-              :loading="isLoading"
-              @click="register"
-            >
-              Create Account
-            </BaseButton>
-          </div>
-        </div>
-
-        <div class="auth-footer">
-          <p>Already have an account? <router-link to="/login" class="login-link">Sign In</router-link></p>
-        </div>
-      </div>
-    </div>
-
-    <BaseNotification 
-      v-if="showNotification" 
-      :type="notificationType" 
-      :message="notificationMessage" 
-      @close="closeNotification"
-    />
-  </div>
-</template>
-
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
@@ -453,9 +259,201 @@ function closeNotification() {
 }
 </script>
 
-<style lang="scss">
-// Continuing the styles for RegisterView.vue
+<template>
+  <div class="register-view">
+    <div class="auth-container">
+      <div class="auth-card">
+        <div class="auth-header">
+          <h2>Mafia Wars: <span class="gold-text">Criminal Empire</span></h2>
+          <p class="auth-subtitle">Create your criminal empire</p>
+        </div>
 
+        <div class="auth-steps">
+          <div 
+            v-for="(step, index) in steps" 
+            :key="index" 
+            class="step" 
+            :class="{ 
+              'active': currentStep === index, 
+              'completed': currentStep > index 
+            }"
+          >
+            <div class="step-number">{{ index + 1 }}</div>
+            <div class="step-label">{{ step }}</div>
+          </div>
+        </div>
+
+        <div class="auth-form">
+          <!-- Step 1: Account Information -->
+          <div v-if="currentStep === 0" class="step-content slide-in">
+            <div class="form-group" :class="{ 'has-error': errors.email }">
+              <label for="email">Email</label>
+              <input 
+                type="email" 
+                id="email" 
+                v-model="formData.email" 
+                placeholder="Enter your email"
+                @input="validateEmail"
+              />
+              <div class="error-message" v-if="errors.email">{{ errors.email }}</div>
+            </div>
+
+            <div class="form-group" :class="{ 'has-error': errors.password }">
+              <label for="password">Password</label>
+              <div class="password-input">
+                <input 
+                  :type="showPassword ? 'text' : 'password'" 
+                  id="password" 
+                  v-model="formData.password" 
+                  placeholder="Create a password"
+                  @input="validatePassword"
+                />
+                <button 
+                  type="button" 
+                  class="password-toggle" 
+                  @click="togglePasswordVisibility"
+                >
+                  {{ showPassword ? '👁️' : '👁️‍🗨️' }}
+                </button>
+              </div>
+              <div class="error-message" v-if="errors.password">{{ errors.password }}</div>
+            </div>
+
+            <div class="form-group" :class="{ 'has-error': errors.confirmPassword }">
+              <label for="confirm-password">Confirm Password</label>
+              <input 
+                type="password" 
+                id="confirm-password" 
+                v-model="formData.confirmPassword" 
+                placeholder="Confirm your password"
+                @input="validateConfirmPassword"
+              />
+              <div class="error-message" v-if="errors.confirmPassword">{{ errors.confirmPassword }}</div>
+            </div>
+          </div>
+
+          <!-- Step 2: Personal Information -->
+          <div v-if="currentStep === 1" class="step-content slide-in">
+            <div class="form-group" :class="{ 'has-error': errors.name }">
+              <label for="name">Crime Boss Name</label>
+              <input 
+                type="text" 
+                id="name" 
+                v-model="formData.name" 
+                placeholder="Enter your boss name"
+                @input="validateName"
+              />
+              <div class="error-message" v-if="errors.name">{{ errors.name }}</div>
+            </div>
+
+            <div class="form-group">
+              <label for="avatar">Avatar</label>
+              <div class="avatar-selection">
+                <div 
+                  v-for="(avatar, index) in avatarOptions" 
+                  :key="index"
+                  class="avatar-option"
+                  :class="{ selected: formData.avatar === avatar }"
+                  @click="selectAvatar(avatar)"
+                >
+                  <div class="avatar-icon">{{ avatar }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3: Starting Territory -->
+          <div v-if="currentStep === 2" class="step-content slide-in">
+            <h3 class="step-title">Choose Your Starting Territory</h3>
+            <p class="step-description">Select the district where your criminal empire will begin:</p>
+
+            <div class="territory-options">
+              <div 
+                v-for="(territory, index) in territoryOptions" 
+                :key="index"
+                class="territory-option"
+                :class="{ selected: formData.territory === territory.id }"
+                @click="selectTerritory(territory.id)"
+              >
+                <div class="territory-icon">{{ territory.icon }}</div>
+                <div class="territory-info">
+                  <div class="territory-name">{{ territory.name }}</div>
+                  <div class="territory-description">{{ territory.description }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 4: Terms and Conditions -->
+          <div v-if="currentStep === 3" class="step-content slide-in">
+            <h3 class="step-title">Terms of Service</h3>
+            <div class="terms-container">
+              <p>By creating an account, you agree to the following terms:</p>
+              <ol>
+                <li>You are responsible for maintaining the confidentiality of your account.</li>
+                <li>You will not use the service for any illegal activities (in real life).</li>
+                <li>Sharing account credentials is prohibited.</li>
+                <li>The game administrators reserve the right to terminate accounts that violate the terms.</li>
+                <li>All in-game purchases are final and non-refundable.</li>
+              </ol>
+            </div>
+
+            <div class="form-group checkbox">
+              <input type="checkbox" id="terms" v-model="formData.agreedToTerms" />
+              <label for="terms">I agree to the Terms of Service and Privacy Policy</label>
+              <div class="error-message" v-if="errors.agreedToTerms">{{ errors.agreedToTerms }}</div>
+            </div>
+          </div>
+
+          <!-- Error message for server errors -->
+          <div v-if="errors.server" class="server-error-message">
+            {{ errors.server }}
+          </div>
+
+          <div class="auth-actions">
+            <BaseButton 
+              v-if="currentStep > 0" 
+              variant="outline" 
+              @click="prevStep"
+            >
+              Back
+            </BaseButton>
+            <BaseButton 
+              v-if="currentStep < steps.length - 1" 
+              variant="primary" 
+              @click="nextStep"
+              :disabled="!canProceed"
+            >
+              Continue
+            </BaseButton>
+            <BaseButton 
+              v-if="currentStep === steps.length - 1" 
+              variant="secondary" 
+              :disabled="!canRegister || isLoading"
+              :loading="isLoading"
+              @click="register"
+            >
+              Create Account
+            </BaseButton>
+          </div>
+        </div>
+
+        <div class="auth-footer">
+          <p>Already have an account? <router-link to="/login" class="login-link">Sign In</router-link></p>
+        </div>
+      </div>
+    </div>
+
+    <BaseNotification 
+      v-if="showNotification" 
+      :type="notificationType" 
+      :message="notificationMessage" 
+      @close="closeNotification"
+    />
+  </div>
+</template>
+
+<style lang="scss">
 .register-view {
   height: 100vh;
   display: flex;

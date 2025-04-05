@@ -1,5 +1,849 @@
 // src/views/TerritoryView.vue
 
+<script setup lang="ts">
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import BaseButton from '@/components/ui/BaseButton.vue';
+import BaseModal from '@/components/ui/BaseModal.vue';
+import { usePlayerStore } from '@/stores/modules/player';
+import { useTerritoryStore } from '@/stores/modules/territory';
+import {
+  Hotspot,
+  TerritoryActionType,
+  ActionResources,
+  ActionResult,
+  TerritoryAction
+} from '@/types/territory';
+
+const route = useRoute();
+const router = useRouter();
+
+const playerStore = usePlayerStore();
+const territoryStore = useTerritoryStore();
+
+// View state
+const activeTab = computed(() => route.query.tab as string || 'empire');
+const viewMode = ref<'grid' | 'map'>('grid');
+const isLoading = ref(false);
+const isCollecting = ref(false);
+
+// Filters
+const selectedRegionId = ref<string | null>(null);
+const selectedDistrictId = ref<string | null>(null);
+const selectedCityId = ref<string | null>(null);
+const businessFilter = ref<'all' | 'legal' | 'illegal'>('all');
+const empireSortBy = ref<'name' | 'income' | 'pending' | 'defense' | 'region'>('income');
+
+// Action modal
+const showActionModal = ref(false);
+const selectedHotspot = ref<Hotspot | null>(null);
+const selectedAction = ref<TerritoryActionType | null>(null);
+const actionResources = ref<ActionResources>({
+  crew: 0,
+  weapons: 0,
+  vehicles: 0
+});
+const isPerformingAction = ref(false);
+
+// Result modal
+const showResultModal = ref(false);
+const actionResult = ref<ActionResult | null>(null);
+const actionSuccess = ref(false);
+
+// Computed properties
+const regions = computed(() => territoryStore.regions);
+const districts = computed(() => territoryStore.districts);
+const cities = computed(() => territoryStore.cities);
+const hotspots = computed(() => territoryStore.hotspots);
+const recentActions = computed(() => territoryStore.recentActions);
+
+const filteredDistricts = computed(() => {
+  if (!selectedRegionId.value) return [];
+  return districts.value.filter(d => d.regionId === selectedRegionId.value);
+});
+
+const filteredCities = computed(() => {
+  if (!selectedDistrictId.value) return [];
+  return cities.value.filter(c => c.districtId === selectedDistrictId.value);
+});
+
+const displayedHotspots = computed(() => {
+  let result = [...territoryStore.filteredHotspots];
+
+  // Apply business type filter
+  if (businessFilter.value === 'legal') {
+    result = result.filter(h => h.isLegal);
+  } else if (businessFilter.value === 'illegal') {
+    result = result.filter(h => !h.isLegal);
+  }
+
+  return result;
+});
+
+// Controlled hotspots
+const controlledHotspots = computed(() => {
+  return hotspots.value.filter(h => isPlayerControlled(h));
+});
+
+const sortedControlledHotspots = computed(() => {
+  const result = [...controlledHotspots.value];
+
+  switch (empireSortBy.value) {
+    case 'name':
+      return result.sort((a, b) => a.name.localeCompare(b.name));
+    case 'income':
+      return result.sort((a, b) => b.income - a.income);
+    case 'pending':
+      return result.sort((a, b) => b.pendingCollection - a.pendingCollection);
+    case 'defense':
+      return result.sort((a, b) => b.defenseStrength - a.defenseStrength);
+    case 'region':
+      return result.sort((a, b) => {
+        const cityA = cities.value.find(c => c.id === a.cityId);
+        const cityB = cities.value.find(c => c.id === b.cityId);
+
+        if (!cityA || !cityB) return 0;
+
+        const districtA = districts.value.find(d => d.id === cityA.districtId);
+        const districtB = districts.value.find(d => d.id === cityB.districtId);
+
+        if (!districtA || !districtB) return 0;
+
+        const regionA = regions.value.find(r => r.id === districtA.regionId);
+        const regionB = regions.value.find(r => r.id === districtB.regionId);
+
+        if (!regionA || !regionB) return 0;
+
+        return regionA.name.localeCompare(regionB.name);
+      });
+    default:
+      return result;
+  }
+});
+
+const collectableBusinesses = computed(() => {
+  return controlledHotspots.value.filter(h => h.pendingCollection > 0);
+});
+
+const hasCollectableBusiness = computed(() => {
+  return collectableBusinesses.value.length > 0;
+});
+
+// Regional distribution
+const regionsWithControlledHotspots = computed(() => {
+  const result = [];
+
+  for (const region of regions.value) {
+    const districtsInRegion = districts.value.filter(d => d.regionId === region.id);
+    const districtIds = districtsInRegion.map(d => d.id);
+
+    const citiesInRegion = cities.value.filter(c => districtIds.includes(c.districtId));
+    const cityIds = citiesInRegion.map(c => c.id);
+
+    const hotspotsInRegion = hotspots.value.filter(h => cityIds.includes(h.cityId));
+    const legalBusinessesInRegion = hotspotsInRegion.filter(h => h.isLegal);
+    const controlledHotspotsInRegion = legalBusinessesInRegion.filter(h => isPlayerControlled(h));
+
+    if (legalBusinessesInRegion.length > 0) {
+      result.push({
+        id: region.id,
+        name: region.name,
+        controlled: controlledHotspotsInRegion.length,
+        total: legalBusinessesInRegion.length,
+        controlPercentage: Math.round((controlledHotspotsInRegion.length / legalBusinessesInRegion.length) * 100)
+      });
+    }
+  }
+
+  return result.sort((a, b) => b.controlPercentage - a.controlPercentage);
+});
+
+// Player resources
+const availableCrew = computed(() => playerStore.playerCrew);
+const availableWeapons = computed(() => playerStore.playerWeapons);
+const availableVehicles = computed(() => playerStore.playerVehicles);
+
+// Computed properties for modals
+const actionModalTitle = computed(() => {
+  if (!selectedHotspot.value) return 'Territory Action';
+
+  switch (selectedAction.value) {
+    case TerritoryActionType.EXTORTION:
+      return 'Extortion Operation';
+    case TerritoryActionType.TAKEOVER:
+      return 'Business Takeover';
+    case TerritoryActionType.COLLECTION:
+      return 'Resource Collection';
+    case TerritoryActionType.DEFEND:
+      return 'Defense Allocation';
+    default:
+      return `${selectedHotspot.value.name}`;
+  }
+});
+
+const resultModalTitle = computed(() => {
+  return actionSuccess.value ? 'Operation Successful' : 'Operation Failed';
+});
+
+// Success chance calculation
+const successChance = computed(() => {
+  if (!selectedHotspot.value || !selectedAction.value) return 0;
+
+  // Base chance depends on action type
+  let baseChance = 50;
+
+  switch (selectedAction.value) {
+    case TerritoryActionType.EXTORTION:
+      baseChance = 70;
+      break;
+    case TerritoryActionType.TAKEOVER:
+      // Harder if already controlled - factor in defense strength
+      if (selectedHotspot.value.controller) {
+        baseChance = Math.max(30, 60 - Math.floor(selectedHotspot.value.defenseStrength / 2));
+      } else {
+        baseChance = 70;
+      }
+      break;
+    case TerritoryActionType.COLLECTION:
+      // Base chance high, but decreases with higher collection amounts
+      const pendingAmount = selectedHotspot.value.pendingCollection;
+      baseChance = Math.max(50, 90 - Math.floor(pendingAmount / 1000));
+      break;
+    case TerritoryActionType.DEFEND:
+      baseChance = 100; // Always succeeds
+      break;
+  }
+
+  // Adjust based on resources
+  const resourceFactor = Math.min(1.5, (
+    (actionResources.value.crew * 10) +
+    (actionResources.value.weapons * 15) +
+    (actionResources.value.vehicles * 20)
+  ) / 100);
+
+  let chance = Math.round(baseChance * resourceFactor);
+
+  // Cap between 5% and 95%
+  return Math.max(5, Math.min(95, chance));
+});
+
+const actionWarning = computed(() => {
+  if (!selectedAction.value || !selectedHotspot.value) return '';
+
+  if (successChance.value < 30) {
+    return 'This operation has a very low chance of success. Consider allocating more resources.';
+  }
+
+  switch (selectedAction.value) {
+    case TerritoryActionType.TAKEOVER:
+      if (selectedHotspot.value.controller) {
+        return 'This business is controlled by a rival. Takeover attempts may lead to retaliation.';
+      }
+      break;
+    case TerritoryActionType.EXTORTION:
+      return 'Extortion generates heat, which can attract law enforcement attention.';
+      break;
+    case TerritoryActionType.COLLECTION:
+      if (selectedHotspot.value.pendingCollection > 5000) {
+        return 'Large collection amounts may attract unwanted attention and generate heat.';
+      }
+      break;
+  }
+
+  return '';
+});
+
+const canPerformAction = computed(() => {
+  return selectedHotspot.value !== null &&
+    selectedAction.value !== null &&
+    (actionResources.value.crew > 0 ||
+      actionResources.value.weapons > 0 ||
+      actionResources.value.vehicles > 0);
+});
+
+// Watch for filter changes
+watch(selectedRegionId, (newValue) => {
+  territoryStore.selectRegion(newValue);
+  selectedDistrictId.value = null;
+  selectedCityId.value = null;
+});
+
+watch(selectedDistrictId, (newValue) => {
+  territoryStore.selectDistrict(newValue);
+  selectedCityId.value = null;
+});
+
+watch(selectedCityId, (newValue) => {
+  territoryStore.selectCity(newValue);
+});
+
+// Watch for hotspot data loading to initialize timers
+watch(
+  () => territoryStore.hotspots,
+  (newHotspots) => {
+    if (newHotspots.length > 0) {
+      cleanupHotspotTimers();
+      console.log('Hotspots loaded, initializing timers...');
+      startHotspotTimers();
+    }
+  },
+  { deep: true }
+);
+
+// Helper functions
+function formatNumber(value: number): string {
+  if (value >= 1000000) {
+    return (value / 1000000).toFixed(1) + 'M';
+  } else if (value >= 1000) {
+    return (value / 1000).toFixed(1) + 'K';
+  }
+  return value.toString();
+}
+
+function isPlayerControlled(hotspot: Hotspot): boolean {
+  return hotspot.controller === playerStore.profile?.id;
+}
+
+function isRivalControlled(hotspot: Hotspot): boolean {
+  return hotspot.controller !== null && hotspot.controller !== '1';
+}
+
+function getHotspotStatus(hotspot: Hotspot): string {
+  if (!hotspot.isLegal) {
+    return 'Illegal Business';
+  }
+
+  if (isPlayerControlled(hotspot)) {
+    return 'Controlled by You';
+  }
+
+  if (hotspot.controller) {
+    return `Controlled by ${hotspot.controllerName || 'Rival'}`;
+  }
+
+  return 'Uncontrolled';
+}
+
+function getHotspotLocation(hotspot: Hotspot, detailed: boolean = false): string {
+  const city = cities.value.find(c => c.id === hotspot.cityId);
+  if (!city) return 'Unknown';
+
+  if (!detailed) return city.name;
+
+  const district = districts.value.find(d => d.id === city.districtId);
+  if (!district) return city.name;
+
+  const region = regions.value.find(r => r.id === district.regionId);
+  if (!region) return `${city.name}, ${district.name}`;
+
+  return `${city.name}, ${district.name}, ${region.name}`;
+}
+
+function getHotspotName(hotspotId: string): string {
+  const hotspot = hotspots.value.find(h => h.id === hotspotId);
+  return hotspot ? hotspot.name : 'Unknown Business';
+}
+
+function getDefenseClass(defense: number): string {
+  if (defense >= 80) return 'high';
+  if (defense >= 40) return 'medium';
+  return 'low';
+}
+
+function getDefenseLabel(defense: number): string {
+  if (defense >= 80) return 'Strong';
+  if (defense >= 40) return 'Medium';
+  return 'Weak';
+}
+
+function getSuccessChanceClass(chance: number): string {
+  if (chance >= 70) return 'high';
+  if (chance >= 40) return 'medium';
+  return 'low';
+}
+
+function getActionTypeLabel(actionType: TerritoryActionType | null): string {
+  switch (actionType) {
+    case TerritoryActionType.EXTORTION:
+      return 'Extortion';
+    case TerritoryActionType.TAKEOVER:
+      return 'Takeover';
+    case TerritoryActionType.COLLECTION:
+      return 'Collection';
+    case TerritoryActionType.DEFEND:
+      return 'Defense';
+    default:
+      return 'Action';
+  }
+}
+
+function getActionIcon(actionType: TerritoryActionType | null): string {
+  switch (actionType) {
+    case TerritoryActionType.EXTORTION:
+      return '💰';
+    case TerritoryActionType.TAKEOVER:
+      return '🏢';
+    case TerritoryActionType.COLLECTION:
+      return '💼';
+    case TerritoryActionType.DEFEND:
+      return '🛡️';
+    default:
+      return '❓';
+  }
+}
+
+function getActionButtonLabel(actionType: TerritoryActionType | null): string {
+  switch (actionType) {
+    case TerritoryActionType.EXTORTION:
+      return 'Extort';
+    case TerritoryActionType.TAKEOVER:
+      return 'Take Over';
+    case TerritoryActionType.COLLECTION:
+      return 'Collect';
+    case TerritoryActionType.DEFEND:
+      return 'Defend';
+    default:
+      return 'Execute';
+  }
+}
+
+function getActionDescription(actionType: TerritoryActionType | null, hotspot: Hotspot | null): string {
+  if (!actionType || !hotspot) return '';
+
+  switch (actionType) {
+    case TerritoryActionType.EXTORTION:
+      return 'Extort money from this illegal business. This will generate income but increases heat, potentially attracting law enforcement attention.';
+
+    case TerritoryActionType.TAKEOVER:
+      if (hotspot.controller) {
+        return `Attempt to take control of this business from ${isRivalControlled(hotspot) ? hotspot.controllerName : 'its current owner'}. Higher resource allocation increases your chance of success.`;
+      } else {
+        return 'Take control of this unowned business. Even uncontrolled businesses require some resources to take over.';
+      }
+
+    case TerritoryActionType.COLLECTION:
+      return `Collect $${formatNumber(hotspot.pendingCollection)} in accumulated income. Larger collections may require more resources and could attract attention.`;
+
+    case TerritoryActionType.DEFEND:
+      return 'Allocate resources to strengthen this business against rival takeover attempts. Resources assigned here are at risk if rivals attempt a takeover.';
+
+    default:
+      return '';
+  }
+}
+
+function getPotentialReward(actionType: TerritoryActionType | null, hotspot: Hotspot | null): number {
+  if (!actionType || !hotspot) return 0;
+
+  switch (actionType) {
+    case TerritoryActionType.EXTORTION:
+      // Extortion rewards are based on the illegal business income with some variance
+      return Math.round(hotspot.income * 3);
+
+    case TerritoryActionType.COLLECTION:
+      return hotspot.pendingCollection;
+
+    default:
+      return 0;
+  }
+}
+
+function getPotentialHeat(actionType: TerritoryActionType | null): number {
+  if (!actionType) return 0;
+
+  switch (actionType) {
+    case TerritoryActionType.EXTORTION:
+      return 5;
+    case TerritoryActionType.TAKEOVER:
+      return 3;
+    case TerritoryActionType.COLLECTION:
+      return 1;
+    default:
+      return 0;
+  }
+}
+
+function formatTimeAgo(timestamp: string): string {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSec = Math.round(diffMs / 1000);
+  const diffMin = Math.round(diffSec / 60);
+  const diffHour = Math.round(diffMin / 60);
+  const diffDay = Math.round(diffHour / 24);
+
+  if (diffSec < 60) {
+    return 'just now';
+  } else if (diffMin < 60) {
+    return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
+  } else if (diffHour < 24) {
+    return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`;
+  } else {
+    return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
+  }
+}
+
+// Action functions
+function selectHotspot(hotspot: Hotspot) {
+  territoryStore.selectHotspot(hotspot.id);
+  selectedHotspot.value = hotspot;
+}
+
+function openActionModal(hotspot: Hotspot, action: TerritoryActionType) {
+  selectHotspot(hotspot);
+  selectedAction.value = action;
+
+  // Set default resource allocation based on action type
+  switch (action) {
+    case TerritoryActionType.EXTORTION:
+      actionResources.value = {
+        crew: Math.min(2, availableCrew.value),
+        weapons: Math.min(1, availableWeapons.value),
+        vehicles: Math.min(1, availableVehicles.value)
+      };
+      break;
+    case TerritoryActionType.TAKEOVER:
+      actionResources.value = {
+        crew: Math.min(3, availableCrew.value),
+        weapons: Math.min(2, availableWeapons.value),
+        vehicles: Math.min(1, availableVehicles.value)
+      };
+      break;
+    case TerritoryActionType.COLLECTION:
+      actionResources.value = {
+        crew: Math.min(1, availableCrew.value),
+        weapons: 0,
+        vehicles: 0
+      };
+      break;
+    case TerritoryActionType.DEFEND:
+      actionResources.value = {
+        crew: Math.min(2, availableCrew.value),
+        weapons: Math.min(1, availableWeapons.value),
+        vehicles: 0
+      };
+      break;
+  }
+
+  showActionModal.value = true;
+}
+
+function closeActionModal() {
+  showActionModal.value = false;
+  selectedAction.value = null;
+  actionResources.value = { crew: 0, weapons: 0, vehicles: 0 };
+}
+
+async function performAction() {
+  if (!selectedHotspot.value || !selectedAction.value || isPerformingAction.value) return;
+
+  isPerformingAction.value = true;
+
+  try {
+    const result = await territoryStore.performTerritoryAction(
+      selectedAction.value,
+      selectedHotspot.value.id,
+      actionResources.value
+    );
+
+    if (result) {
+      actionResult.value = result;
+      actionSuccess.value = result.success;
+
+      // Close action modal and show result
+      showActionModal.value = false;
+      showResultModal.value = true;
+    }
+  } catch (error) {
+    console.error('Error performing territory action:', error);
+  } finally {
+    isPerformingAction.value = false;
+  }
+}
+
+function closeResultModal() {
+  showResultModal.value = false;
+
+  // Reset action resources
+  actionResources.value = { crew: 0, weapons: 0, vehicles: 0 };
+
+  // Refresh data
+  territoryStore.updateFilteredHotspots();
+}
+
+async function collectAllPending() {
+  if (isCollecting.value || collectableBusinesses.value.length === 0) return;
+
+  isCollecting.value = true;
+
+  try {
+    const result = await playerStore.collectAllPending();
+
+    if (result) {
+      // Update the pending collection amounts in hotspots
+      for (const hotspot of controlledHotspots.value) {
+        if (hotspot.pendingCollection > 0) {
+          hotspot.pendingCollection = 0;
+        }
+      }
+
+      // Show a success notification or message
+      actionResult.value = {
+        success: true,
+        moneyGained: result.collectedAmount,
+        message: `Successfully collected $${formatNumber(result.collectedAmount)} from all your businesses.`
+      };
+
+      actionSuccess.value = true;
+      showResultModal.value = true;
+    }
+  } catch (error) {
+    console.error('Error collecting all pending resources:', error);
+  } finally {
+    isCollecting.value = false;
+  }
+}
+
+function resetFilters() {
+  selectedRegionId.value = null;
+  selectedDistrictId.value = null;
+  selectedCityId.value = null;
+  businessFilter.value = 'all';
+  territoryStore.selectRegion(null);
+}
+
+// Filter change handlers
+function onRegionChange() {
+  territoryStore.selectRegion(selectedRegionId.value);
+}
+
+function onDistrictChange() {
+  territoryStore.selectDistrict(selectedDistrictId.value);
+}
+
+function onCityChange() {
+  territoryStore.selectCity(selectedCityId.value);
+}
+
+function navigateToTab(tab: 'empire' | 'explore' | 'recent') {
+  router.push({ path: '/territory', query: { tab } })
+}
+
+// State for tracking which hotspot is being collected
+const collectingHotspotId = ref<string | null>(null);
+
+// Helper function to format time remaining until next income
+function formatTimeRemaining(hotspotId: string): string {
+  if (hotspotTimers.value[hotspotId]) {
+    return hotspotTimers.value[hotspotId].remainingTime;
+  }
+  return 'Initializing...';
+  // return hotspotTimers.value[hotspotId].remainingTime;
+}
+
+// Function to collect income from a specific hotspot
+async function collectHotspotIncome(hotspotId: string) {
+  if (collectingHotspotId.value === hotspotId) return;
+
+  collectingHotspotId.value = hotspotId;
+
+  try {
+    const result = await territoryStore.collectHotspotIncome(hotspotId);
+
+    if (result) {
+      // Show result modal
+      actionResult.value = {
+        success: true,
+        moneyGained: result.collectedAmount,
+        message: result.message
+      };
+
+      actionSuccess.value = true;
+      showResultModal.value = true;
+    }
+  } catch (error) {
+    console.error('Error collecting hotspot income:', error);
+  } finally {
+    collectingHotspotId.value = null;
+  }
+}
+
+// Function to calculate the remaining time as a formatted string
+function calculateRemainingTime(nextIncomeTimeISO: string | undefined): string {
+  if (!nextIncomeTimeISO) {
+    return 'Unable to calculate remaining time...';
+  }
+
+  try {
+    const now = new Date();
+    const nextIncomeTime = new Date(nextIncomeTimeISO);
+    
+    // console.log('Time: ', now, " | Next income time: ", nextIncomeTimeISO)
+
+    // Check for invalid date
+    if (isNaN(nextIncomeTime.getTime())) {
+      return 'Initializing...';
+    }
+
+    // Calculate time difference in milliseconds
+    const diffMs = nextIncomeTime.getTime() - now.getTime();
+
+    // If next income time has already passed, return "Now"
+    if (diffMs <= 0) {
+      return 'Now';
+    }
+
+    // Calculate hours, minutes, and seconds
+    const diffSec = Math.floor(diffMs / 1000);
+    const hours = Math.floor(diffSec / 3600);
+    const minutes = Math.floor((diffSec % 3600) / 60);
+    const seconds = diffSec % 60;
+
+    // Format the time remaining
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${seconds}s`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${seconds}s`;
+    } else {
+      return `${seconds}s`;
+    }
+  } catch (error) {
+    console.error('Error calculating remaining time:', error, nextIncomeTimeISO);
+    return 'Error';
+  }
+}
+
+function isIncomeSoon(hotspotId: string): boolean {
+  if (!hotspotTimers.value[hotspotId]) {
+    return false;
+  }
+
+  // Parse the remaining time to check if it's less than 5 minutes
+  const timeStr = hotspotTimers.value[hotspotId].remainingTime;
+
+  // If it's "Now", it's definitely soon
+  if (timeStr === 'Now') {
+    return true;
+  }
+
+  // If it contains hours, it's not soon
+  if (timeStr.includes('h')) {
+    return false;
+  }
+
+  // Check if it's just minutes and seconds
+  if (timeStr.includes('m')) {
+    const minutes = parseInt(timeStr.split('m')[0]);
+    return minutes < 5; // Less than 5 minutes is considered "soon"
+  }
+
+  // If it's just seconds, it's definitely soon
+  return true;
+}
+
+// Reactive variables for timer management
+const hotspotTimers = ref<{ [hotspotId: string]: { remainingTime: string } }>({});
+let timerInterval: number | null = null;
+
+// Separate initialization function that can be called both on mount and data load
+function initializeHotspotTimers() {
+  // Clear existing timers
+  hotspotTimers.value = {};
+  
+  // Initialize timers for all controlled hotspots
+  controlledHotspots.value.forEach(hotspot => {
+    if (hotspot.lastIncomeTime) {
+      // If we don't have nextIncomeTime but have lastIncomeTime, calculate it
+      try {
+        const lastTime = new Date(hotspot.lastIncomeTime);
+        if (!isNaN(lastTime.getTime())) {
+          // Calculate next income time as 1 hour after last income
+          const calculatedNextTime = new Date(lastTime.getTime() + 60 * 60 * 1000);
+
+          // Use the calculated next time for the timer
+          hotspotTimers.value[hotspot.id] = {
+            remainingTime: calculateRemainingTime(calculatedNextTime.toISOString())
+          };
+        }
+      } catch (e) {
+        console.error(`Error calculating nextIncomeTime from lastIncomeTime for hotspot ${hotspot.id}:`, e);
+        hotspotTimers.value[hotspot.id] = {
+          remainingTime: 'Error'
+        };
+      }
+    } else {
+      // No timing data available
+      hotspotTimers.value[hotspot.id] = {
+        remainingTime: 'Initializing...'
+      };
+    }
+  });
+}
+
+// Function to start hotspot timers
+function startHotspotTimers() {
+  // Initialize timers first
+  initializeHotspotTimers();
+
+  // Clear any existing interval
+  if (timerInterval !== null) {
+    clearInterval(timerInterval);
+  }
+
+  // Update the timer every second
+  timerInterval = window.setInterval(() => {
+    controlledHotspots.value.forEach(hotspot => {
+      if (hotspotTimers.value[hotspot.id]) {
+        hotspotTimers.value[hotspot.id].remainingTime = calculateRemainingTime(hotspot.nextIncomeTime);
+      } else {
+        // If a timer doesn't exist yet (new hotspot), initialize it
+        if (hotspot.nextIncomeTime) {
+          hotspotTimers.value[hotspot.id] = {
+            remainingTime: calculateRemainingTime(hotspot.nextIncomeTime)
+          };
+        }
+      }
+    });
+  }, 1000); // Update every second
+}
+
+// Function to cleanup hotspot timers
+function cleanupHotspotTimers() {
+  if (timerInterval !== null) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+    console.log('Timer interval cleanup');
+  }
+}
+
+// OnMounted hook
+onMounted(async () => {
+  isLoading.value = true;
+
+  if (!playerStore.profile) {
+    await playerStore.fetchProfile();
+  }
+
+  if (territoryStore.regions.length === 0) {
+    await territoryStore.fetchTerritoryData();
+  }
+
+  if (territoryStore.recentActions.length === 0) {
+    await territoryStore.fetchRecentActions();
+  }
+
+  isLoading.value = false;
+
+  // Start the hotspot timers
+  startHotspotTimers();
+});
+
+// Set up cleanup on component unmount
+onBeforeUnmount(() => {
+  cleanupHotspotTimers();
+});
+</script>
+
 <template>
   <div class="territory-view">
     <div class="page-header">
@@ -689,847 +1533,6 @@
     </BaseModal>
   </div>
 </template>
-
-<script setup lang="ts">
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import BaseButton from '@/components/ui/BaseButton.vue';
-import BaseModal from '@/components/ui/BaseModal.vue';
-import { usePlayerStore } from '@/stores/modules/player';
-import { useTerritoryStore } from '@/stores/modules/territory';
-import {
-  Hotspot,
-  TerritoryActionType,
-  ActionResources,
-  ActionResult,
-  TerritoryAction
-} from '@/types/territory';
-
-const route = useRoute();
-const router = useRouter();
-
-const playerStore = usePlayerStore();
-const territoryStore = useTerritoryStore();
-
-// View state
-const activeTab = computed(() => route.query.tab as string || 'empire');
-const viewMode = ref<'grid' | 'map'>('grid');
-const isLoading = ref(false);
-const isCollecting = ref(false);
-
-// Filters
-const selectedRegionId = ref<string | null>(null);
-const selectedDistrictId = ref<string | null>(null);
-const selectedCityId = ref<string | null>(null);
-const businessFilter = ref<'all' | 'legal' | 'illegal'>('all');
-const empireSortBy = ref<'name' | 'income' | 'pending' | 'defense' | 'region'>('income');
-
-// Action modal
-const showActionModal = ref(false);
-const selectedHotspot = ref<Hotspot | null>(null);
-const selectedAction = ref<TerritoryActionType | null>(null);
-const actionResources = ref<ActionResources>({
-  crew: 0,
-  weapons: 0,
-  vehicles: 0
-});
-const isPerformingAction = ref(false);
-
-// Result modal
-const showResultModal = ref(false);
-const actionResult = ref<ActionResult | null>(null);
-const actionSuccess = ref(false);
-
-// Computed properties
-const regions = computed(() => territoryStore.regions);
-const districts = computed(() => territoryStore.districts);
-const cities = computed(() => territoryStore.cities);
-const hotspots = computed(() => territoryStore.hotspots);
-const recentActions = computed(() => territoryStore.recentActions);
-
-const filteredDistricts = computed(() => {
-  if (!selectedRegionId.value) return [];
-  return districts.value.filter(d => d.regionId === selectedRegionId.value);
-});
-
-const filteredCities = computed(() => {
-  if (!selectedDistrictId.value) return [];
-  return cities.value.filter(c => c.districtId === selectedDistrictId.value);
-});
-
-const displayedHotspots = computed(() => {
-  let result = [...territoryStore.filteredHotspots];
-
-  // Apply business type filter
-  if (businessFilter.value === 'legal') {
-    result = result.filter(h => h.isLegal);
-  } else if (businessFilter.value === 'illegal') {
-    result = result.filter(h => !h.isLegal);
-  }
-
-  return result;
-});
-
-// Controlled hotspots
-const controlledHotspots = computed(() => {
-  return hotspots.value.filter(h => isPlayerControlled(h));
-});
-
-const sortedControlledHotspots = computed(() => {
-  const result = [...controlledHotspots.value];
-
-  switch (empireSortBy.value) {
-    case 'name':
-      return result.sort((a, b) => a.name.localeCompare(b.name));
-    case 'income':
-      return result.sort((a, b) => b.income - a.income);
-    case 'pending':
-      return result.sort((a, b) => b.pendingCollection - a.pendingCollection);
-    case 'defense':
-      return result.sort((a, b) => b.defenseStrength - a.defenseStrength);
-    case 'region':
-      return result.sort((a, b) => {
-        const cityA = cities.value.find(c => c.id === a.cityId);
-        const cityB = cities.value.find(c => c.id === b.cityId);
-
-        if (!cityA || !cityB) return 0;
-
-        const districtA = districts.value.find(d => d.id === cityA.districtId);
-        const districtB = districts.value.find(d => d.id === cityB.districtId);
-
-        if (!districtA || !districtB) return 0;
-
-        const regionA = regions.value.find(r => r.id === districtA.regionId);
-        const regionB = regions.value.find(r => r.id === districtB.regionId);
-
-        if (!regionA || !regionB) return 0;
-
-        return regionA.name.localeCompare(regionB.name);
-      });
-    default:
-      return result;
-  }
-});
-
-const collectableBusinesses = computed(() => {
-  return controlledHotspots.value.filter(h => h.pendingCollection > 0);
-});
-
-const hasCollectableBusiness = computed(() => {
-  return collectableBusinesses.value.length > 0;
-});
-
-// Regional distribution
-const regionsWithControlledHotspots = computed(() => {
-  const result = [];
-
-  for (const region of regions.value) {
-    const districtsInRegion = districts.value.filter(d => d.regionId === region.id);
-    const districtIds = districtsInRegion.map(d => d.id);
-
-    const citiesInRegion = cities.value.filter(c => districtIds.includes(c.districtId));
-    const cityIds = citiesInRegion.map(c => c.id);
-
-    const hotspotsInRegion = hotspots.value.filter(h => cityIds.includes(h.cityId));
-    const legalBusinessesInRegion = hotspotsInRegion.filter(h => h.isLegal);
-    const controlledHotspotsInRegion = legalBusinessesInRegion.filter(h => isPlayerControlled(h));
-
-    if (legalBusinessesInRegion.length > 0) {
-      result.push({
-        id: region.id,
-        name: region.name,
-        controlled: controlledHotspotsInRegion.length,
-        total: legalBusinessesInRegion.length,
-        controlPercentage: Math.round((controlledHotspotsInRegion.length / legalBusinessesInRegion.length) * 100)
-      });
-    }
-  }
-
-  return result.sort((a, b) => b.controlPercentage - a.controlPercentage);
-});
-
-// Player resources
-const availableCrew = computed(() => playerStore.playerCrew);
-const availableWeapons = computed(() => playerStore.playerWeapons);
-const availableVehicles = computed(() => playerStore.playerVehicles);
-
-// Computed properties for modals
-const actionModalTitle = computed(() => {
-  if (!selectedHotspot.value) return 'Territory Action';
-
-  switch (selectedAction.value) {
-    case TerritoryActionType.EXTORTION:
-      return 'Extortion Operation';
-    case TerritoryActionType.TAKEOVER:
-      return 'Business Takeover';
-    case TerritoryActionType.COLLECTION:
-      return 'Resource Collection';
-    case TerritoryActionType.DEFEND:
-      return 'Defense Allocation';
-    default:
-      return `${selectedHotspot.value.name}`;
-  }
-});
-
-const resultModalTitle = computed(() => {
-  return actionSuccess.value ? 'Operation Successful' : 'Operation Failed';
-});
-
-// Success chance calculation
-const successChance = computed(() => {
-  if (!selectedHotspot.value || !selectedAction.value) return 0;
-
-  // Base chance depends on action type
-  let baseChance = 50;
-
-  switch (selectedAction.value) {
-    case TerritoryActionType.EXTORTION:
-      baseChance = 70;
-      break;
-    case TerritoryActionType.TAKEOVER:
-      // Harder if already controlled - factor in defense strength
-      if (selectedHotspot.value.controller) {
-        baseChance = Math.max(30, 60 - Math.floor(selectedHotspot.value.defenseStrength / 2));
-      } else {
-        baseChance = 70;
-      }
-      break;
-    case TerritoryActionType.COLLECTION:
-      // Base chance high, but decreases with higher collection amounts
-      const pendingAmount = selectedHotspot.value.pendingCollection;
-      baseChance = Math.max(50, 90 - Math.floor(pendingAmount / 1000));
-      break;
-    case TerritoryActionType.DEFEND:
-      baseChance = 100; // Always succeeds
-      break;
-  }
-
-  // Adjust based on resources
-  const resourceFactor = Math.min(1.5, (
-    (actionResources.value.crew * 10) +
-    (actionResources.value.weapons * 15) +
-    (actionResources.value.vehicles * 20)
-  ) / 100);
-
-  let chance = Math.round(baseChance * resourceFactor);
-
-  // Cap between 5% and 95%
-  return Math.max(5, Math.min(95, chance));
-});
-
-const actionWarning = computed(() => {
-  if (!selectedAction.value || !selectedHotspot.value) return '';
-
-  if (successChance.value < 30) {
-    return 'This operation has a very low chance of success. Consider allocating more resources.';
-  }
-
-  switch (selectedAction.value) {
-    case TerritoryActionType.TAKEOVER:
-      if (selectedHotspot.value.controller) {
-        return 'This business is controlled by a rival. Takeover attempts may lead to retaliation.';
-      }
-      break;
-    case TerritoryActionType.EXTORTION:
-      return 'Extortion generates heat, which can attract law enforcement attention.';
-      break;
-    case TerritoryActionType.COLLECTION:
-      if (selectedHotspot.value.pendingCollection > 5000) {
-        return 'Large collection amounts may attract unwanted attention and generate heat.';
-      }
-      break;
-  }
-
-  return '';
-});
-
-const canPerformAction = computed(() => {
-  return selectedHotspot.value !== null &&
-    selectedAction.value !== null &&
-    (actionResources.value.crew > 0 ||
-      actionResources.value.weapons > 0 ||
-      actionResources.value.vehicles > 0);
-});
-
-// Watch for filter changes
-watch(selectedRegionId, (newValue) => {
-  territoryStore.selectRegion(newValue);
-  selectedDistrictId.value = null;
-  selectedCityId.value = null;
-});
-
-watch(selectedDistrictId, (newValue) => {
-  territoryStore.selectDistrict(newValue);
-  selectedCityId.value = null;
-});
-
-watch(selectedCityId, (newValue) => {
-  territoryStore.selectCity(newValue);
-});
-
-// Watch for hotspot data loading to initialize timers
-watch(
-  () => territoryStore.hotspots,
-  (newHotspots) => {
-    if (newHotspots.length > 0) {
-      console.log('Hotspots loaded, initializing timers...');
-      initializeHotspotTimers();
-    }
-  },
-  { deep: true }
-);
-
-// Helper functions
-function formatNumber(value: number): string {
-  if (value >= 1000000) {
-    return (value / 1000000).toFixed(1) + 'M';
-  } else if (value >= 1000) {
-    return (value / 1000).toFixed(1) + 'K';
-  }
-  return value.toString();
-}
-
-function isPlayerControlled(hotspot: Hotspot): boolean {
-  // In the real implementation, we would compare with actual player ID
-  return hotspot.controller === playerStore.profile?.id;
-}
-
-function isRivalControlled(hotspot: Hotspot): boolean {
-  return hotspot.controller !== null && hotspot.controller !== '1';
-}
-
-function getHotspotStatus(hotspot: Hotspot): string {
-  if (!hotspot.isLegal) {
-    return 'Illegal Business';
-  }
-
-  if (isPlayerControlled(hotspot)) {
-    return 'Controlled by You';
-  }
-
-  if (hotspot.controller) {
-    return `Controlled by ${hotspot.controllerName || 'Rival'}`;
-  }
-
-  return 'Uncontrolled';
-}
-
-function getHotspotLocation(hotspot: Hotspot, detailed: boolean = false): string {
-  const city = cities.value.find(c => c.id === hotspot.cityId);
-  if (!city) return 'Unknown';
-
-  if (!detailed) return city.name;
-
-  const district = districts.value.find(d => d.id === city.districtId);
-  if (!district) return city.name;
-
-  const region = regions.value.find(r => r.id === district.regionId);
-  if (!region) return `${city.name}, ${district.name}`;
-
-  return `${city.name}, ${district.name}, ${region.name}`;
-}
-
-function getHotspotName(hotspotId: string): string {
-  const hotspot = hotspots.value.find(h => h.id === hotspotId);
-  return hotspot ? hotspot.name : 'Unknown Business';
-}
-
-function getDefenseClass(defense: number): string {
-  if (defense >= 80) return 'high';
-  if (defense >= 40) return 'medium';
-  return 'low';
-}
-
-function getDefenseLabel(defense: number): string {
-  if (defense >= 80) return 'Strong';
-  if (defense >= 40) return 'Medium';
-  return 'Weak';
-}
-
-function getSuccessChanceClass(chance: number): string {
-  if (chance >= 70) return 'high';
-  if (chance >= 40) return 'medium';
-  return 'low';
-}
-
-function getActionTypeLabel(actionType: TerritoryActionType | null): string {
-  switch (actionType) {
-    case TerritoryActionType.EXTORTION:
-      return 'Extortion';
-    case TerritoryActionType.TAKEOVER:
-      return 'Takeover';
-    case TerritoryActionType.COLLECTION:
-      return 'Collection';
-    case TerritoryActionType.DEFEND:
-      return 'Defense';
-    default:
-      return 'Action';
-  }
-}
-
-function getActionIcon(actionType: TerritoryActionType | null): string {
-  switch (actionType) {
-    case TerritoryActionType.EXTORTION:
-      return '💰';
-    case TerritoryActionType.TAKEOVER:
-      return '🏢';
-    case TerritoryActionType.COLLECTION:
-      return '💼';
-    case TerritoryActionType.DEFEND:
-      return '🛡️';
-    default:
-      return '❓';
-  }
-}
-
-function getActionButtonLabel(actionType: TerritoryActionType | null): string {
-  switch (actionType) {
-    case TerritoryActionType.EXTORTION:
-      return 'Extort';
-    case TerritoryActionType.TAKEOVER:
-      return 'Take Over';
-    case TerritoryActionType.COLLECTION:
-      return 'Collect';
-    case TerritoryActionType.DEFEND:
-      return 'Defend';
-    default:
-      return 'Execute';
-  }
-}
-
-function getActionDescription(actionType: TerritoryActionType | null, hotspot: Hotspot | null): string {
-  if (!actionType || !hotspot) return '';
-
-  switch (actionType) {
-    case TerritoryActionType.EXTORTION:
-      return 'Extort money from this illegal business. This will generate income but increases heat, potentially attracting law enforcement attention.';
-
-    case TerritoryActionType.TAKEOVER:
-      if (hotspot.controller) {
-        return `Attempt to take control of this business from ${isRivalControlled(hotspot) ? hotspot.controllerName : 'its current owner'}. Higher resource allocation increases your chance of success.`;
-      } else {
-        return 'Take control of this unowned business. Even uncontrolled businesses require some resources to take over.';
-      }
-
-    case TerritoryActionType.COLLECTION:
-      return `Collect $${formatNumber(hotspot.pendingCollection)} in accumulated income. Larger collections may require more resources and could attract attention.`;
-
-    case TerritoryActionType.DEFEND:
-      return 'Allocate resources to strengthen this business against rival takeover attempts. Resources assigned here are at risk if rivals attempt a takeover.';
-
-    default:
-      return '';
-  }
-}
-
-function getPotentialReward(actionType: TerritoryActionType | null, hotspot: Hotspot | null): number {
-  if (!actionType || !hotspot) return 0;
-
-  switch (actionType) {
-    case TerritoryActionType.EXTORTION:
-      // Extortion rewards are based on the illegal business income with some variance
-      return Math.round(hotspot.income * 3);
-
-    case TerritoryActionType.COLLECTION:
-      return hotspot.pendingCollection;
-
-    default:
-      return 0;
-  }
-}
-
-function getPotentialHeat(actionType: TerritoryActionType | null): number {
-  if (!actionType) return 0;
-
-  switch (actionType) {
-    case TerritoryActionType.EXTORTION:
-      return 5;
-    case TerritoryActionType.TAKEOVER:
-      return 3;
-    case TerritoryActionType.COLLECTION:
-      return 1;
-    default:
-      return 0;
-  }
-}
-
-function formatTimeAgo(timestamp: string): string {
-  const date = new Date(timestamp);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffSec = Math.round(diffMs / 1000);
-  const diffMin = Math.round(diffSec / 60);
-  const diffHour = Math.round(diffMin / 60);
-  const diffDay = Math.round(diffHour / 24);
-
-  if (diffSec < 60) {
-    return 'just now';
-  } else if (diffMin < 60) {
-    return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
-  } else if (diffHour < 24) {
-    return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`;
-  } else {
-    return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
-  }
-}
-
-// Action functions
-function selectHotspot(hotspot: Hotspot) {
-  territoryStore.selectHotspot(hotspot.id);
-  selectedHotspot.value = hotspot;
-}
-
-function openActionModal(hotspot: Hotspot, action: TerritoryActionType) {
-  selectHotspot(hotspot);
-  selectedAction.value = action;
-
-  // Set default resource allocation based on action type
-  switch (action) {
-    case TerritoryActionType.EXTORTION:
-      actionResources.value = {
-        crew: Math.min(2, availableCrew.value),
-        weapons: Math.min(1, availableWeapons.value),
-        vehicles: Math.min(1, availableVehicles.value)
-      };
-      break;
-    case TerritoryActionType.TAKEOVER:
-      actionResources.value = {
-        crew: Math.min(3, availableCrew.value),
-        weapons: Math.min(2, availableWeapons.value),
-        vehicles: Math.min(1, availableVehicles.value)
-      };
-      break;
-    case TerritoryActionType.COLLECTION:
-      actionResources.value = {
-        crew: Math.min(1, availableCrew.value),
-        weapons: 0,
-        vehicles: 0
-      };
-      break;
-    case TerritoryActionType.DEFEND:
-      actionResources.value = {
-        crew: Math.min(2, availableCrew.value),
-        weapons: Math.min(1, availableWeapons.value),
-        vehicles: 0
-      };
-      break;
-  }
-
-  showActionModal.value = true;
-}
-
-function closeActionModal() {
-  showActionModal.value = false;
-  selectedAction.value = null;
-  actionResources.value = { crew: 0, weapons: 0, vehicles: 0 };
-}
-
-async function performAction() {
-  if (!selectedHotspot.value || !selectedAction.value || isPerformingAction.value) return;
-
-  isPerformingAction.value = true;
-
-  try {
-    const result = await territoryStore.performTerritoryAction(
-      selectedAction.value,
-      selectedHotspot.value.id,
-      actionResources.value
-    );
-
-    if (result) {
-      actionResult.value = result;
-      actionSuccess.value = result.success;
-
-      // Close action modal and show result
-      showActionModal.value = false;
-      showResultModal.value = true;
-    }
-  } catch (error) {
-    console.error('Error performing territory action:', error);
-  } finally {
-    isPerformingAction.value = false;
-  }
-}
-
-function closeResultModal() {
-  showResultModal.value = false;
-
-  // Reset action resources
-  actionResources.value = { crew: 0, weapons: 0, vehicles: 0 };
-
-  // Refresh data
-  territoryStore.updateFilteredHotspots();
-}
-
-async function collectAllPending() {
-  if (isCollecting.value || collectableBusinesses.value.length === 0) return;
-
-  isCollecting.value = true;
-
-  try {
-    const result = await playerStore.collectAllPending();
-
-    if (result) {
-      // Update the pending collection amounts in hotspots
-      for (const hotspot of controlledHotspots.value) {
-        if (hotspot.pendingCollection > 0) {
-          hotspot.pendingCollection = 0;
-        }
-      }
-
-      // Show a success notification or message
-      actionResult.value = {
-        success: true,
-        moneyGained: result.collectedAmount,
-        message: `Successfully collected $${formatNumber(result.collectedAmount)} from all your businesses.`
-      };
-
-      actionSuccess.value = true;
-      showResultModal.value = true;
-    }
-  } catch (error) {
-    console.error('Error collecting all pending resources:', error);
-  } finally {
-    isCollecting.value = false;
-  }
-}
-
-function resetFilters() {
-  selectedRegionId.value = null;
-  selectedDistrictId.value = null;
-  selectedCityId.value = null;
-  businessFilter.value = 'all';
-  territoryStore.selectRegion(null);
-}
-
-// Filter change handlers
-function onRegionChange() {
-  territoryStore.selectRegion(selectedRegionId.value);
-}
-
-function onDistrictChange() {
-  territoryStore.selectDistrict(selectedDistrictId.value);
-}
-
-function onCityChange() {
-  territoryStore.selectCity(selectedCityId.value);
-}
-
-function navigateToTab(tab: 'empire' | 'explore' | 'recent') {
-  router.push({ path: '/territory', query: { tab } })
-}
-
-// State for tracking which hotspot is being collected
-const collectingHotspotId = ref<string | null>(null);
-
-// Helper function to format time remaining until next income
-function formatTimeRemaining(hotspotId: string): string {
-  if (hotspotTimers.value[hotspotId]) {
-    return hotspotTimers.value[hotspotId].remainingTime;
-  }
-  return 'Initializing...';
-  // return hotspotTimers.value[hotspotId].remainingTime;
-}
-
-// Function to collect income from a specific hotspot
-async function collectHotspotIncome(hotspotId: string) {
-  if (collectingHotspotId.value === hotspotId) return;
-
-  collectingHotspotId.value = hotspotId;
-
-  try {
-    const result = await territoryStore.collectHotspotIncome(hotspotId);
-
-    if (result) {
-      // Show result modal
-      actionResult.value = {
-        success: true,
-        moneyGained: result.collectedAmount,
-        message: result.message
-      };
-
-      actionSuccess.value = true;
-      showResultModal.value = true;
-    }
-  } catch (error) {
-    console.error('Error collecting hotspot income:', error);
-  } finally {
-    collectingHotspotId.value = null;
-  }
-}
-
-// Function to calculate the remaining time as a formatted string
-function calculateRemainingTime(nextIncomeTimeISO: string | undefined): string {
-  if (!nextIncomeTimeISO) {
-    return 'Unable to calculate remaining time...';
-  }
-
-  try {
-    const now = new Date();
-    const nextIncomeTime = new Date(nextIncomeTimeISO);
-    
-    // console.log('Time: ', now, " | Next income time: ", nextIncomeTimeISO)
-
-    // Check for invalid date
-    if (isNaN(nextIncomeTime.getTime())) {
-      return 'Initializing...';
-    }
-
-    // Calculate time difference in milliseconds
-    const diffMs = nextIncomeTime.getTime() - now.getTime();
-
-    // If next income time has already passed, return "Now"
-    if (diffMs <= 0) {
-      return 'Now';
-    }
-
-    // Calculate hours, minutes, and seconds
-    const diffSec = Math.floor(diffMs / 1000);
-    const hours = Math.floor(diffSec / 3600);
-    const minutes = Math.floor((diffSec % 3600) / 60);
-    const seconds = diffSec % 60;
-
-    // Format the time remaining
-    if (hours > 0) {
-      return `${hours}h ${minutes}m ${seconds}s`;
-    } else if (minutes > 0) {
-      return `${minutes}m ${seconds}s`;
-    } else {
-      return `${seconds}s`;
-    }
-  } catch (error) {
-    console.error('Error calculating remaining time:', error, nextIncomeTimeISO);
-    return 'Error';
-  }
-}
-
-function isIncomeSoon(hotspotId: string): boolean {
-  if (!hotspotTimers.value[hotspotId]) {
-    return false;
-  }
-
-  // Parse the remaining time to check if it's less than 5 minutes
-  const timeStr = hotspotTimers.value[hotspotId].remainingTime;
-
-  // If it's "Now", it's definitely soon
-  if (timeStr === 'Now') {
-    return true;
-  }
-
-  // If it contains hours, it's not soon
-  if (timeStr.includes('h')) {
-    return false;
-  }
-
-  // Check if it's just minutes and seconds
-  if (timeStr.includes('m')) {
-    const minutes = parseInt(timeStr.split('m')[0]);
-    return minutes < 5; // Less than 5 minutes is considered "soon"
-  }
-
-  // If it's just seconds, it's definitely soon
-  return true;
-}
-
-// Reactive variables for timer management
-const hotspotTimers = ref<{ [hotspotId: string]: { remainingTime: string } }>({});
-let timerInterval: number | null = null;
-
-
-
-// Separate initialization function that can be called both on mount and data load
-function initializeHotspotTimers() {
-  // Clear existing timers
-  hotspotTimers.value = {};
-  
-  // Initialize timers for all controlled hotspots
-  controlledHotspots.value.forEach(hotspot => {
-    if (hotspot.lastIncomeTime) {
-      // If we don't have nextIncomeTime but have lastIncomeTime, calculate it
-      try {
-        const lastTime = new Date(hotspot.lastIncomeTime);
-        if (!isNaN(lastTime.getTime())) {
-          // Calculate next income time as 1 hour after last income
-          const calculatedNextTime = new Date(lastTime.getTime() + 60 * 60 * 1000);
-          
-          // Use the calculated next time for the timer
-          hotspotTimers.value[hotspot.id] = {
-            remainingTime: calculateRemainingTime(calculatedNextTime.toISOString())
-          };
-        }
-      } catch (e) {
-        console.error(`Error calculating nextIncomeTime from lastIncomeTime for hotspot ${hotspot.id}:`, e);
-        hotspotTimers.value[hotspot.id] = {
-          remainingTime: 'Error'
-        };
-      }
-    } else {
-      // No timing data available
-      hotspotTimers.value[hotspot.id] = {
-        remainingTime: 'Initializing...'
-      };
-    }
-  });
-}
-
-// Function to start hotspot timers
-function startHotspotTimers() {
-  // Initialize timers first
-  initializeHotspotTimers();
-
-  // Clear any existing interval
-  if (timerInterval !== null) {
-    clearInterval(timerInterval);
-  }
-
-  // Update the timer every second
-  timerInterval = window.setInterval(() => {
-    controlledHotspots.value.forEach(hotspot => {
-      if (hotspotTimers.value[hotspot.id]) {
-        hotspotTimers.value[hotspot.id].remainingTime = calculateRemainingTime(hotspot.nextIncomeTime);
-      } else {
-        // If a timer doesn't exist yet (new hotspot), initialize it
-        if (hotspot.nextIncomeTime) {
-          hotspotTimers.value[hotspot.id] = {
-            remainingTime: calculateRemainingTime(hotspot.nextIncomeTime)
-          };
-        }
-      }
-    });
-  }, 1000); // Update every second
-}
-
-// OnMounted hook
-onMounted(async () => {
-  isLoading.value = true;
-
-  if (!playerStore.profile) {
-    await playerStore.fetchProfile();
-  }
-
-  if (territoryStore.regions.length === 0) {
-    await territoryStore.fetchTerritoryData();
-  }
-
-  if (territoryStore.recentActions.length === 0) {
-    await territoryStore.fetchRecentActions();
-  }
-
-  isLoading.value = false;
-
-  // Start the hotspot timers
-  startHotspotTimers();
-});
-
-// Set up cleanup on component unmount
-onBeforeUnmount(() => {
-  if (timerInterval !== null) {
-    clearInterval(timerInterval);
-    timerInterval = null;
-    console.log('Timer interval cleared during component unmount');
-  }
-});
-</script>
 
 <style lang="scss">
 .territory-view {

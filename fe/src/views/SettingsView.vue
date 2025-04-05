@@ -1,344 +1,5 @@
 // src/views/SettingsView.vue
 
-<template>
-    <div class="settings-view">
-        <div class="page-title">
-            <h2>Account Settings</h2>
-            <p class="subtitle">Customize your criminal experience</p>
-        </div>
-
-        <div class="settings-content">
-            <div class="settings-sidebar">
-                <div class="settings-navigation">
-                    <button v-for="(section, index) in settingsSections" :key="index" class="nav-item"
-                        :class="{ active: activeSection === section.id }" @click="activeSection = section.id">
-                        <span class="nav-icon">{{ section.icon }}</span>
-                        <span class="nav-label">{{ section.label }}</span>
-                    </button>
-                </div>
-            </div>
-
-            <div class="settings-main">
-                <!-- Profile Settings -->
-                <div v-if="activeSection === 'profile'" class="settings-section">
-                    <h3 class="section-title">Profile Settings</h3>
-
-                    <BaseCard>
-                        <form @submit.prevent="saveProfileSettings">
-                            <div class="form-group">
-                                <label for="name">Crime Boss Name</label>
-                                <input type="text" id="name" v-model="profileSettings.name"
-                                    placeholder="Enter your boss name" />
-                            </div>
-
-                            <div class="form-group">
-                                <label for="email">Email Address</label>
-                                <input type="email" id="email" v-model="profileSettings.email"
-                                    placeholder="Enter your email" />
-                            </div>
-
-                            <div class="form-group">
-                                <label for="bio">Boss Bio</label>
-                                <textarea id="bio" v-model="profileSettings.bio"
-                                    placeholder="Tell others about your criminal empire" rows="4"></textarea>
-                            </div>
-
-                            <div class="form-actions">
-                                <BaseButton variant="secondary" type="submit" :loading="isSavingProfile">
-                                    Save Changes
-                                </BaseButton>
-                            </div>
-                        </form>
-                    </BaseCard>
-
-                    <BaseCard class="delete-account-card">
-                        <h4>Delete Account</h4>
-                        <p class="warning-text">This action is irreversible. All your progress, assets, and criminal
-                            empire will be lost forever.</p>
-                        <BaseButton variant="danger" @click="showDeleteAccountConfirmation">
-                            Delete Account
-                        </BaseButton>
-                    </BaseCard>
-                </div>
-
-                <!-- Notification Settings -->
-                <div v-if="activeSection === 'notifications'" class="settings-section">
-                    <h3 class="section-title">Notification Settings</h3>
-
-                    <BaseCard>
-                        <div class="notification-settings">
-                            <div class="setting-item" v-for="(setting, index) in notificationSettings" :key="index">
-                                <div class="setting-info">
-                                    <div class="setting-name">{{ setting.name }}</div>
-                                    <div class="setting-description">{{ setting.description }}</div>
-                                </div>
-                                <div class="setting-control">
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" v-model="setting.enabled">
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="form-actions">
-                            <BaseButton variant="secondary" @click="saveNotificationSettings"
-                                :loading="isSavingNotifications">
-                                Save Changes
-                            </BaseButton>
-                        </div>
-                    </BaseCard>
-                </div>
-
-                <!-- Display Settings -->
-                <div v-if="activeSection === 'display'" class="settings-section">
-                    <h3 class="section-title">Display Settings</h3>
-
-                    <BaseCard>
-                        <div class="display-settings">
-                            <div class="form-group">
-                                <label>Theme</label>
-                                <div class="theme-options">
-                                    <div class="theme-option" :class="{ selected: displaySettings.theme === 'default' }"
-                                        @click="selectTheme('default')">
-                                        <div class="theme-preview default-theme"></div>
-                                        <div class="theme-name">Classic Noir</div>
-                                    </div>
-                                    <div class="theme-option" :class="{ selected: displaySettings.theme === 'modern' }"
-                                        @click="selectTheme('modern')">
-                                        <div class="theme-preview modern-theme"></div>
-                                        <div class="theme-name">Modern Syndicate</div>
-                                    </div>
-                                    <div class="theme-option" :class="{ selected: displaySettings.theme === 'retro' }"
-                                        @click="selectTheme('retro')">
-                                        <div class="theme-preview retro-theme"></div>
-                                        <div class="theme-name">Retro Mob</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Animation Effects</label>
-                                <div class="radio-group">
-                                    <label class="radio-label">
-                                        <input type="radio" name="animations" value="full"
-                                            v-model="displaySettings.animations">
-                                        <span>Full Animations</span>
-                                    </label>
-                                    <label class="radio-label">
-                                        <input type="radio" name="animations" value="reduced"
-                                            v-model="displaySettings.animations">
-                                        <span>Reduced Animations</span>
-                                    </label>
-                                    <label class="radio-label">
-                                        <input type="radio" name="animations" value="off"
-                                            v-model="displaySettings.animations">
-                                        <span>No Animations</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Font Size</label>
-                                <div class="font-size-control">
-                                    <span class="font-size-label small">A</span>
-                                    <input type="range" min="0" max="2" step="1" v-model="displaySettings.fontSize">
-                                    <span class="font-size-label large">A</span>
-                                </div>
-                                <div class="font-size-value">
-                                    {{ getFontSizeLabel(displaySettings.fontSize) }}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="form-actions">
-                            <BaseButton variant="secondary" @click="saveDisplaySettings" :loading="isSavingDisplay">
-                                Save Changes
-                            </BaseButton>
-                        </div>
-                    </BaseCard>
-                </div>
-
-                <!-- Privacy Settings -->
-                <div v-if="activeSection === 'privacy'" class="settings-section">
-                    <h3 class="section-title">Privacy Settings</h3>
-
-                    <BaseCard>
-                        <div class="privacy-settings">
-                            <div class="setting-item" v-for="(setting, index) in privacySettings" :key="index">
-                                <div class="setting-info">
-                                    <div class="setting-name">{{ setting.name }}</div>
-                                    <div class="setting-description">{{ setting.description }}</div>
-                                </div>
-                                <div class="setting-control">
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" v-model="setting.enabled">
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="form-actions">
-                            <BaseButton variant="secondary" @click="savePrivacySettings" :loading="isSavingPrivacy">
-                                Save Changes
-                            </BaseButton>
-                        </div>
-                    </BaseCard>
-
-                    <BaseCard>
-                        <h4>Data & Privacy</h4>
-                        <p>You can download all your data or request account deletion.</p>
-
-                        <div class="privacy-actions">
-                            <BaseButton variant="outline">
-                                Download My Data
-                            </BaseButton>
-                            <BaseButton variant="danger" @click="showDeleteAccountConfirmation">
-                                Delete Account
-                            </BaseButton>
-                        </div>
-                    </BaseCard>
-                </div>
-
-                <!-- Security Settings -->
-                <div v-if="activeSection === 'security'" class="settings-section">
-                    <h3 class="section-title">Security Settings</h3>
-
-                    <BaseCard>
-                        <h4>Password</h4>
-                        <div class="password-info">
-                            <p>Last changed: {{ formatDate(lastPasswordChange) }}</p>
-                            <BaseButton variant="outline" @click="showChangePasswordModal">
-                                Change Password
-                            </BaseButton>
-                        </div>
-                    </BaseCard>
-
-                    <BaseCard>
-                        <h4>Two-Factor Authentication</h4>
-                        <div class="two-factor-section">
-                            <div class="two-factor-status">
-                                <div class="status-indicator" :class="{ enabled: twoFactorEnabled }"></div>
-                                <div class="status-text">
-                                    <p>{{ twoFactorEnabled ? 'Enabled' : 'Disabled' }}</p>
-                                    <p class="status-description">{{ twoFactorEnabled ?
-                                        'Your account is protected with two-factor authentication.' :
-                                        'Add an extra layer of security to your account.' }}</p>
-                                </div>
-                            </div>
-                            <BaseButton :variant="twoFactorEnabled ? 'danger' : 'primary'" @click="toggleTwoFactor">
-                                {{ twoFactorEnabled ? 'Disable' : 'Enable' }} 2FA
-                            </BaseButton>
-                        </div>
-                    </BaseCard>
-
-                    <BaseCard>
-                        <h4>Login Sessions</h4>
-                        <div class="sessions-list">
-                            <div class="session-item" v-for="(session, index) in loginSessions" :key="index">
-                                <div class="session-info">
-                                    <div class="session-device">{{ session.device }}</div>
-                                    <div class="session-details">
-                                        <span>{{ session.location }}</span>
-                                        <span class="separator">•</span>
-                                        <span>{{ formatDate(session.lastActive) }}</span>
-                                    </div>
-                                </div>
-                                <div class="session-actions">
-                                    <button class="text-btn danger" v-if="!session.current"
-                                        @click="terminateSession(session.id)">
-                                        Terminate
-                                    </button>
-                                    <span v-else class="current-badge">Current</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-actions">
-                            <BaseButton variant="danger" @click="terminateAllSessions">
-                                Log Out All Devices
-                            </BaseButton>
-                        </div>
-                    </BaseCard>
-                </div>
-            </div>
-        </div>
-
-        <!-- Change Password Modal -->
-        <BaseModal v-model="showPasswordModal" title="Change Password">
-            <div class="change-password-modal">
-                <div class="form-group" :class="{ 'has-error': passwordErrors.currentPassword }">
-                    <label for="current-password">Current Password</label>
-                    <input type="password" id="current-password" v-model="passwordData.currentPassword"
-                        placeholder="Enter your current password" />
-                    <div class="error-message" v-if="passwordErrors.currentPassword">
-                        {{ passwordErrors.currentPassword }}
-                    </div>
-                </div>
-
-                <div class="form-group" :class="{ 'has-error': passwordErrors.newPassword }">
-                    <label for="new-password">New Password</label>
-                    <input type="password" id="new-password" v-model="passwordData.newPassword"
-                        placeholder="Enter new password" />
-                    <div class="error-message" v-if="passwordErrors.newPassword">
-                        {{ passwordErrors.newPassword }}
-                    </div>
-                </div>
-
-                <div class="form-group" :class="{ 'has-error': passwordErrors.confirmPassword }">
-                    <label for="confirm-password">Confirm New Password</label>
-                    <input type="password" id="confirm-password" v-model="passwordData.confirmPassword"
-                        placeholder="Confirm new password" />
-                    <div class="error-message" v-if="passwordErrors.confirmPassword">
-                        {{ passwordErrors.confirmPassword }}
-                    </div>
-                </div>
-            </div>
-            <template #footer>
-                <div class="modal-actions">
-                    <BaseButton variant="text" @click="closePasswordModal">
-                        Cancel
-                    </BaseButton>
-                    <BaseButton variant="primary" :disabled="!canChangePassword || isChangingPassword"
-                        :loading="isChangingPassword" @click="changePassword">
-                        Update Password
-                    </BaseButton>
-                </div>
-            </template>
-        </BaseModal>
-
-        <!-- Delete Account Confirmation Modal -->
-        <BaseModal v-model="showDeleteModal" title="Delete Account">
-            <div class="delete-account-modal">
-                <div class="warning-icon">⚠️</div>
-                <h4>This action cannot be undone</h4>
-                <p>Are you sure you want to permanently delete your account? All your progress, assets, and criminal
-                    empire will
-                    be lost forever.</p>
-
-                <div class="confirmation-input">
-                    <label for="confirmation">Type "DELETE" to confirm:</label>
-                    <input type="text" id="confirmation" v-model="deleteConfirmation" placeholder="DELETE" />
-                </div>
-            </div>
-            <template #footer>
-                <div class="modal-actions">
-                    <BaseButton variant="text" @click="closeDeleteModal">
-                        Cancel
-                    </BaseButton>
-                    <BaseButton variant="danger" :disabled="deleteConfirmation !== 'DELETE' || isDeletingAccount"
-                        :loading="isDeletingAccount" @click="deleteAccount">
-                        Permanently Delete
-                    </BaseButton>
-                </div>
-            </template>
-        </BaseModal>
-
-        <BaseNotification v-if="showNotification" :type="notificationType" :message="notificationMessage"
-            @close="closeNotification" />
-    </div>
-</template>
-
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
@@ -736,6 +397,345 @@ function closeNotification() {
     showNotification.value = false;
 }
 </script>
+
+<template>
+    <div class="settings-view">
+        <div class="page-title">
+            <h2>Account Settings</h2>
+            <p class="subtitle">Customize your criminal experience</p>
+        </div>
+
+        <div class="settings-content">
+            <div class="settings-sidebar">
+                <div class="settings-navigation">
+                    <button v-for="(section, index) in settingsSections" :key="index" class="nav-item"
+                        :class="{ active: activeSection === section.id }" @click="activeSection = section.id">
+                        <span class="nav-icon">{{ section.icon }}</span>
+                        <span class="nav-label">{{ section.label }}</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="settings-main">
+                <!-- Profile Settings -->
+                <div v-if="activeSection === 'profile'" class="settings-section">
+                    <h3 class="section-title">Profile Settings</h3>
+
+                    <BaseCard>
+                        <form @submit.prevent="saveProfileSettings">
+                            <div class="form-group">
+                                <label for="name">Crime Boss Name</label>
+                                <input type="text" id="name" v-model="profileSettings.name"
+                                    placeholder="Enter your boss name" />
+                            </div>
+
+                            <div class="form-group">
+                                <label for="email">Email Address</label>
+                                <input type="email" id="email" v-model="profileSettings.email"
+                                    placeholder="Enter your email" />
+                            </div>
+
+                            <div class="form-group">
+                                <label for="bio">Boss Bio</label>
+                                <textarea id="bio" v-model="profileSettings.bio"
+                                    placeholder="Tell others about your criminal empire" rows="4"></textarea>
+                            </div>
+
+                            <div class="form-actions">
+                                <BaseButton variant="secondary" type="submit" :loading="isSavingProfile">
+                                    Save Changes
+                                </BaseButton>
+                            </div>
+                        </form>
+                    </BaseCard>
+
+                    <BaseCard class="delete-account-card">
+                        <h4>Delete Account</h4>
+                        <p class="warning-text">This action is irreversible. All your progress, assets, and criminal
+                            empire will be lost forever.</p>
+                        <BaseButton variant="danger" @click="showDeleteAccountConfirmation">
+                            Delete Account
+                        </BaseButton>
+                    </BaseCard>
+                </div>
+
+                <!-- Notification Settings -->
+                <div v-if="activeSection === 'notifications'" class="settings-section">
+                    <h3 class="section-title">Notification Settings</h3>
+
+                    <BaseCard>
+                        <div class="notification-settings">
+                            <div class="setting-item" v-for="(setting, index) in notificationSettings" :key="index">
+                                <div class="setting-info">
+                                    <div class="setting-name">{{ setting.name }}</div>
+                                    <div class="setting-description">{{ setting.description }}</div>
+                                </div>
+                                <div class="setting-control">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" v-model="setting.enabled">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <BaseButton variant="secondary" @click="saveNotificationSettings"
+                                :loading="isSavingNotifications">
+                                Save Changes
+                            </BaseButton>
+                        </div>
+                    </BaseCard>
+                </div>
+
+                <!-- Display Settings -->
+                <div v-if="activeSection === 'display'" class="settings-section">
+                    <h3 class="section-title">Display Settings</h3>
+
+                    <BaseCard>
+                        <div class="display-settings">
+                            <div class="form-group">
+                                <label>Theme</label>
+                                <div class="theme-options">
+                                    <div class="theme-option" :class="{ selected: displaySettings.theme === 'default' }"
+                                        @click="selectTheme('default')">
+                                        <div class="theme-preview default-theme"></div>
+                                        <div class="theme-name">Classic Noir</div>
+                                    </div>
+                                    <div class="theme-option" :class="{ selected: displaySettings.theme === 'modern' }"
+                                        @click="selectTheme('modern')">
+                                        <div class="theme-preview modern-theme"></div>
+                                        <div class="theme-name">Modern Syndicate</div>
+                                    </div>
+                                    <div class="theme-option" :class="{ selected: displaySettings.theme === 'retro' }"
+                                        @click="selectTheme('retro')">
+                                        <div class="theme-preview retro-theme"></div>
+                                        <div class="theme-name">Retro Mob</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Animation Effects</label>
+                                <div class="radio-group">
+                                    <label class="radio-label">
+                                        <input type="radio" name="animations" value="full"
+                                            v-model="displaySettings.animations">
+                                        <span>Full Animations</span>
+                                    </label>
+                                    <label class="radio-label">
+                                        <input type="radio" name="animations" value="reduced"
+                                            v-model="displaySettings.animations">
+                                        <span>Reduced Animations</span>
+                                    </label>
+                                    <label class="radio-label">
+                                        <input type="radio" name="animations" value="off"
+                                            v-model="displaySettings.animations">
+                                        <span>No Animations</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Font Size</label>
+                                <div class="font-size-control">
+                                    <span class="font-size-label small">A</span>
+                                    <input type="range" min="0" max="2" step="1" v-model="displaySettings.fontSize">
+                                    <span class="font-size-label large">A</span>
+                                </div>
+                                <div class="font-size-value">
+                                    {{ getFontSizeLabel(displaySettings.fontSize) }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <BaseButton variant="secondary" @click="saveDisplaySettings" :loading="isSavingDisplay">
+                                Save Changes
+                            </BaseButton>
+                        </div>
+                    </BaseCard>
+                </div>
+
+                <!-- Privacy Settings -->
+                <div v-if="activeSection === 'privacy'" class="settings-section">
+                    <h3 class="section-title">Privacy Settings</h3>
+
+                    <BaseCard>
+                        <div class="privacy-settings">
+                            <div class="setting-item" v-for="(setting, index) in privacySettings" :key="index">
+                                <div class="setting-info">
+                                    <div class="setting-name">{{ setting.name }}</div>
+                                    <div class="setting-description">{{ setting.description }}</div>
+                                </div>
+                                <div class="setting-control">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" v-model="setting.enabled">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <BaseButton variant="secondary" @click="savePrivacySettings" :loading="isSavingPrivacy">
+                                Save Changes
+                            </BaseButton>
+                        </div>
+                    </BaseCard>
+
+                    <BaseCard>
+                        <h4>Data & Privacy</h4>
+                        <p>You can download all your data or request account deletion.</p>
+
+                        <div class="privacy-actions">
+                            <BaseButton variant="outline">
+                                Download My Data
+                            </BaseButton>
+                            <BaseButton variant="danger" @click="showDeleteAccountConfirmation">
+                                Delete Account
+                            </BaseButton>
+                        </div>
+                    </BaseCard>
+                </div>
+
+                <!-- Security Settings -->
+                <div v-if="activeSection === 'security'" class="settings-section">
+                    <h3 class="section-title">Security Settings</h3>
+
+                    <BaseCard>
+                        <h4>Password</h4>
+                        <div class="password-info">
+                            <p>Last changed: {{ formatDate(lastPasswordChange) }}</p>
+                            <BaseButton variant="outline" @click="showChangePasswordModal">
+                                Change Password
+                            </BaseButton>
+                        </div>
+                    </BaseCard>
+
+                    <BaseCard>
+                        <h4>Two-Factor Authentication</h4>
+                        <div class="two-factor-section">
+                            <div class="two-factor-status">
+                                <div class="status-indicator" :class="{ enabled: twoFactorEnabled }"></div>
+                                <div class="status-text">
+                                    <p>{{ twoFactorEnabled ? 'Enabled' : 'Disabled' }}</p>
+                                    <p class="status-description">{{ twoFactorEnabled ?
+                                        'Your account is protected with two-factor authentication.' :
+                                        'Add an extra layer of security to your account.' }}</p>
+                                </div>
+                            </div>
+                            <BaseButton :variant="twoFactorEnabled ? 'danger' : 'primary'" @click="toggleTwoFactor">
+                                {{ twoFactorEnabled ? 'Disable' : 'Enable' }} 2FA
+                            </BaseButton>
+                        </div>
+                    </BaseCard>
+
+                    <BaseCard>
+                        <h4>Login Sessions</h4>
+                        <div class="sessions-list">
+                            <div class="session-item" v-for="(session, index) in loginSessions" :key="index">
+                                <div class="session-info">
+                                    <div class="session-device">{{ session.device }}</div>
+                                    <div class="session-details">
+                                        <span>{{ session.location }}</span>
+                                        <span class="separator">•</span>
+                                        <span>{{ formatDate(session.lastActive) }}</span>
+                                    </div>
+                                </div>
+                                <div class="session-actions">
+                                    <button class="text-btn danger" v-if="!session.current"
+                                        @click="terminateSession(session.id)">
+                                        Terminate
+                                    </button>
+                                    <span v-else class="current-badge">Current</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <BaseButton variant="danger" @click="terminateAllSessions">
+                                Log Out All Devices
+                            </BaseButton>
+                        </div>
+                    </BaseCard>
+                </div>
+            </div>
+        </div>
+
+        <!-- Change Password Modal -->
+        <BaseModal v-model="showPasswordModal" title="Change Password">
+            <div class="change-password-modal">
+                <div class="form-group" :class="{ 'has-error': passwordErrors.currentPassword }">
+                    <label for="current-password">Current Password</label>
+                    <input type="password" id="current-password" v-model="passwordData.currentPassword"
+                        placeholder="Enter your current password" />
+                    <div class="error-message" v-if="passwordErrors.currentPassword">
+                        {{ passwordErrors.currentPassword }}
+                    </div>
+                </div>
+
+                <div class="form-group" :class="{ 'has-error': passwordErrors.newPassword }">
+                    <label for="new-password">New Password</label>
+                    <input type="password" id="new-password" v-model="passwordData.newPassword"
+                        placeholder="Enter new password" />
+                    <div class="error-message" v-if="passwordErrors.newPassword">
+                        {{ passwordErrors.newPassword }}
+                    </div>
+                </div>
+
+                <div class="form-group" :class="{ 'has-error': passwordErrors.confirmPassword }">
+                    <label for="confirm-password">Confirm New Password</label>
+                    <input type="password" id="confirm-password" v-model="passwordData.confirmPassword"
+                        placeholder="Confirm new password" />
+                    <div class="error-message" v-if="passwordErrors.confirmPassword">
+                        {{ passwordErrors.confirmPassword }}
+                    </div>
+                </div>
+            </div>
+            <template #footer>
+                <div class="modal-actions">
+                    <BaseButton variant="text" @click="closePasswordModal">
+                        Cancel
+                    </BaseButton>
+                    <BaseButton variant="primary" :disabled="!canChangePassword || isChangingPassword"
+                        :loading="isChangingPassword" @click="changePassword">
+                        Update Password
+                    </BaseButton>
+                </div>
+            </template>
+        </BaseModal>
+
+        <!-- Delete Account Confirmation Modal -->
+        <BaseModal v-model="showDeleteModal" title="Delete Account">
+            <div class="delete-account-modal">
+                <div class="warning-icon">⚠️</div>
+                <h4>This action cannot be undone</h4>
+                <p>Are you sure you want to permanently delete your account? All your progress, assets, and criminal
+                    empire will
+                    be lost forever.</p>
+
+                <div class="confirmation-input">
+                    <label for="confirmation">Type "DELETE" to confirm:</label>
+                    <input type="text" id="confirmation" v-model="deleteConfirmation" placeholder="DELETE" />
+                </div>
+            </div>
+            <template #footer>
+                <div class="modal-actions">
+                    <BaseButton variant="text" @click="closeDeleteModal">
+                        Cancel
+                    </BaseButton>
+                    <BaseButton variant="danger" :disabled="deleteConfirmation !== 'DELETE' || isDeletingAccount"
+                        :loading="isDeletingAccount" @click="deleteAccount">
+                        Permanently Delete
+                    </BaseButton>
+                </div>
+            </template>
+        </BaseModal>
+
+        <BaseNotification v-if="showNotification" :type="notificationType" :message="notificationMessage"
+            @close="closeNotification" />
+    </div>
+</template>
 
 <style lang="scss">
 .settings-view {
