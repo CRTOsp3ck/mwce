@@ -64,7 +64,7 @@ func startTerritorySeeder() {
 	l := logger.NewLogger()
 
 	// Load configuration
-	cfg, err := config.LoadConfig(*configPath)
+	cfg, err := config.LoadAllConfigs(*configPath)
 	if err != nil {
 		l.Fatal().Err(err).Msg("Failed to load configuration")
 	}

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math/rand"
 	"mwce-be/internal/util"
+	"strconv"
 	"time"
 
 	"mwce-be/internal/config"
@@ -214,7 +215,7 @@ func (s *operationsService) StartOperation(playerID, operationID string, resourc
 		if resources.Money > 0 {
 			refundUpdates["money"] = resources.Money
 		}
- 
+
 		s.playerService.UpdatePlayerResources(playerID, refundUpdates)
 
 		return nil, errors.New("failed to start operation")
@@ -315,7 +316,7 @@ func (s *operationsService) CollectOperation(playerID, attemptID string) (*model
 	}
 
 	// Determine success or failure
-	successChance := s.calculateSuccessChance(operation, attempt.Resources)
+	successChance := s.calculateSuccessChance(operation, attempt.Resources, playerID)
 	success := rand.Float64()*100 < float64(successChance)
 
 	// Generate result
@@ -511,7 +512,108 @@ func (s *operationsService) CheckAndCompleteOperations() error {
 }
 
 // calculateSuccessChance calculates the success chance for an operation
-func (s *operationsService) calculateSuccessChance(operation *model.Operation, resources model.OperationResources) int {
+func (s *operationsService) calculateSuccessChance(operation *model.Operation, resources model.OperationResources, playerID string) int {
+	// If mechanics config is available, use it for calculations
+	if s.gameConfig.Mechanics != nil {
+		// Try to get operation-specific success chance from config
+		if successChanceConfig, exists := s.gameConfig.Mechanics.SuccessChances[operation.Type]; exists {
+			// Base success chance from config
+			successChance := successChanceConfig.BaseChance
+
+			// Apply resource multipliers from config
+			resourceCommitmentBonus := 0.0
+			if len(successChanceConfig.ResourceMultiplier) > 0 {
+				// Calculate resource commitment level
+				if multiplier, exists := successChanceConfig.ResourceMultiplier["crew"]; exists && operation.Resources.Crew > 0 {
+					crewCommitment := float64(resources.Crew) / float64(operation.Resources.Crew) * multiplier
+					resourceCommitmentBonus += crewCommitment
+				}
+
+				if multiplier, exists := successChanceConfig.ResourceMultiplier["weapons"]; exists && operation.Resources.Weapons > 0 {
+					weaponsCommitment := float64(resources.Weapons) / float64(operation.Resources.Weapons) * multiplier
+					resourceCommitmentBonus += weaponsCommitment
+				}
+
+				if multiplier, exists := successChanceConfig.ResourceMultiplier["vehicles"]; exists && operation.Resources.Vehicles > 0 {
+					vehiclesCommitment := float64(resources.Vehicles) / float64(operation.Resources.Vehicles) * multiplier
+					resourceCommitmentBonus += vehiclesCommitment
+				}
+
+				if multiplier, exists := successChanceConfig.ResourceMultiplier["money"]; exists && operation.Resources.Money > 0 {
+					moneyCommitment := float64(resources.Money) / float64(operation.Resources.Money) * multiplier
+					resourceCommitmentBonus += moneyCommitment
+				}
+			}
+
+			// Apply resource commitment bonus
+			successChance += int(resourceCommitmentBonus)
+
+			// Apply heat penalty if applicable
+			if s.gameConfig.Mechanics.Heat.Effects != nil {
+				// Check for operation success penalties in heat effects
+				operationPenalties, exists := s.gameConfig.Mechanics.Heat.Effects["operation_success_penalty"]
+				if exists && playerID != "" {
+					// Get player's current heat
+					player, err := s.playerRepo.GetPlayerByID(playerID)
+					if err == nil {
+						// Find the appropriate penalty tier based on heat level
+						// We need to process the nested map structure correctly
+						var appliedPenalty int
+						highestApplicableThreshold := 0
+
+						// Find the highest threshold that's less than or equal to player's heat
+						for heatThresholdStr, penaltyVal := range operationPenalties {
+							// Convert string key to int for comparison
+							heatThreshold, err := strconv.Atoi(heatThresholdStr)
+							if err != nil {
+								s.logger.Warn().
+									Str("threshold", heatThresholdStr).
+									Msg("Invalid heat threshold format in config")
+								continue
+							}
+
+							// If player heat meets or exceeds this threshold and it's higher than previous matches
+							if player.Heat >= heatThreshold && heatThreshold > highestApplicableThreshold {
+								highestApplicableThreshold = heatThreshold
+
+								// Extract the penalty value
+								penalty, exists := penaltyVal[highestApplicableThreshold]
+								if !exists {
+									s.logger.Warn().
+										Int("threshold", highestApplicableThreshold).
+										Msg("Penalty not found for threshold in config")
+									continue
+								}
+								appliedPenalty = penalty
+							}
+						}
+
+						// Apply the highest applicable penalty
+						if highestApplicableThreshold > 0 {
+							successChance -= appliedPenalty
+							s.logger.Debug().
+								Int("playerHeat", player.Heat).
+								Int("thresholdApplied", highestApplicableThreshold).
+								Int("penaltyApplied", appliedPenalty).
+								Int("finalSuccessChance", successChance).
+								Msg("Applied heat penalty to operation")
+						}
+					}
+				}
+			}
+
+			// Cap success chance between 5% and 95%
+			if successChance < 5 {
+				successChance = 5
+			} else if successChance > 95 {
+				successChance = 95
+			}
+
+			return successChance
+		}
+	}
+
+	// Fallback to original calculation if config not available
 	// Base success chance from the operation
 	successChance := operation.SuccessRate
 
@@ -566,6 +668,63 @@ func (s *operationsService) calculateSuccessChance(operation *model.Operation, r
 
 	return successChance
 }
+
+// calculateSuccessChance calculates the success chance for an operation
+// func (s *operationsService) calculateSuccessChance(operation *model.Operation, resources model.OperationResources) int {
+// 	// Base success chance from the operation
+// 	successChance := operation.SuccessRate
+
+// 	// Calculate resource commitment level (0-100%)
+// 	requiredCrew := operation.Resources.Crew
+// 	requiredWeapons := operation.Resources.Weapons
+// 	requiredVehicles := operation.Resources.Vehicles
+
+// 	// Avoid division by zero
+// 	crewCommitment := 100.0
+// 	if requiredCrew > 0 {
+// 		crewCommitment = float64(resources.Crew) / float64(requiredCrew) * 100.0
+// 		if crewCommitment > 200.0 {
+// 			crewCommitment = 200.0 // Cap at 200%
+// 		}
+// 	}
+
+// 	weaponsCommitment := 100.0
+// 	if requiredWeapons > 0 {
+// 		weaponsCommitment = float64(resources.Weapons) / float64(requiredWeapons) * 100.0
+// 		if weaponsCommitment > 200.0 {
+// 			weaponsCommitment = 200.0 // Cap at 200%
+// 		}
+// 	}
+
+// 	vehiclesCommitment := 100.0
+// 	if requiredVehicles > 0 {
+// 		vehiclesCommitment = float64(resources.Vehicles) / float64(requiredVehicles) * 100.0
+// 		if vehiclesCommitment > 200.0 {
+// 			vehiclesCommitment = 200.0 // Cap at 200%
+// 		}
+// 	}
+
+// 	// Weight the commitment levels
+// 	averageCommitment := (crewCommitment + weaponsCommitment + vehiclesCommitment) / 3.0
+
+// 	// Adjust success chance based on commitment
+// 	if averageCommitment > 100.0 {
+// 		// Bonus for over-committing resources
+// 		successChance += int((averageCommitment - 100.0) / 10.0)
+// 	} else if averageCommitment < 100.0 {
+// 		// Penalty for under-committing resources
+// 		successChance -= int((100.0 - averageCommitment) / 5.0)
+// 	}
+
+// 	// Cap success chance between 5% and 95%
+// 	if successChance < 5 {
+// 		successChance = 5
+// 	} else if successChance > 95 {
+// 		successChance = 95
+// 	}
+
+// 	return successChance
+// }
 
 // getSuccessMessage returns a success message for the operation type
 func getSuccessMessage(operationType string) string {

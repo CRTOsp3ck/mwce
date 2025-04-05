@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"mwce-be/internal/config"
 	"mwce-be/internal/model"
 	"mwce-be/internal/repository"
 	"mwce-be/internal/util"
@@ -24,19 +25,48 @@ type PlayerService interface {
 	UpdatePlayerResources(playerID string, resourceUpdates map[string]int) error
 	AddNotification(playerID, message, notificationType string) error
 	UpdateTitle(playerID string) error
+	CreateNewPlayer(name, email, password string) (*model.Player, error)
 }
 
 type playerService struct {
 	playerRepo repository.PlayerRepository
+	gameConfig config.GameConfig
 	logger     zerolog.Logger
 }
 
 // NewPlayerService creates a new player service
-func NewPlayerService(playerRepo repository.PlayerRepository, logger zerolog.Logger) PlayerService {
+func NewPlayerService(playerRepo repository.PlayerRepository, gameConfig config.GameConfig, logger zerolog.Logger) PlayerService {
 	return &playerService{
 		playerRepo: playerRepo,
+		gameConfig: gameConfig,
 		logger:     logger,
 	}
+}
+
+// CreateNewPlayer creates a new player with initial resources from config
+func (s *playerService) CreateNewPlayer(name, email, password string) (*model.Player, error) {
+	// Create player with initial resource values from config
+	now := time.Now()
+	player := &model.Player{
+		Name:        name,
+		Email:       email,
+		Password:    password,                  // Should be hashed by caller
+		Title:       util.PlayerTitleAssociate, // Starting title
+		Money:       s.gameConfig.ResourceLimit.InitialMoney,
+		Crew:        s.gameConfig.ResourceLimit.InitialCrew,
+		MaxCrew:     s.gameConfig.ResourceLimit.MaxCrew,
+		Weapons:     s.gameConfig.ResourceLimit.InitialWeapons,
+		MaxWeapons:  s.gameConfig.ResourceLimit.MaxWeapons,
+		Vehicles:    s.gameConfig.ResourceLimit.InitialVehicles,
+		MaxVehicles: s.gameConfig.ResourceLimit.MaxVehicles,
+		Respect:     s.gameConfig.ResourceLimit.InitialRespect,
+		Influence:   s.gameConfig.ResourceLimit.InitialInfluence,
+		Heat:        s.gameConfig.ResourceLimit.InitialHeat,
+		CreatedAt:   now,
+		LastActive:  now,
+	}
+
+	return player, nil
 }
 
 // GetProfile retrieves a player's profile
@@ -110,6 +140,33 @@ func (s *playerService) UpdatePlayerResources(playerID string, resourceUpdates m
 
 // AddNotification adds a notification for a player
 func (s *playerService) AddNotification(playerID, message, notificationType string) error {
+	// Check the notification limits from config
+	if s.gameConfig.Mechanics != nil {
+		notificationsForPlayer, err := s.playerRepo.GetNotifications(playerID)
+		if err == nil {
+			maxUnread := s.gameConfig.Mechanics.Notifications.MaxUnread
+			maxTotal := s.gameConfig.Mechanics.Notifications.MaxTotal
+
+			// Count unread notifications
+			unreadCount := 0
+			for _, n := range notificationsForPlayer {
+				if !n.Read {
+					unreadCount++
+				}
+			}
+
+			// If over limits, mark oldest as read or prune
+			if unreadCount >= maxUnread || len(notificationsForPlayer) >= maxTotal {
+				// Implementation for pruning would go here
+				s.logger.Warn().
+					Str("playerID", playerID).
+					Int("unreadCount", unreadCount).
+					Int("totalCount", len(notificationsForPlayer)).
+					Msg("Notification limits reached")
+			}
+		}
+	}
+
 	notification := &model.Notification{
 		PlayerID:  playerID,
 		Message:   message,
@@ -127,23 +184,34 @@ func (s *playerService) UpdateTitle(playerID string) error {
 		return err
 	}
 
-	// Determine the new title based on respect and influence
+	// Using title requirements from mechanics config
 	newTitle := util.PlayerTitleAssociate
-
 	respectInfluence := player.Respect + player.Influence
 
-	if respectInfluence >= 20 && respectInfluence < 40 {
-		newTitle = util.PlayerTitleSoldier
-	} else if respectInfluence >= 40 && respectInfluence < 60 {
-		newTitle = util.PlayerTitleCapo
-	} else if respectInfluence >= 60 && respectInfluence < 80 {
-		newTitle = util.PlayerTitleUnderboss
-	} else if respectInfluence >= 80 && respectInfluence < 100 {
-		newTitle = util.PlayerTitleConsigliere
-	} else if respectInfluence >= 100 && respectInfluence < 150 {
-		newTitle = util.PlayerTitleBoss
-	} else if respectInfluence >= 150 {
-		newTitle = util.PlayerTitleGodfather
+	// Use title requirements from config if available
+	if s.gameConfig.Mechanics != nil && len(s.gameConfig.Mechanics.Progression.TitleRequirements) > 0 {
+		for title, requirements := range s.gameConfig.Mechanics.Progression.TitleRequirements {
+			if respectValue, exists := requirements["respect_influence"]; exists {
+				if respectInfluence >= respectValue {
+					newTitle = title
+				}
+			}
+		}
+	} else {
+		// Fallback to hardcoded values if config not available
+		if respectInfluence >= 20 && respectInfluence < 40 {
+			newTitle = util.PlayerTitleSoldier
+		} else if respectInfluence >= 40 && respectInfluence < 60 {
+			newTitle = util.PlayerTitleCapo
+		} else if respectInfluence >= 60 && respectInfluence < 80 {
+			newTitle = util.PlayerTitleUnderboss
+		} else if respectInfluence >= 80 && respectInfluence < 100 {
+			newTitle = util.PlayerTitleConsigliere
+		} else if respectInfluence >= 100 && respectInfluence < 150 {
+			newTitle = util.PlayerTitleBoss
+		} else if respectInfluence >= 150 {
+			newTitle = util.PlayerTitleGodfather
+		}
 	}
 
 	// Only update if the title has changed

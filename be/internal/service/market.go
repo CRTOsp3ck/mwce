@@ -4,6 +4,7 @@ package service
 
 import (
 	"errors"
+	"math/rand"
 	"time"
 
 	"mwce-be/internal/config"
@@ -33,7 +34,7 @@ type marketService struct {
 	marketRepo    repository.MarketRepository
 	playerRepo    repository.PlayerRepository
 	playerService PlayerService
-	gameConfig    config.GameConfig
+	gameConfig    *config.GameConfig
 	logger        zerolog.Logger
 }
 
@@ -42,7 +43,7 @@ func NewMarketService(
 	marketRepo repository.MarketRepository,
 	playerRepo repository.PlayerRepository,
 	playerService PlayerService,
-	gameConfig config.GameConfig,
+	gameConfig *config.GameConfig,
 	logger zerolog.Logger,
 ) MarketService {
 	return &marketService{
@@ -53,11 +54,6 @@ func NewMarketService(
 		logger:        logger,
 	}
 }
-
-// SetPlayerService sets the player service (used to avoid circular dependencies)
-// func (s *marketService) SetPlayerService(playerService PlayerService) {
-// 	s.playerService = playerService
-// }
 
 // GetListings retrieves all market listings
 func (s *marketService) GetListings() ([]model.MarketListing, error) {
@@ -279,12 +275,157 @@ func (s *marketService) SellResource(playerID string, request model.ResourceTran
 
 // UpdateMarketPrices updates market prices based on supply and demand
 func (s *marketService) UpdateMarketPrices() error {
-	return s.marketRepo.UpdateMarketPrices()
+	// First check if we have any mechanics config at all
+	if s.gameConfig == nil {
+		s.logger.Error().Msg("Game configuration is nil")
+		return errors.New("game configuration is nil")
+	}
+
+	// Then check if we have mechanics config
+	if s.gameConfig.Mechanics == nil {
+		s.logger.Warn().Msg("Mechanics configuration not available, using default values")
+		return s.marketRepo.UpdateMarketPrices()
+	}
+
+	// Finally, check specifically for market config
+	marketConfig := s.gameConfig.Mechanics.Market
+	if marketConfig.PriceFluctuationRange == 0 && len(marketConfig.BasePrices) == 0 {
+		s.logger.Warn().Msg("Market mechanics configuration not available, using default values")
+		return s.marketRepo.UpdateMarketPrices()
+	}
+
+	// If we get here, we have valid market config to use
+	s.logger.Info().
+		Int("fluctRange", marketConfig.PriceFluctuationRange).
+		Int("updateInterval", marketConfig.PriceUpdateInterval).
+		Int("numBasePrices", len(marketConfig.BasePrices)).
+		Msg("Using market mechanics configuration")
+
+	// Use the market configuration from mechanics.yaml
+	// marketConfig := s.gameConfig.Mechanics.Market
+
+	// Get current listings
+	listings, err := s.marketRepo.GetAllListings()
+	if err != nil {
+		return err
+	}
+
+	// If no listings exist, create them using config values
+	if len(listings) == 0 {
+		// Create initial listings using base prices from config
+		for resourceType, basePrice := range marketConfig.BasePrices {
+			listing := model.MarketListing{
+				Type:            resourceType,
+				Price:           basePrice,
+				Quantity:        999, // Default quantity
+				Trend:           util.PriceTrendStable,
+				TrendPercentage: 0,
+				CreatedAt:       time.Now(),
+				UpdatedAt:       time.Now(),
+			}
+
+			if err := s.marketRepo.CreateListing(&listing); err != nil {
+				s.logger.Error().Err(err).
+					Str("resourceType", resourceType).
+					Msg("Failed to create initial market listing")
+				continue
+			}
+
+			// Create initial price history entry
+			history := model.MarketPriceHistory{
+				ResourceType: resourceType,
+				Price:        basePrice,
+				Timestamp:    time.Now(),
+				CreatedAt:    time.Now(),
+			}
+
+			if err := s.marketRepo.CreatePriceHistory(&history); err != nil {
+				s.logger.Error().Err(err).
+					Str("resourceType", resourceType).
+					Msg("Failed to create initial price history")
+			}
+		}
+
+		return nil
+	}
+
+	// For existing listings, update prices based on config
+	for _, listing := range listings {
+		// Get min and max prices from config
+		minPrice, hasMin := marketConfig.MinPrices[listing.Type]
+		maxPrice, hasMax := marketConfig.MaxPrices[listing.Type]
+
+		if !hasMin || !hasMax {
+			s.logger.Warn().
+				Str("resourceType", listing.Type).
+				Msg("Min or max price not defined in config, using defaults")
+			minPrice = 100               // Default minimum
+			maxPrice = listing.Price * 2 // Default maximum
+		}
+
+		// Calculate price fluctuation using config values
+		fluctuationRange := marketConfig.PriceFluctuationRange
+		if fluctuationRange <= 0 {
+			fluctuationRange = 5 // Default 5%
+		}
+
+		// Calculate price change (-fluctuationRange to +fluctuationRange percent)
+		priceChange := (rand.Float64()*float64(fluctuationRange*2) - float64(fluctuationRange)) / 100.0
+
+		// Apply price change
+		newPrice := float64(listing.Price) * (1.0 + priceChange)
+
+		// Ensure price stays within configured min/max
+		if newPrice < float64(minPrice) {
+			newPrice = float64(minPrice)
+		} else if newPrice > float64(maxPrice) {
+			newPrice = float64(maxPrice)
+		}
+
+		// Update trend
+		if priceChange > 0 {
+			listing.Trend = util.PriceTrendUp
+		} else if priceChange < 0 {
+			listing.Trend = util.PriceTrendDown
+		} else {
+			listing.Trend = util.PriceTrendStable
+		}
+
+		listing.TrendPercentage = int(priceChange * 100.0)
+		if listing.TrendPercentage < 0 {
+			listing.TrendPercentage = -listing.TrendPercentage
+		}
+
+		listing.Price = int(newPrice)
+		listing.UpdatedAt = time.Now()
+
+		// Save the updated listing
+		if err := s.marketRepo.UpdateListing(&listing); err != nil {
+			s.logger.Error().Err(err).
+				Str("resourceType", listing.Type).
+				Msg("Failed to update market listing")
+			continue
+		}
+
+		// Record price history
+		history := model.MarketPriceHistory{
+			ResourceType: listing.Type,
+			Price:        listing.Price,
+			Timestamp:    time.Now(),
+			CreatedAt:    time.Now(),
+		}
+
+		if err := s.marketRepo.CreatePriceHistory(&history); err != nil {
+			s.logger.Error().Err(err).
+				Str("resourceType", listing.Type).
+				Msg("Failed to create price history entry")
+		}
+	}
+
+	return nil
 }
 
-// Helper functions
-
-// formatPurchaseNotification formats a notification for a purchase
+// Helper functions for formatting notifications
 func formatPurchaseNotification(quantity int, resourceType string, totalCost int) string {
 	var resourceName string
 
@@ -314,7 +455,6 @@ func formatPurchaseNotification(quantity int, resourceType string, totalCost int
 	return formatMessage("Purchase completed", "You bought %d %s for $%s.", quantity, resourceName, formatMoney(totalCost))
 }
 
-// formatSaleNotification formats a notification for a sale
 func formatSaleNotification(quantity int, resourceType string, totalValue int) string {
 	var resourceName string
 

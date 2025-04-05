@@ -23,17 +23,19 @@ type AuthService interface {
 }
 
 type authService struct {
-	playerRepo repository.PlayerRepository
-	jwtConfig  config.JWTConfig
-	logger     zerolog.Logger
+	playerRepo    repository.PlayerRepository
+	playerService PlayerService
+	jwtConfig     config.JWTConfig
+	logger        zerolog.Logger
 }
 
 // NewAuthService creates a new auth service
-func NewAuthService(playerRepo repository.PlayerRepository, jwtConfig config.JWTConfig, logger zerolog.Logger) AuthService {
+func NewAuthService(playerRepo repository.PlayerRepository, playerService PlayerService, jwtConfig config.JWTConfig, logger zerolog.Logger) AuthService {
 	return &authService{
-		playerRepo: playerRepo,
-		jwtConfig:  jwtConfig,
-		logger:     logger,
+		playerRepo:    playerRepo,
+		playerService: playerService,
+		jwtConfig:     jwtConfig,
+		logger:        logger,
 	}
 }
 
@@ -51,25 +53,10 @@ func (s *authService) Register(request model.RegisterRequest) (*model.AuthRespon
 		return nil, errors.New("failed to hash password")
 	}
 
-	// Create player
-	now := time.Now()
-	player := &model.Player{
-		Name:        request.Name,
-		Email:       request.Email,
-		Password:    string(hashedPassword),
-		Title:       util.PlayerTitleAssociate, // Starting title
-		Money:       10000,                     // Starting money
-		Crew:        5,                         // Starting crew
-		MaxCrew:     25,                        // Max crew
-		Weapons:     3,                         // Starting weapons
-		MaxWeapons:  30,                        // Max weapons
-		Vehicles:    1,                         // Starting vehicles
-		MaxVehicles: 12,                        // Max vehicles
-		Respect:     10,                        // Starting respect
-		Influence:   5,                         // Starting influence
-		Heat:        0,                         // Starting heat
-		CreatedAt:   now,
-		LastActive:  now,
+	// Create player using the PlayerService which will use config values
+	player, err := s.playerService.CreateNewPlayer(request.Name, request.Email, string(hashedPassword))
+	if err != nil {
+		return nil, errors.New("failed to create player")
 	}
 
 	// Create player in database
@@ -79,9 +66,7 @@ func (s *authService) Register(request model.RegisterRequest) (*model.AuthRespon
 
 	// Create player stats
 	stats := &model.PlayerStats{
-		PlayerID:  player.ID,
-		CreatedAt: now,
-		UpdatedAt: now,
+		PlayerID: player.ID,
 	}
 	if err := s.playerRepo.UpdatePlayerStats(stats); err != nil {
 		s.logger.Error().Err(err).Msg("Failed to create player stats")

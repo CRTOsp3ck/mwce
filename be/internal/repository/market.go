@@ -19,10 +19,12 @@ import (
 type MarketRepository interface {
 	GetAllListings() ([]model.MarketListing, error)
 	GetListingByType(resourceType string) (*model.MarketListing, error)
+	CreateListing(listing *model.MarketListing) error
 	UpdateListing(listing *model.MarketListing) error
 	CreateTransaction(transaction *model.MarketTransaction) error
 	GetTransactionsByPlayer(playerID string) ([]model.MarketTransaction, error)
 	UpdateMarketPrices() error
+	CreatePriceHistory(history *model.MarketPriceHistory) error
 	GetResourcePriceHistory(resourceType string, days int) (*model.MarketHistoryResponse, error)
 	GetAllPriceHistory(days int) ([]model.MarketHistoryResponse, error)
 }
@@ -59,6 +61,14 @@ func (r *marketRepository) GetListingByType(resourceType string) (*model.MarketL
 	return &listing, nil
 }
 
+// CreateListing creates a new market listing
+func (r *marketRepository) CreateListing(listing *model.MarketListing) error {
+	if listing.ID == "" {
+		listing.ID = uuid.New().String()
+	}
+	return r.db.GetDB().Create(listing).Error
+}
+
 // UpdateListing updates a market listing
 func (r *marketRepository) UpdateListing(listing *model.MarketListing) error {
 	return r.db.GetDB().Save(listing).Error
@@ -79,6 +89,14 @@ func (r *marketRepository) GetTransactionsByPlayer(playerID string) ([]model.Mar
 		return nil, err
 	}
 	return transactions, nil
+}
+
+// CreatePriceHistory creates a new price history record
+func (r *marketRepository) CreatePriceHistory(history *model.MarketPriceHistory) error {
+	if history.ID == "" {
+		history.ID = uuid.New().String()
+	}
+	return r.db.GetDB().Create(history).Error
 }
 
 // UpdateMarketPrices updates market prices based on supply and demand and creates initial listings
@@ -134,7 +152,7 @@ func (r *marketRepository) UpdateMarketPrices() error {
 		}
 
 		// Save changes
-		if err := r.db.GetDB().Create(&history).Error; err != nil {
+		if err := r.CreatePriceHistory(&history); err != nil {
 			return err
 		}
 
@@ -234,7 +252,7 @@ func (r *marketRepository) createInitialListings() error {
 	}
 
 	for _, listing := range listings {
-		if err := r.db.GetDB().Create(&listing).Error; err != nil {
+		if err := r.CreateListing(&listing); err != nil {
 			return err
 		}
 
@@ -247,7 +265,7 @@ func (r *marketRepository) createInitialListings() error {
 			CreatedAt:    time.Now(),
 		}
 
-		if err := r.db.GetDB().Create(&history).Error; err != nil {
+		if err := r.CreatePriceHistory(&history); err != nil {
 			return err
 		}
 	}
