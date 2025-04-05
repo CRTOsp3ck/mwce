@@ -19,16 +19,31 @@ import (
 
 func main() {
 	// Parse command line flags
-	configPath := flag.String("config", "../../configs/app.yaml", "Path to configuration file")
+	configPath := flag.String("config", "../../configs/app.yaml", "Path to application configuration file")
 	flag.Parse()
 
 	// Initialize logger
 	l := logger.NewLogger()
 
-	// Load configuration
-	cfg, err := config.LoadConfig(*configPath)
+	// Load all configurations with extensive debug output
+	fmt.Printf("Starting configuration loading process\n")
+	cfg, err := config.LoadAllConfigs(*configPath)
 	if err != nil {
-		l.Fatal().Err(err).Msg("Failed to load configuration")
+		fmt.Printf("ERROR loading configs: %v\n", err)
+		l.Fatal().Err(err).Msg("Failed to load configurations")
+	}
+	fmt.Printf("All configurations loaded successfully\n")
+
+	// Verify that game config is loaded
+	if cfg.Game == nil {
+		fmt.Printf("CRITICAL: Game config is nil after loading\n")
+		l.Fatal().Msg("Game configuration is nil after loading")
+	}
+
+	// Verify that mechanics config is loaded
+	if cfg.Game.Mechanics == nil {
+		fmt.Printf("CRITICAL: Mechanics config is nil after loading\n")
+		l.Fatal().Msg("Mechanics configuration is nil after loading")
 	}
 
 	// Initialize the application

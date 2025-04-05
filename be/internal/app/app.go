@@ -68,12 +68,12 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 
 	// CORS middleware
 	router.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000"}, // Update this with your frontend domain in production
+		AllowedOrigins:   []string{"http://localhost:3000"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,
-		MaxAge:           300, // Maximum value not ignored by any of major browsers
+		MaxAge:           300,
 	}))
 
 	// Initialize repositories
@@ -83,11 +83,11 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 	marketRepo := repository.NewMarketRepository(db)
 
 	// Initialize services
-	authService := service.NewAuthService(playerRepo, cfg.JWT, logger)
+	playerService := service.NewPlayerService(playerRepo, *cfg.Game, logger)
+	authService := service.NewAuthService(playerRepo, playerService, cfg.JWT, logger)
 	sseService := service.NewSSEService(logger)
-	playerService := service.NewPlayerService(playerRepo, logger)
-	territoryService := service.NewTerritoryService(territoryRepo, playerRepo, sseService, cfg.Game, logger)
-	operationsService := service.NewOperationsService(operationsRepo, playerRepo, playerService, cfg.Game, logger)
+	territoryService := service.NewTerritoryService(territoryRepo, playerRepo, sseService, *cfg.Game, logger)
+	operationsService := service.NewOperationsService(operationsRepo, playerRepo, playerService, *cfg.Game, logger)
 	marketService := service.NewMarketService(marketRepo, playerRepo, playerService, cfg.Game, logger)
 
 	// Start scheduled jobs
