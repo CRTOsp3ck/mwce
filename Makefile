@@ -1,12 +1,16 @@
-.PHONY: build run test clean seed seed-operations seed-territory
+.PHONY: build run-be run-be-seed run-fe test clean
 
-# Build the application
-build:
-	go build -o ./be/bin/mwce-be ./be/cmd/server
+# Run the back-end
+run-be:
+	cd be/cmd/server && go run .
 
-# Run the application
-run:
-	go run ./be/cmd/server/main.go
+# Run the back-end seeder
+run-be-seed:
+	cd be/cmd/seed && go run .
+
+# Run the front-end
+run-fe:
+	cd fe && npm run dev
 
 # Run tests
 test:
@@ -15,7 +19,3 @@ test:
 # Clean build artifacts
 clean:
 	rm -rf ./be/bin
-
-# Seed data
-seed:
-	go run ./be/cmd/seed/main.go
