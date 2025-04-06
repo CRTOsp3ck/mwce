@@ -82,7 +82,7 @@ const displayedHotspots = computed(() => {
 
 // Controlled hotspots
 const controlledHotspots = computed(() => {
-  return hotspots.value.filter(h => isPlayerControlled(h));
+  return territoryStore.controlledHotspots;
 });
 
 const sortedControlledHotspots = computed(() => {
@@ -261,6 +261,26 @@ const canPerformAction = computed(() => {
       actionResources.value.vehicles > 0);
 });
 
+// Add this computed property to make the component reactive to timer updates
+const timerRefreshCounter = computed(() => territoryStore.timerRefreshCounter);
+
+// Helper function to use the centralized timer from the store
+function formatTimeRemaining(hotspotId: string): string {
+  // Access the refresh counter to ensure reactivity
+  // This is crucial for the timer to update in real-time
+  const _ = timerRefreshCounter.value;
+
+  return territoryStore.getTimeRemaining(hotspotId);
+}
+
+// Function to check if income is coming soon
+function isIncomeSoon(hotspotId: string): boolean {
+  // Access the refresh counter to ensure reactivity
+  const _ = timerRefreshCounter.value;
+
+  return territoryStore.isIncomeSoon(hotspotId);
+}
+
 // Watch for filter changes
 watch(selectedRegionId, (newValue) => {
   territoryStore.selectRegion(newValue);
@@ -277,19 +297,6 @@ watch(selectedCityId, (newValue) => {
   territoryStore.selectCity(newValue);
 });
 
-// Watch for hotspot data loading to initialize timers
-watch(
-  () => territoryStore.hotspots,
-  (newHotspots) => {
-    if (newHotspots.length > 0) {
-      cleanupHotspotTimers();
-      console.log('Hotspots loaded, initializing timers...');
-      startHotspotTimers();
-    }
-  },
-  { deep: true }
-);
-
 // Helper functions
 function formatNumber(value: number): string {
   if (value >= 1000000) {
@@ -305,7 +312,7 @@ function isPlayerControlled(hotspot: Hotspot): boolean {
 }
 
 function isRivalControlled(hotspot: Hotspot): boolean {
-  return hotspot.controller !== null && hotspot.controller !== '1';
+  return hotspot.controller !== null && hotspot.controller !== playerStore.profile?.id;
 }
 
 function getHotspotStatus(hotspot: Hotspot): string {
@@ -577,16 +584,9 @@ async function collectAllPending() {
   isCollecting.value = true;
 
   try {
-    const result = await playerStore.collectAllPending();
+    const result = await territoryStore.collectAllHotspotIncome();
 
     if (result) {
-      // Update the pending collection amounts in hotspots
-      for (const hotspot of controlledHotspots.value) {
-        if (hotspot.pendingCollection > 0) {
-          hotspot.pendingCollection = 0;
-        }
-      }
-
       // Show a success notification or message
       actionResult.value = {
         success: true,
@@ -632,15 +632,6 @@ function navigateToTab(tab: 'empire' | 'explore' | 'recent') {
 // State for tracking which hotspot is being collected
 const collectingHotspotId = ref<string | null>(null);
 
-// Helper function to format time remaining until next income
-function formatTimeRemaining(hotspotId: string): string {
-  if (hotspotTimers.value[hotspotId]) {
-    return hotspotTimers.value[hotspotId].remainingTime;
-  }
-  return 'Initializing...';
-  // return hotspotTimers.value[hotspotId].remainingTime;
-}
-
 // Function to collect income from a specific hotspot
 async function collectHotspotIncome(hotspotId: string) {
   if (collectingHotspotId.value === hotspotId) return;
@@ -668,155 +659,6 @@ async function collectHotspotIncome(hotspotId: string) {
   }
 }
 
-// Function to calculate the remaining time as a formatted string
-function calculateRemainingTime(nextIncomeTimeISO: string | undefined): string {
-  // console.log('NextIncomeTimeISO', nextIncomeTimeISO);
-  if (!nextIncomeTimeISO) {
-    return 'Unable to calculate remaining time...';
-  }
-
-  try {
-    const now = new Date();
-    const nextIncomeTime = new Date(nextIncomeTimeISO);
-
-    // console.log('Time: ', now, " | Next income time: ", nextIncomeTimeISO)
-
-    // Check for invalid date
-    if (isNaN(nextIncomeTime.getTime())) {
-      return 'Initializing...';
-    }
-
-    // Calculate time difference in milliseconds
-    const diffMs = nextIncomeTime.getTime() - now.getTime();
-
-    // If next income time has already passed, return "Now"
-    if (diffMs <= 0) {
-      return 'Now';
-    }
-
-    // Calculate hours, minutes, and seconds
-    const diffSec = Math.floor(diffMs / 1000);
-    const hours = Math.floor(diffSec / 3600);
-    const minutes = Math.floor((diffSec % 3600) / 60);
-    const seconds = diffSec % 60;
-
-    // Format the time remaining
-    if (hours > 0) {
-      return `${hours}h ${minutes}m ${seconds}s`;
-    } else if (minutes > 0) {
-      return `${minutes}m ${seconds}s`;
-    } else {
-      return `${seconds}s`;
-    }
-  } catch (error) {
-    console.error('Error calculating remaining time:', error, nextIncomeTimeISO);
-    return 'Error';
-  }
-}
-
-function isIncomeSoon(hotspotId: string): boolean {
-  if (!hotspotTimers.value[hotspotId]) {
-    return false;
-  }
-
-  // Parse the remaining time to check if it's less than 5 minutes
-  const timeStr = hotspotTimers.value[hotspotId].remainingTime;
-
-  // If it's "Now", it's definitely soon
-  if (timeStr === 'Now') {
-    return true;
-  }
-
-  // If it contains hours, it's not soon
-  if (timeStr.includes('h')) {
-    return false;
-  }
-
-  // Check if it's just minutes and seconds
-  if (timeStr.includes('m')) {
-    const minutes = parseInt(timeStr.split('m')[0]);
-    return minutes < 5; // Less than 5 minutes is considered "soon"
-  }
-
-  // If it's just seconds, it's definitely soon
-  return true;
-}
-
-// Reactive variables for timer management
-const hotspotTimers = ref<{ [hotspotId: string]: { remainingTime: string } }>({});
-let timerInterval: number | null = null;
-
-// Separate initialization function that can be called both on mount and data load
-function initializeHotspotTimers() {
-  // Clear existing timers
-  hotspotTimers.value = {};
-
-  // Initialize timers for all controlled hotspots
-  controlledHotspots.value.forEach(hotspot => {
-    if (hotspot.lastIncomeTime) {
-      // If we don't have nextIncomeTime but have lastIncomeTime, calculate it
-      try {
-        const lastTime = new Date(hotspot.lastIncomeTime);
-        if (!isNaN(lastTime.getTime())) {
-          // Calculate next income time as 1 hour after last income
-          const calculatedNextTime = new Date(lastTime.getTime() + 60 * 60 * 1000);
-
-          // Use the calculated next time for the timer
-          hotspotTimers.value[hotspot.id] = {
-            remainingTime: calculateRemainingTime(calculatedNextTime.toISOString())
-          };
-        }
-      } catch (e) {
-        console.error(`Error calculating nextIncomeTime from lastIncomeTime for hotspot ${hotspot.id}:`, e);
-        hotspotTimers.value[hotspot.id] = {
-          remainingTime: 'Error'
-        };
-      }
-    } else {
-      // No timing data available
-      hotspotTimers.value[hotspot.id] = {
-        remainingTime: 'Initializing...'
-      };
-    }
-  });
-}
-
-// Function to start hotspot timers
-function startHotspotTimers() {
-  // Initialize timers first
-  initializeHotspotTimers();
-
-  // Clear any existing interval
-  if (timerInterval !== null) {
-    clearInterval(timerInterval);
-  }
-
-  // Update the timer every second
-  timerInterval = window.setInterval(() => {
-    controlledHotspots.value.forEach(hotspot => {
-      if (hotspotTimers.value[hotspot.id]) {
-        hotspotTimers.value[hotspot.id].remainingTime = calculateRemainingTime(hotspot.nextIncomeTime);
-      } else {
-        // If a timer doesn't exist yet (new hotspot), initialize it
-        if (hotspot.nextIncomeTime) {
-          hotspotTimers.value[hotspot.id] = {
-            remainingTime: calculateRemainingTime(hotspot.nextIncomeTime)
-          };
-        }
-      }
-    });
-  }, 1000); // Update every second
-}
-
-// Function to cleanup hotspot timers
-function cleanupHotspotTimers() {
-  if (timerInterval !== null) {
-    clearInterval(timerInterval);
-    timerInterval = null;
-    console.log('Timer interval cleanup');
-  }
-}
-
 // OnMounted hook
 onMounted(async () => {
   isLoading.value = true;
@@ -827,6 +669,12 @@ onMounted(async () => {
 
   if (territoryStore.regions.length === 0) {
     await territoryStore.fetchTerritoryData();
+  } else {
+    // If data already exists, ensure all income timers are properly set
+    territoryStore.ensureAllIncomeTimes();
+
+    // Make sure timer is started (this is crucial)
+    territoryStore.startIncomeTimer();
   }
 
   if (territoryStore.recentActions.length === 0) {
@@ -835,14 +683,17 @@ onMounted(async () => {
 
   isLoading.value = false;
 
-  // Start the hotspot timers
-  startHotspotTimers();
+  // Log a message to confirm initialization
+  console.log('TerritoryView mounted and initialized. Timer active:', !!territoryStore.incomeTimerInterval);
 });
 
 // Set up cleanup on component unmount
 onBeforeUnmount(() => {
-  cleanupHotspotTimers();
+  console.log('TerritoryView unmounting, stopping timer');
+  // Stop the income timer in the store
+  territoryStore.stopIncomeTimer();
 });
+
 </script>
 
 <template>
@@ -988,7 +839,7 @@ onBeforeUnmount(() => {
                 </div>
               </div>
 
-              <!-- Update the next income display -->
+              <!-- Updated next income display using store getters -->
               <div class="detail-row income-timer">
                 <div class="detail-item">
                   <span class="detail-label">Next Income:</span>
