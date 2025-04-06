@@ -670,6 +670,7 @@ async function collectHotspotIncome(hotspotId: string) {
 
 // Function to calculate the remaining time as a formatted string
 function calculateRemainingTime(nextIncomeTimeISO: string | undefined): string {
+  // console.log('NextIncomeTimeISO', nextIncomeTimeISO);
   if (!nextIncomeTimeISO) {
     return 'Unable to calculate remaining time...';
   }
@@ -677,7 +678,7 @@ function calculateRemainingTime(nextIncomeTimeISO: string | undefined): string {
   try {
     const now = new Date();
     const nextIncomeTime = new Date(nextIncomeTimeISO);
-    
+
     // console.log('Time: ', now, " | Next income time: ", nextIncomeTimeISO)
 
     // Check for invalid date
@@ -749,7 +750,7 @@ let timerInterval: number | null = null;
 function initializeHotspotTimers() {
   // Clear existing timers
   hotspotTimers.value = {};
-  
+
   // Initialize timers for all controlled hotspots
   controlledHotspots.value.forEach(hotspot => {
     if (hotspot.lastIncomeTime) {
