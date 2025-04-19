@@ -1,4 +1,4 @@
-.PHONY: build run-be run-be-seed run-fe test clean
+.PHONY: build run-be run-be-seed run-fe test clean run
 
 # Run the back-end
 run-be:
@@ -19,3 +19,8 @@ test:
 # Clean build artifacts
 clean:
 	rm -rf ./be/bin
+
+# Run both backend and frontend in new terminals
+run:
+	xterm -fa 'Monospace' -fs 11 -geometry 120x30 -hold -e "bash -c 'make run-be; bash'" & \
+	xterm -fa 'Monospace' -fs 11 -geometry 120x30 -hold -e "bash -c 'make run-fe; bash'"

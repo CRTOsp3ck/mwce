@@ -5,7 +5,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -61,34 +60,38 @@ func main() {
 		IdleTimeout:  time.Duration(cfg.Server.TimeoutIdle) * time.Second,
 	}
 
-	// Start the server in a goroutine
-	go func() {
-		l.Info().Msgf("Starting server on port %d", cfg.Server.Port)
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			l.Fatal().Err(err).Msg("Failed to start server")
-		}
-	}()
-
 	// Set up graceful shutdown
 	quit := make(chan os.Signal, 1)
+	done := make(chan bool, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
 
-	l.Info().Msg("Shutting down server...")
+	go func() {
+		<-quit
+		l.Info().Msg("Shutting down server...")
 
-	// Create a deadline for graceful shutdown
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cfg.Server.TimeoutShutdown)*time.Second)
-	defer cancel()
+		// Create a deadline for graceful shutdown
+		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cfg.Server.TimeoutShutdown)*time.Second)
+		defer cancel()
 
-	// Close database connections before shutting down
-	if err := application.Close(); err != nil {
-		l.Error().Err(err).Msg("Error during application cleanup")
+		// Close database connections before shutting down
+		if err := application.Close(); err != nil {
+			l.Error().Err(err).Msg("Error during application cleanup")
+		}
+
+		// Shutdown the server gracefully
+		if err := server.Shutdown(ctx); err != nil {
+			l.Error().Err(err).Msg("Server forced to shutdown")
+		}
+
+		l.Info().Msg("Server exited gracefully")
+		done <- true
+	}()
+
+	// Start the server
+	l.Info().Msgf("Starting server on port %d", cfg.Server.Port)
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		l.Fatal().Err(err).Msg("Failed to start server")
 	}
 
-	// Shutdown the server gracefully
-	if err := server.Shutdown(ctx); err != nil {
-		log.Fatalf("Server forced to shutdown: %v", err)
-	}
-
-	l.Info().Msg("Server exited gracefully")
+	<-done
 }
