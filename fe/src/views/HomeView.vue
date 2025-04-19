@@ -601,6 +601,9 @@ async function collectAll() {
     }
 
     .recent-actions-card {
+      @include respond-to(md) {
+  grid-column: span 2;
+}
       .actions-list {
         @include flex-column;
         gap: $spacing-md;
