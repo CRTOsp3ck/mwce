@@ -38,6 +38,8 @@ const isCancellingOperation = ref(false);
 
 // Timer for checking operation status
 let statusCheckTimer: number | null = null;
+let countdownTimer: number | null = null;
+const timerRefreshCounter = ref(0);
 
 // Computed properties
 const playerMoney = computed(() => playerStore.playerMoney);
@@ -140,16 +142,20 @@ onMounted(async () => {
     }
   }
 
-  // Set up timer to check operation status
-  statusCheckTimer = window.setInterval(() => {
-    operationsStore.checkOperationStatus();
-  }, 10000); // Check every 10 seconds
+  startCountdownTimer();
 });
 
 // Clean up timer on component unmount
 onBeforeUnmount(() => {
   if (statusCheckTimer) {
     clearInterval(statusCheckTimer);
+    statusCheckTimer = null;
+  }
+
+  // Add this to clean up the countdown timer
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+    countdownTimer = null;
   }
 });
 
@@ -185,11 +191,14 @@ function formatOperationType(type: OperationType): string {
 function formatDuration(seconds: number): string {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
 
   if (hours > 0) {
-    return `${hours}h ${minutes}m`;
+    return `${hours}h ${minutes}m ${secs}s`;
+  } else if (minutes > 0) {
+    return `${minutes}m ${secs}s`;
   } else {
-    return `${minutes}m`;
+    return `${secs}s`;
   }
 }
 
@@ -290,6 +299,9 @@ function getOperationType(operationAttempt: OperationAttempt): string {
 }
 
 function getTimeRemaining(operationAttempt: OperationAttempt): string {
+  // Force reactivity with the timer counter
+  const _ = timerRefreshCounter.value;
+
   if (!operationAttempt || operationAttempt.status !== OperationStatus.IN_PROGRESS) {
     return 'Completed';
   }
@@ -327,6 +339,10 @@ function getEstimatedCompletion(operationAttempt: OperationAttempt): string {
 }
 
 function getProgressPercentage(operationAttempt: OperationAttempt): number {
+  // Force reactivity with the timer counter
+  const _ = timerRefreshCounter.value;
+
+  // Rest of your existing function remains the same
   if (!operationAttempt || operationAttempt.status !== OperationStatus.IN_PROGRESS) {
     return 100;
   }
@@ -427,107 +443,97 @@ async function confirmCancelOperation() {
 function navigateToTab(tab: 'available' | 'in-progress' | 'completed') {
   router.push({ path: '/operations', query: { tab } });
 }
+
+function startCountdownTimer() {
+  // Clean up existing timer if any
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+    countdownTimer = null;
+  }
+
+  // Set up new timer that updates every second
+  countdownTimer = window.setInterval(() => {
+    // Increment the refresh counter to trigger reactivity
+    timerRefreshCounter.value++;
+  }, 1000);
+}
+
+function isAlmostComplete(operationAttempt: OperationAttempt): boolean {
+  const progress = getProgressPercentage(operationAttempt);
+  return progress >= 95 && progress < 100;
+}
 </script>
 
 <template>
-    <div class="operations-view">
-      <div class="page-title">
-        <h2>Operations</h2>
-        <p class="subtitle">Complete operations to gain resources, respect, and influence across the city.</p>
+  <div class="operations-view">
+    <div class="page-title">
+      <h2>Operations</h2>
+      <p class="subtitle">Complete operations to gain resources, respect, and influence across the city.</p>
+    </div>
+
+    <div class="operations-tabs">
+      <button class="tab-button" :class="{ active: activeTab === 'available' }" @click="navigateToTab('available')">
+        Available Operations
+      </button>
+      <button class="tab-button" :class="{ active: activeTab === 'in-progress' }" @click="navigateToTab('in-progress')">
+        In Progress ({{ inProgressOperations.length }})
+      </button>
+      <button class="tab-button" :class="{ active: activeTab === 'completed' }" @click="navigateToTab('completed')">
+        Completed
+      </button>
+    </div>
+
+    <div class="operations-filters" v-if="activeTab === 'available'">
+      <div class="filter">
+        <label>Type:</label>
+        <select v-model="typeFilter">
+          <option value="all">All Types</option>
+          <option value="basic">Basic Operations</option>
+          <option value="special">Special Operations</option>
+        </select>
       </div>
 
-      <div class="operations-tabs">
-        <button
-          class="tab-button"
-          :class="{ active: activeTab === 'available' }"
-          @click="navigateToTab('available')"
-        >
-          Available Operations
-        </button>
-        <button
-          class="tab-button"
-          :class="{ active: activeTab === 'in-progress' }"
-          @click="navigateToTab('in-progress')"
-        >
-          In Progress ({{ inProgressOperations.length }})
-        </button>
-        <button
-          class="tab-button"
-          :class="{ active: activeTab === 'completed' }"
-          @click="navigateToTab('completed')"
-        >
-          Completed
-        </button>
+      <div class="search">
+        <input type="text" v-model="searchQuery" placeholder="Search operations..." />
       </div>
+    </div>
 
-      <div class="operations-filters" v-if="activeTab === 'available'">
-        <div class="filter">
-          <label>Type:</label>
-          <select v-model="typeFilter">
-            <option value="all">All Types</option>
-            <option value="basic">Basic Operations</option>
-            <option value="special">Special Operations</option>
-          </select>
-        </div>
-
-        <div class="search">
-          <input
-            type="text"
-            v-model="searchQuery"
-            placeholder="Search operations..."
-          />
-        </div>
-      </div>
-
-      <!-- Available Operations Tab -->
-      <div v-if="activeTab === 'available'" class="operations-list available-operations">
-        <BaseCard
-          v-for="operation in filteredOperations"
-          :key="operation.id"
-          class="operation-card"
-          :class="{ 'special-operation': operation.isSpecial }"
-        >
-          <template #header>
-            <div class="operation-badge" v-if="operation.isSpecial">
-              Special
-            </div>
-          </template>
-
-          <div class="operation-header">
-            <h3>{{ operation.name }}</h3>
-            <div class="operation-type">{{ formatOperationType(operation.type) }}</div>
+    <!-- Available Operations Tab -->
+    <div v-if="activeTab === 'available'" class="operations-list available-operations">
+      <BaseCard v-for="operation in filteredOperations" :key="operation.id" class="operation-card"
+        :class="{ 'special-operation': operation.isSpecial }">
+        <template #header>
+          <div class="operation-badge" v-if="operation.isSpecial">
+            Special
           </div>
+        </template>
 
-          <div class="operation-details">
-            <p class="description">{{ operation.description }}</p>
+        <div class="operation-header">
+          <h3>{{ operation.name }}</h3>
+          <div class="operation-type">{{ formatOperationType(operation.type) }}</div>
+        </div>
 
-            <div class="requirements" v-if="hasRequirements(operation)">
-              <h4>Requirements</h4>
-              <ul class="requirements-list">
-                <li v-if="operation.requirements.minInfluence">
+        <div class="operation-details">
+          <p class="description">{{ operation.description }}</p>
+
+          <div class="requirements" v-if="hasRequirements(operation)">
+            <h4>Requirements</h4>
+            <ul class="requirements-list">
+              <li v-if="operation.requirements.minInfluence">
                 Minimum Influence: {{ operation.requirements.minInfluence }}
-                <span
-                  class="requirement-status"
-                  :class="{ met: playerInfluence >= operation.requirements.minInfluence }"
-                >
+                <span class="requirement-status"
+                  :class="{ met: playerInfluence >= operation.requirements.minInfluence }">
                   {{ playerInfluence >= operation.requirements.minInfluence ? '✓' : '✗' }}
                 </span>
               </li>
               <li v-if="operation.requirements.maxHeat">
                 Maximum Heat: {{ operation.requirements.maxHeat }}
-                <span
-                  class="requirement-status"
-                  :class="{ met: playerHeat <= operation.requirements.maxHeat }"
-                >
-                  {{ playerHeat <= operation.requirements.maxHeat ? '✓' : '✗' }}
-                </span>
+                <span class="requirement-status" :class="{ met: playerHeat <= operation.requirements.maxHeat }">
+                  {{ playerHeat <= operation.requirements.maxHeat ? '✓' : '✗' }} </span>
               </li>
               <li v-if="operation.requirements.minTitle">
                 Minimum Title: {{ operation.requirements.minTitle }}
-                <span
-                  class="requirement-status"
-                  :class="{ met: meetsMinimumTitle(operation.requirements.minTitle) }"
-                >
+                <span class="requirement-status" :class="{ met: meetsMinimumTitle(operation.requirements.minTitle) }">
                   {{ meetsMinimumTitle(operation.requirements.minTitle) ? '✓' : '✗' }}
                 </span>
               </li>
@@ -543,10 +549,7 @@ function navigateToTab(tab: 'available' | 'in-progress' | 'completed') {
                   <div class="resource-name">Crew</div>
                   <div class="resource-value">
                     {{ operation.resources.crew }}
-                    <span
-                      class="resource-status"
-                      :class="{ shortage: playerCrew < operation.resources.crew }"
-                    >
+                    <span class="resource-status" :class="{ shortage: playerCrew < operation.resources.crew }">
                       ({{ playerCrew }} available)
                     </span>
                   </div>
@@ -559,10 +562,7 @@ function navigateToTab(tab: 'available' | 'in-progress' | 'completed') {
                   <div class="resource-name">Weapons</div>
                   <div class="resource-value">
                     {{ operation.resources.weapons }}
-                    <span
-                      class="resource-status"
-                      :class="{ shortage: playerWeapons < operation.resources.weapons }"
-                    >
+                    <span class="resource-status" :class="{ shortage: playerWeapons < operation.resources.weapons }">
                       ({{ playerWeapons }} available)
                     </span>
                   </div>
@@ -575,10 +575,7 @@ function navigateToTab(tab: 'available' | 'in-progress' | 'completed') {
                   <div class="resource-name">Vehicles</div>
                   <div class="resource-value">
                     {{ operation.resources.vehicles }}
-                    <span
-                      class="resource-status"
-                      :class="{ shortage: playerVehicles < operation.resources.vehicles }"
-                    >
+                    <span class="resource-status" :class="{ shortage: playerVehicles < operation.resources.vehicles }">
                       ({{ playerVehicles }} available)
                     </span>
                   </div>
@@ -591,10 +588,7 @@ function navigateToTab(tab: 'available' | 'in-progress' | 'completed') {
                   <div class="resource-name">Money</div>
                   <div class="resource-value">
                     ${{ formatNumber(operation.resources.money) }}
-                    <span
-                      class="resource-status"
-                      :class="{ shortage: playerMoney < operation.resources.money }"
-                    >
+                    <span class="resource-status" :class="{ shortage: playerMoney < operation.resources.money }">
                       (${{ formatNumber(playerMoney) }} available)
                     </span>
                   </div>
@@ -687,11 +681,8 @@ function navigateToTab(tab: 'available' | 'in-progress' | 'completed') {
 
         <template #footer>
           <div class="operation-footer">
-            <BaseButton
-              :disabled="!canStartOperation(operation)"
-              :variant="operation.isSpecial ? 'primary' : 'secondary'"
-              @click="startOperation(operation)"
-            >
+            <BaseButton :disabled="!canStartOperation(operation)"
+              :variant="operation.isSpecial ? 'primary' : 'secondary'" @click="startOperation(operation)">
               Start Operation
             </BaseButton>
             <div class="operation-warning" v-if="getOperationWarning(operation)">
@@ -710,11 +701,7 @@ function navigateToTab(tab: 'available' | 'in-progress' | 'completed') {
 
     <!-- In Progress Operations Tab -->
     <div v-else-if="activeTab === 'in-progress'" class="operations-list in-progress-operations">
-      <BaseCard
-        v-for="operation in inProgressOperations"
-        :key="operation.id"
-        class="operation-card in-progress"
-      >
+      <BaseCard v-for="operation in inProgressOperations" :key="operation.id" class="operation-card in-progress">
         <div class="operation-header">
           <h3>{{ getOperationName(operation) }}</h3>
           <div class="operation-type">{{ getOperationType(operation) }}</div>
@@ -731,10 +718,8 @@ function navigateToTab(tab: 'available' | 'in-progress' | 'completed') {
               </div>
             </div>
             <div class="progress-bar">
-              <div
-                class="progress-fill"
-                :style="{ width: `${getProgressPercentage(operation)}%` }"
-              ></div>
+              <div class="progress-fill" :class="{ 'almost-complete': isAlmostComplete(operation) }"
+                :style="{ width: `${getProgressPercentage(operation)}%` }"></div>
             </div>
           </div>
 
@@ -778,10 +763,7 @@ function navigateToTab(tab: 'available' | 'in-progress' | 'completed') {
 
         <template #footer>
           <div class="operation-footer">
-            <BaseButton
-              variant="danger"
-              @click="cancelOperation(operation)"
-            >
+            <BaseButton variant="danger" @click="cancelOperation(operation)">
               Cancel Operation
             </BaseButton>
           </div>
@@ -797,15 +779,10 @@ function navigateToTab(tab: 'available' | 'in-progress' | 'completed') {
 
     <!-- Completed Operations Tab -->
     <div v-else-if="activeTab === 'completed'" class="operations-list completed-operations">
-      <BaseCard
-        v-for="operation in completedOperations"
-        :key="operation.id"
-        class="operation-card"
-        :class="{
-          'success': isSuccessfulOperation(operation),
-          'failure': isFailedOperation(operation)
-        }"
-      >
+      <BaseCard v-for="operation in completedOperations" :key="operation.id" class="operation-card" :class="{
+        'success': isSuccessfulOperation(operation),
+        'failure': isFailedOperation(operation)
+      }">
         <div class="operation-header">
           <h3>{{ getOperationName(operation) }}</h3>
           <div class="operation-type">{{ getOperationType(operation) }}</div>
@@ -941,10 +918,8 @@ function navigateToTab(tab: 'available' | 'in-progress' | 'completed') {
     </div>
 
     <!-- Start Operation Modal -->
-    <BaseModal
-      v-model="showStartModal"
-      :title="selectedOperation ? `Start Operation: ${selectedOperation.name}` : 'Start Operation'"
-    >
+    <BaseModal v-model="showStartModal"
+      :title="selectedOperation ? `Start Operation: ${selectedOperation.name}` : 'Start Operation'">
       <div v-if="selectedOperation" class="start-operation-modal">
         <div class="operation-summary">
           <h3>{{ selectedOperation.name }}</h3>
@@ -973,10 +948,7 @@ function navigateToTab(tab: 'available' | 'in-progress' | 'completed') {
                 <div class="resource-name">Crew</div>
                 <div class="resource-value">
                   {{ selectedOperation.resources.crew }}
-                  <span
-                    class="resource-status"
-                    :class="{ shortage: playerCrew < selectedOperation.resources.crew }"
-                  >
+                  <span class="resource-status" :class="{ shortage: playerCrew < selectedOperation.resources.crew }">
                     ({{ playerCrew }} available)
                   </span>
                 </div>
@@ -989,10 +961,8 @@ function navigateToTab(tab: 'available' | 'in-progress' | 'completed') {
                 <div class="resource-name">Weapons</div>
                 <div class="resource-value">
                   {{ selectedOperation.resources.weapons }}
-                  <span
-                    class="resource-status"
-                    :class="{ shortage: playerWeapons < selectedOperation.resources.weapons }"
-                  >
+                  <span class="resource-status"
+                    :class="{ shortage: playerWeapons < selectedOperation.resources.weapons }">
                     ({{ playerWeapons }} available)
                   </span>
                 </div>
@@ -1005,10 +975,8 @@ function navigateToTab(tab: 'available' | 'in-progress' | 'completed') {
                 <div class="resource-name">Vehicles</div>
                 <div class="resource-value">
                   {{ selectedOperation.resources.vehicles }}
-                  <span
-                    class="resource-status"
-                    :class="{ shortage: playerVehicles < selectedOperation.resources.vehicles }"
-                  >
+                  <span class="resource-status"
+                    :class="{ shortage: playerVehicles < selectedOperation.resources.vehicles }">
                     ({{ playerVehicles }} available)
                   </span>
                 </div>
@@ -1021,10 +989,7 @@ function navigateToTab(tab: 'available' | 'in-progress' | 'completed') {
                 <div class="resource-name">Money</div>
                 <div class="resource-value">
                   ${{ formatNumber(selectedOperation.resources.money) }}
-                  <span
-                    class="resource-status"
-                    :class="{ shortage: playerMoney < selectedOperation.resources.money }"
-                  >
+                  <span class="resource-status" :class="{ shortage: playerMoney < selectedOperation.resources.money }">
                     (${{ formatNumber(playerMoney) }} available)
                   </span>
                 </div>
@@ -1041,17 +1006,11 @@ function navigateToTab(tab: 'available' | 'in-progress' | 'completed') {
 
       <template #footer>
         <div class="modal-footer-actions">
-          <BaseButton
-            variant="text"
-            @click="closeStartModal"
-          >
+          <BaseButton variant="text" @click="closeStartModal">
             Cancel
           </BaseButton>
-          <BaseButton
-            :disabled="!canStartSelectedOperation"
-            :loading="isStartingOperation"
-            @click="confirmStartOperation"
-          >
+          <BaseButton :disabled="!canStartSelectedOperation" :loading="isStartingOperation"
+            @click="confirmStartOperation">
             Start Operation
           </BaseButton>
         </div>
@@ -1059,10 +1018,7 @@ function navigateToTab(tab: 'available' | 'in-progress' | 'completed') {
     </BaseModal>
 
     <!-- Cancel Operation Modal -->
-    <BaseModal
-      v-model="showCancelModal"
-      title="Cancel Operation"
-    >
+    <BaseModal v-model="showCancelModal" title="Cancel Operation">
       <div class="cancel-operation-modal">
         <p>Are you sure you want to cancel this operation?</p>
         <p>Your committed resources will be returned, but any progress will be lost.</p>
@@ -1070,17 +1026,10 @@ function navigateToTab(tab: 'available' | 'in-progress' | 'completed') {
 
       <template #footer>
         <div class="modal-footer-actions">
-          <BaseButton
-            variant="text"
-            @click="closeCancelModal"
-          >
+          <BaseButton variant="text" @click="closeCancelModal">
             No, Continue Operation
           </BaseButton>
-          <BaseButton
-            variant="danger"
-            :loading="isCancellingOperation"
-            @click="confirmCancelOperation"
-          >
+          <BaseButton variant="danger" :loading="isCancellingOperation" @click="confirmCancelOperation">
             Yes, Cancel Operation
           </BaseButton>
         </div>
@@ -1260,7 +1209,8 @@ function navigateToTab(tab: 'available' | 'in-progress' | 'completed') {
           }
         }
 
-        .operation-resources, .resources-committed {
+        .operation-resources,
+        .resources-committed {
           h4 {
             margin: 0 0 $spacing-sm 0;
           }
@@ -1309,7 +1259,8 @@ function navigateToTab(tab: 'available' | 'in-progress' | 'completed') {
               margin: 0 0 $spacing-sm 0;
             }
 
-            .rewards-list, .risks-list {
+            .rewards-list,
+            .risks-list {
               list-style: none;
               padding: 0;
               margin: 0;
@@ -1320,7 +1271,8 @@ function navigateToTab(tab: 'available' | 'in-progress' | 'completed') {
                 gap: $spacing-sm;
                 margin-bottom: $spacing-xs;
 
-                .reward-icon, .risk-icon {
+                .reward-icon,
+                .risk-icon {
                   flex-shrink: 0;
                 }
 
@@ -1386,7 +1338,49 @@ function navigateToTab(tab: 'available' | 'in-progress' | 'completed') {
               height: 100%;
               background-color: $info-color;
               width: 0%;
-              transition: width 0.5s ease;
+              transition: width 0.6s ease-in-out; // Add smooth transition
+              position: relative;
+
+              // Optional: Add a subtle gradient animation
+              background-image: linear-gradient(45deg,
+                  rgba(255, 255, 255, 0.15) 25%,
+                  transparent 25%,
+                  transparent 50%,
+                  rgba(255, 255, 255, 0.15) 50%,
+                  rgba(255, 255, 255, 0.15) 75%,
+                  transparent 75%,
+                  transparent);
+              background-size: 20px 20px;
+              animation: progress-bar-stripes 1s linear infinite;
+            }
+          }
+
+          // Add this keyframe animation to your CSS
+          @keyframes progress-bar-stripes {
+            from {
+              background-position: 20px 0;
+            }
+
+            to {
+              background-position: 0 0;
+            }
+          }
+
+          .progress-fill.almost-complete {
+            animation: progress-bar-stripes 1s linear infinite, pulse-glow 1.5s infinite;
+          }
+
+          @keyframes pulse-glow {
+            0% {
+              box-shadow: 0 0 5px rgba($info-color, 0.5);
+            }
+
+            50% {
+              box-shadow: 0 0 10px rgba($info-color, 0.8);
+            }
+
+            100% {
+              box-shadow: 0 0 5px rgba($info-color, 0.5);
             }
           }
         }
