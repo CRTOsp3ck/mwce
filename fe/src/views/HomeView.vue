@@ -387,12 +387,38 @@ async function collectAll() {
 
     .overview-card {
       grid-column: 1 / -1;
+      position: relative;
+      overflow: hidden;
+
+      // Add background image with dimming effect
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: url('/src/assets/images/city-skyline.png'); /* Adjust path as needed */
+        background-size: cover;
+        background-position: center;
+        opacity: 0.15; /* Dimming effect */
+        z-index: 0;
+        pointer-events: none; /* Ensures the background doesn't interfere with clicks */
+      }
+
+      // Ensure content is positioned above the background
+      .card-header, .card-body, .card-footer {
+        position: relative;
+        z-index: 1;
+      }
 
       .overview-stats {
         display: flex;
         justify-content: space-between;
         flex-wrap: wrap;
         gap: $spacing-lg;
+        position: relative;
+        z-index: 1;
 
         .stat-item {
           flex: 1;
