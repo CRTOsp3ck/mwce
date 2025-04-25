@@ -13,6 +13,7 @@ const LoginView = () => import('@/views/LoginView.vue');
 const RegisterView = () => import('@/views/RegisterView.vue');
 const ProfileView = () => import('@/views/ProfileView.vue');
 const SettingsView = () => import('@/views/SettingsView.vue');
+const NotificationsView = () => import('@/views/NotificationsView.vue')
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -66,6 +67,15 @@ const routes: Array<RouteRecordRaw> = [
     component: NftView,
     meta: {
       title: 'NFT - Criminal Empire',
+      requiresAuth: true
+    },
+  },
+  {
+    path: '/notifications',
+    name: 'Notifications',
+    component: NotificationsView,
+    meta: {
+      title: 'Notifications - Criminal Empire',
       requiresAuth: true
     },
   },
