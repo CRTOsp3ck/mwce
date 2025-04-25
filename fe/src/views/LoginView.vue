@@ -33,9 +33,9 @@ const notificationMessage = ref('');
 
 // Computed property for form validation
 const isFormValid = computed(() => {
-  return email.value.trim() !== '' && 
-         password.value.trim() !== '' && 
-         errors.value.email === '' && 
+  return email.value.trim() !== '' &&
+         password.value.trim() !== '' &&
+         errors.value.email === '' &&
          errors.value.password === '';
 });
 
@@ -79,9 +79,9 @@ async function login() {
     });
 
     // Store authentication token
-    const { token, player } = response.data;
+    const { player, token } = response.data;
     localStorage.setItem('auth_token', token);
-    
+
     // Set up user state if needed
     if (playerStore.profile === null) {
       // Fetch player profile after login
@@ -133,10 +133,10 @@ function closeNotification() {
         <div class="auth-form">
           <div class="form-group" :class="{ 'has-error': errors.email }">
             <label for="email">Email</label>
-            <input 
-              type="email" 
-              id="email" 
-              v-model="email" 
+            <input
+              type="email"
+              id="email"
+              v-model="email"
               placeholder="Enter your email"
               @input="validateEmail"
             />
@@ -146,16 +146,16 @@ function closeNotification() {
           <div class="form-group" :class="{ 'has-error': errors.password }">
             <label for="password">Password</label>
             <div class="password-input">
-              <input 
-                :type="showPassword ? 'text' : 'password'" 
-                id="password" 
-                v-model="password" 
+              <input
+                :type="showPassword ? 'text' : 'password'"
+                id="password"
+                v-model="password"
                 placeholder="Enter your password"
                 @input="validatePassword"
               />
-              <button 
-                type="button" 
-                class="password-toggle" 
+              <button
+                type="button"
+                class="password-toggle"
                 @click="togglePasswordVisibility"
               >
                 {{ showPassword ? '👁️' : '👁️‍🗨️' }}
@@ -173,9 +173,9 @@ function closeNotification() {
           </div>
 
           <div class="auth-actions">
-            <BaseButton 
-              variant="secondary" 
-              class="login-btn" 
+            <BaseButton
+              variant="secondary"
+              class="login-btn"
               :disabled="!isFormValid || isLoading"
               :loading="isLoading"
               @click="login"
@@ -204,10 +204,10 @@ function closeNotification() {
       </div>
     </div>
 
-    <BaseNotification 
-      v-if="showNotification" 
-      :type="notificationType" 
-      :message="notificationMessage" 
+    <BaseNotification
+      v-if="showNotification"
+      :type="notificationType"
+      :message="notificationMessage"
       @close="closeNotification"
     />
   </div>

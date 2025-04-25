@@ -8,15 +8,9 @@ import BaseButton from '@/components/ui/BaseButton.vue';
 import { usePlayerStore } from '@/stores/modules/player';
 import { useTerritoryStore } from '@/stores/modules/territory';
 import { useOperationsStore } from '@/stores/modules/operations';
-import {
-  ResourceType
-} from '@/types/market';
-import {
-  TerritoryActionType
-} from '@/types/territory';
-import {
-  OperationType
-} from '@/types/operations';
+import { ResourceType } from '@/types/market';
+import { TerritoryActionType } from '@/types/territory';
+import { OperationType } from '@/types/operations';
 
 const router = useRouter();
 const playerStore = usePlayerStore();
@@ -196,7 +190,7 @@ async function collectAll() {
     const result = await territoryStore.collectAllHotspotIncome();
     if (result) {
       // Show a success message
-      // You could implement a toast notification system here
+      // You could implement a toast   system here
     }
   } catch (error) {
     console.error('Failed to collect all pending resources:', error);

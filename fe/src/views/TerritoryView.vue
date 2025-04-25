@@ -1,5 +1,3 @@
-// src/views/TerritoryView.vue
-
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -185,12 +183,18 @@ const resultModalTitle = computed(() => {
   return actionSuccess.value ? 'Operation Successful' : 'Operation Failed';
 });
 
-// Success chance calculation
+// Success chance calculation - Updated to better match backend calculation
 const successChance = computed(() => {
   if (!selectedHotspot.value || !selectedAction.value) return 0;
 
+  // Calculate player strength based on the resources allocated
+  const playerStrength = (actionResources.value.crew * 10) +
+                         (actionResources.value.weapons * 15) +
+                         (actionResources.value.vehicles * 20);
+
   // Base chance depends on action type
   let baseChance = 50;
+  let opponentStrength = 0;
 
   switch (selectedAction.value) {
     case TerritoryActionType.EXTORTION:
@@ -199,32 +203,59 @@ const successChance = computed(() => {
     case TerritoryActionType.TAKEOVER:
       // Harder if already controlled - factor in defense strength
       if (selectedHotspot.value.controller) {
-        baseChance = Math.max(30, 60 - Math.floor(selectedHotspot.value.defenseStrength / 2));
+        baseChance = 50;
+        opponentStrength = selectedHotspot.value.defenseStrength;
       } else {
-        baseChance = 70;
+        baseChance = 75;
       }
       break;
     case TerritoryActionType.COLLECTION:
       // Base chance high, but decreases with higher collection amounts
       const pendingAmount = selectedHotspot.value.pendingCollection;
-      baseChance = Math.max(50, 90 - Math.floor(pendingAmount / 1000));
+      baseChance = Math.max(50, 95 - Math.floor(pendingAmount / 1000));
       break;
     case TerritoryActionType.DEFEND:
       baseChance = 100; // Always succeeds
       break;
   }
 
-  // Adjust based on resources
-  const resourceFactor = Math.min(1.5, (
-    (actionResources.value.crew * 10) +
-    (actionResources.value.weapons * 15) +
-    (actionResources.value.vehicles * 20)
-  ) / 100);
+  // Adjust for player strength vs opponent strength
+  if (playerStrength > 0) {
+    if (opponentStrength > 0) {
+      // For actions against opponents, compare strengths
+      const strengthRatio = playerStrength / opponentStrength;
 
-  let chance = Math.round(baseChance * resourceFactor);
+      if (strengthRatio >= 2.0) {
+        baseChance += 20; // Major advantage
+      } else if (strengthRatio >= 1.5) {
+        baseChance += 15; // Significant advantage
+      } else if (strengthRatio >= 1.0) {
+        baseChance += 10; // Slight advantage
+      } else if (strengthRatio >= 0.75) {
+        baseChance += 5; // Nearly even
+      } else if (strengthRatio >= 0.5) {
+        baseChance -= 5; // Disadvantage
+      } else if (strengthRatio >= 0.25) {
+        baseChance -= 10; // Major disadvantage
+      } else {
+        baseChance -= 20; // Severe disadvantage
+      }
+    } else {
+      // For actions without opposition, add based on allocated strength
+      if (playerStrength >= 100) {
+        baseChance += 20;
+      } else if (playerStrength >= 75) {
+        baseChance += 15;
+      } else if (playerStrength >= 50) {
+        baseChance += 10;
+      } else if (playerStrength >= 25) {
+        baseChance += 5;
+      }
+    }
+  }
 
   // Cap between 5% and 95%
-  return Math.max(5, Math.min(95, chance));
+  return Math.max(5, Math.min(95, baseChance));
 });
 
 const actionWarning = computed(() => {
@@ -242,7 +273,6 @@ const actionWarning = computed(() => {
       break;
     case TerritoryActionType.EXTORTION:
       return 'Extortion generates heat, which can attract law enforcement attention.';
-      break;
     case TerritoryActionType.COLLECTION:
       if (selectedHotspot.value.pendingCollection > 5000) {
         return 'Large collection amounts may attract unwanted attention and generate heat.';
@@ -261,7 +291,7 @@ const canPerformAction = computed(() => {
       actionResources.value.vehicles > 0);
 });
 
-// Add this computed property to make the component reactive to timer updates
+// This computed property ensures reactivity with the timer in the territory store
 const timerRefreshCounter = computed(() => territoryStore.timerRefreshCounter);
 
 // Helper function to use the centralized timer from the store
@@ -269,7 +299,6 @@ function formatTimeRemaining(hotspotId: string): string {
   // Access the refresh counter to ensure reactivity
   // This is crucial for the timer to update in real-time
   const _ = timerRefreshCounter.value;
-
   return territoryStore.getTimeRemaining(hotspotId);
 }
 
@@ -277,7 +306,6 @@ function formatTimeRemaining(hotspotId: string): string {
 function isIncomeSoon(hotspotId: string): boolean {
   // Access the refresh counter to ensure reactivity
   const _ = timerRefreshCounter.value;
-
   return territoryStore.isIncomeSoon(hotspotId);
 }
 
@@ -423,7 +451,7 @@ function getActionDescription(actionType: TerritoryActionType | null, hotspot: H
 
     case TerritoryActionType.TAKEOVER:
       if (hotspot.controller) {
-        return `Attempt to take control of this business from ${isRivalControlled(hotspot) ? hotspot.controllerName : 'its current owner'}. Higher resource allocation increases your chance of success.`;
+        return `Attempt to take control of this business from ${isRivalControlled(hotspot) ? hotspot.controllerName || 'a rival' : 'its current owner'}. Higher resource allocation increases your chance of success.`;
       } else {
         return 'Take control of this unowned business. Even uncontrolled businesses require some resources to take over.';
       }
@@ -439,13 +467,20 @@ function getActionDescription(actionType: TerritoryActionType | null, hotspot: H
   }
 }
 
+// Updated to reflect more realistic backend calculations
 function getPotentialReward(actionType: TerritoryActionType | null, hotspot: Hotspot | null): number {
   if (!actionType || !hotspot) return 0;
 
   switch (actionType) {
     case TerritoryActionType.EXTORTION:
-      // Extortion rewards are based on the illegal business income with some variance
-      return Math.round(hotspot.income * 3);
+      // Extortion rewards based on resources committed and base value
+      const baseGain = 500 + (Math.floor(Math.random() * 11) * 100); // $500-$1500 base
+      const resourceMultiplier = 1.0 + (
+        (actionResources.value.crew +
+          actionResources.value.weapons * 2 +
+          actionResources.value.vehicles * 3) / 20.0
+      );
+      return Math.round(baseGain * resourceMultiplier);
 
     case TerritoryActionType.COLLECTION:
       return hotspot.pendingCollection;
@@ -455,16 +490,17 @@ function getPotentialReward(actionType: TerritoryActionType | null, hotspot: Hot
   }
 }
 
+// Updated to reflect backend heat generation values
 function getPotentialHeat(actionType: TerritoryActionType | null): number {
   if (!actionType) return 0;
 
   switch (actionType) {
     case TerritoryActionType.EXTORTION:
-      return 5;
+      return 5 + Math.floor(Math.random() * 6); // 5-10 heat
     case TerritoryActionType.TAKEOVER:
-      return 3;
+      return 3 + Math.floor(Math.random() * 5); // 3-7 heat
     case TerritoryActionType.COLLECTION:
-      return 1;
+      return 1 + Math.floor(Math.random() * 3); // 1-3 heat
     default:
       return 0;
   }
@@ -500,7 +536,7 @@ function openActionModal(hotspot: Hotspot, action: TerritoryActionType) {
   selectHotspot(hotspot);
   selectedAction.value = action;
 
-  // Set default resource allocation based on action type
+  // Set default resource allocation based on action type - optimized based on backend expectations
   switch (action) {
     case TerritoryActionType.EXTORTION:
       actionResources.value = {
@@ -510,18 +546,34 @@ function openActionModal(hotspot: Hotspot, action: TerritoryActionType) {
       };
       break;
     case TerritoryActionType.TAKEOVER:
+      // For takeovers, more resources are needed, especially against defended businesses
+      const defenseStrength = hotspot.defenseStrength || 0;
+      const recommendedCrew = defenseStrength > 0 ? Math.min(3, availableCrew.value) : Math.min(2, availableCrew.value);
+      const recommendedWeapons = defenseStrength > 0 ? Math.min(2, availableWeapons.value) : Math.min(1, availableWeapons.value);
+      const recommendedVehicles = defenseStrength > 0 ? Math.min(1, availableVehicles.value) : 0;
+
       actionResources.value = {
-        crew: Math.min(3, availableCrew.value),
-        weapons: Math.min(2, availableWeapons.value),
-        vehicles: Math.min(1, availableVehicles.value)
+        crew: recommendedCrew,
+        weapons: recommendedWeapons,
+        vehicles: recommendedVehicles
       };
       break;
     case TerritoryActionType.COLLECTION:
-      actionResources.value = {
-        crew: Math.min(1, availableCrew.value),
-        weapons: 0,
-        vehicles: 0
-      };
+      // For collections, resource needs increase with amount being collected
+      const pendingAmount = hotspot.pendingCollection;
+      if (pendingAmount > 5000) {
+        actionResources.value = {
+          crew: Math.min(2, availableCrew.value),
+          weapons: Math.min(1, availableWeapons.value),
+          vehicles: 0
+        };
+      } else {
+        actionResources.value = {
+          crew: Math.min(1, availableCrew.value),
+          weapons: 0,
+          vehicles: 0
+        };
+      }
       break;
     case TerritoryActionType.DEFEND:
       actionResources.value = {
@@ -547,19 +599,23 @@ async function performAction() {
   isPerformingAction.value = true;
 
   try {
-    const result = await territoryStore.performTerritoryAction(
+    const actResult = await territoryStore.performTerritoryAction(
       selectedAction.value,
       selectedHotspot.value.id,
       actionResources.value
     );
 
-    if (result) {
-      actionResult.value = result;
-      actionSuccess.value = result.success;
+    console.log('Result value:', actResult)
+
+    if (actResult) {
+      actionResult.value = actResult;
+      actionSuccess.value = actResult.success;
 
       // Close action modal and show result
       showActionModal.value = false;
       showResultModal.value = true;
+
+      console.log('Perform territory action result', actionResult.value);
     }
   } catch (error) {
     console.error('Error performing territory action:', error);
@@ -590,8 +646,8 @@ async function collectAllPending() {
       // Show a success notification or message
       actionResult.value = {
         success: true,
-        moneyGained: result.collectedAmount,
-        message: `Successfully collected $${formatNumber(result.collectedAmount)} from all your businesses.`
+        moneyGained: result.collectionResult.collectedAmount,
+        message: `Successfully collected $${formatNumber(result.collectionResult.collectedAmount)} from all your businesses.`
       };
 
       actionSuccess.value = true;
@@ -626,7 +682,7 @@ function onCityChange() {
 }
 
 function navigateToTab(tab: 'empire' | 'explore' | 'recent') {
-  router.push({ path: '/territory', query: { tab } })
+  router.push({ path: '/territory', query: { tab } });
 }
 
 // State for tracking which hotspot is being collected
@@ -642,11 +698,17 @@ async function collectHotspotIncome(hotspotId: string) {
     const result = await territoryStore.collectHotspotIncome(hotspotId);
 
     if (result) {
+      // Check the structure of the result and safely extract the collected amount
+      let collectedAmount = 0;
+      if (result.collectionResult && typeof result.collectionResult.collectedAmount === 'number') {
+        collectedAmount = result.collectionResult.collectedAmount;
+      }
+
       // Show result modal
       actionResult.value = {
         success: true,
-        moneyGained: result.collectedAmount,
-        message: result.message
+        moneyGained: collectedAmount,
+        message: result.gameMessage?.message || `Successfully collected ${formatNumber(collectedAmount)}`
       };
 
       actionSuccess.value = true;
@@ -693,7 +755,6 @@ onBeforeUnmount(() => {
   // Stop the income timer in the store
   territoryStore.stopIncomeTimer();
 });
-
 </script>
 
 <template>
@@ -1333,7 +1394,7 @@ onBeforeUnmount(() => {
                 <span class="item-icon">🔫</span>
                 <span class="item-value">+{{ actionResult.weaponsGained }} weapons</span>
               </div>
-              <div v-if="actionResult.weaponsLost" class="result-item-negative">
+              <div v-if="actionResult.weaponsLost" class="result-item negative">
                 <span class="item-icon">🔫</span>
                 <span class="item-value">-{{ actionResult.weaponsLost }} weapons</span>
               </div>
@@ -1427,7 +1488,7 @@ onBeforeUnmount(() => {
         .stat-content {
           .stat-value {
             font-size: $font-size-xl;
-            font-weight: 600;
+            font-weight:600;
             @include gold-accent;
           }
 
@@ -2508,20 +2569,6 @@ onBeforeUnmount(() => {
   .hotspot-card.has-pending .card-badge {
     background-color: $secondary-color;
     animation: pulse 2s infinite;
-  }
-
-  @keyframes pulse {
-    0% {
-      box-shadow: 0 0 0 0 rgba($secondary-color, 0.7);
-    }
-
-    70% {
-      box-shadow: 0 0 0 6px rgba($secondary-color, 0);
-    }
-
-    100% {
-      box-shadow: 0 0 0 0 rgba($secondary-color, 0);
-    }
   }
 }
 </style>
