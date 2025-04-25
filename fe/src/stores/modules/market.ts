@@ -103,9 +103,6 @@ export const useMarketStore = defineStore("market", {
       } catch (error) {
         this.error = "Failed to load market data";
         console.error("Error fetching market data:", error);
-
-        // For development, set mock market data
-        // this.setMockMarketData();
       } finally {
         this.isLoading = false;
       }
@@ -134,21 +131,13 @@ export const useMarketStore = defineStore("market", {
 
         // Execute transaction
         const response = await marketService.buyResource(resourceType, quantity);
-        
+
         // Check for success and process the response
         if (!response.success || !response.data) {
           throw new Error("Transaction failed");
         }
-        
-        const transactionData = response.data;
-        let transaction: MarketTransaction;
-        
-        // Handle different response formats (direct transaction or wrapped in result)
-        if ('result' in transactionData && transactionData.result) {
-          transaction = transactionData.result as MarketTransaction;
-        } else {
-          transaction = transactionData as unknown as MarketTransaction;
-        }
+
+        const transaction = response.data;
 
         // Update player resources
         playerStore.profile.money -= totalCost;
@@ -180,7 +169,10 @@ export const useMarketStore = defineStore("market", {
           }
         }
 
-        return transaction;
+        return {
+          transaction,
+          gameMessage: response.gameMessage
+        };
       } catch (error) {
         this.error = "Failed to buy resource";
         console.error("Error buying resource:", error);
@@ -230,21 +222,13 @@ export const useMarketStore = defineStore("market", {
 
         // Execute transaction
         const response = await marketService.sellResource(resourceType, quantity);
-        
+
         // Check for success
         if (!response.success || !response.data) {
           throw new Error("Transaction failed");
         }
-        
-        const transactionData = response.data;
-        let transaction: MarketTransaction;
-        
-        // Handle different response formats
-        if ('result' in transactionData && transactionData.result) {
-          transaction = transactionData.result as MarketTransaction;
-        } else {
-          transaction = transactionData as unknown as MarketTransaction;
-        }
+
+        const transaction = response.data;
 
         // Update player resources
         playerStore.profile.money += totalValue;
@@ -276,7 +260,10 @@ export const useMarketStore = defineStore("market", {
           }
         }
 
-        return transaction;
+        return {
+          transaction,
+          gameMessage: response.gameMessage
+        };
       } catch (error) {
         this.error = "Failed to sell resource";
         console.error("Error selling resource:", error);
@@ -284,114 +271,6 @@ export const useMarketStore = defineStore("market", {
       } finally {
         this.isLoading = false;
       }
-    },
-
-    // Mock data for development
-    setMockMarketData() {
-      // Create mock listings
-      this.listings = [
-        {
-          id: "listing1",
-          type: ResourceType.CREW,
-          price: 1000,
-          quantity: 999,
-          trend: PriceTrend.UP,
-          trendPercentage: 5,
-        },
-        {
-          id: "listing2",
-          type: ResourceType.WEAPONS,
-          price: 2000,
-          quantity: 999,
-          trend: PriceTrend.DOWN,
-          trendPercentage: 3,
-        },
-        {
-          id: "listing3",
-          type: ResourceType.VEHICLES,
-          price: 5000,
-          quantity: 999,
-          trend: PriceTrend.STABLE,
-          trendPercentage: 0,
-        },
-      ];
-
-      // Create mock transactions
-      this.transactions = [
-        {
-          id: "transaction1",
-          playerId: "1",
-          resourceType: ResourceType.CREW,
-          quantity: 3,
-          price: 950,
-          totalCost: 2850,
-          timestamp: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
-          transactionType: TransactionType.BUY,
-        },
-        {
-          id: "transaction2",
-          playerId: "1",
-          resourceType: ResourceType.WEAPONS,
-          quantity: 2,
-          price: 2100,
-          totalCost: 4200,
-          timestamp: new Date(Date.now() - 6 * 3600 * 1000).toISOString(),
-          transactionType: TransactionType.BUY,
-        },
-        {
-          id: "transaction3",
-          playerId: "1",
-          resourceType: ResourceType.VEHICLES,
-          quantity: 1,
-          price: 4800,
-          totalCost: 4800,
-          timestamp: new Date(Date.now() - 24 * 3600 * 1000).toISOString(),
-          transactionType: TransactionType.SELL,
-        },
-      ];
-
-      // Create mock price history (last 7 days)
-      const now = new Date();
-      const timePoints = [];
-      const crewPrices = [];
-      const weaponsPrices = [];
-      const vehiclesPrices = [];
-
-      for (let i = 6; i >= 0; i--) {
-        const date = new Date(now.getTime() - i * 24 * 3600 * 1000);
-        timePoints.push(date.toISOString());
-
-        // Generate some price fluctuations
-        const crewBasePrice = 1000;
-        const weaponsBasePrice = 2000;
-        const vehiclesBasePrice = 5000;
-
-        crewPrices.push(crewBasePrice + Math.floor(Math.random() * 200) - 100);
-        weaponsPrices.push(
-          weaponsBasePrice + Math.floor(Math.random() * 300) - 150
-        );
-        vehiclesPrices.push(
-          vehiclesBasePrice + Math.floor(Math.random() * 500) - 250
-        );
-      }
-
-      this.priceHistory = [
-        {
-          resourceType: ResourceType.CREW,
-          timePoints,
-          prices: crewPrices,
-        },
-        {
-          resourceType: ResourceType.WEAPONS,
-          timePoints,
-          prices: weaponsPrices,
-        },
-        {
-          resourceType: ResourceType.VEHICLES,
-          timePoints,
-          prices: vehiclesPrices,
-        },
-      ];
-    },
-  },
+    }
+  }
 });

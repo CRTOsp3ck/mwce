@@ -9,9 +9,10 @@ import (
 
 // Response is the standard API response structure
 type Response struct {
-	Success bool        `json:"success"`
-	Data    interface{} `json:"data,omitempty"`
-	Error   *ErrorInfo  `json:"error,omitempty"`
+	Success     bool         `json:"success"`
+	Data        interface{}  `json:"data,omitempty"`
+	GameMessage *GameMessage `json:"gameMessage,omitempty"`
+	Error       *ErrorInfo   `json:"error,omitempty"`
 }
 
 // ErrorInfo contains detailed error information
@@ -71,7 +72,7 @@ func RespondWithError(w http.ResponseWriter, statusCode int, message string) {
 	json.NewEncoder(w).Encode(response)
 }
 
-// RespondWithGameMessage sends a gameplay-related message with response
+// RespondWithGameMessage sends a response with a game message
 func RespondWithGameMessage(w http.ResponseWriter, statusCode int, data interface{}, messageType string, message string) {
 	response := Response{
 		Success: statusCode >= 200 && statusCode < 300,
@@ -79,20 +80,9 @@ func RespondWithGameMessage(w http.ResponseWriter, statusCode int, data interfac
 	}
 
 	if messageType != "" && message != "" {
-		gameMessage := GameMessage{
+		response.GameMessage = &GameMessage{
 			Type:    messageType,
 			Message: message,
-		}
-
-		// Include the game message in the data if data is a map
-		if mapData, ok := data.(map[string]interface{}); ok {
-			mapData["gameMessage"] = gameMessage
-		} else {
-			// If data is not a map, create a new map with both the original data and the game message
-			response.Data = map[string]interface{}{
-				"result":      data,
-				"gameMessage": gameMessage,
-			}
 		}
 	}
 

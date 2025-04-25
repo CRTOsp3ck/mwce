@@ -254,14 +254,9 @@ export const useTerritoryStore = defineStore('territory', {
           throw new Error('Failed to perform territory action');
         }
 
-        // Extract the result from the response
-        let result: ActionResult;
-
-        if ('result' in response.data) {
-          result = response.data.result as ActionResult;
-        } else {
-          result = response.data as unknown as ActionResult;
-        }
+        // Get the action result
+        const result = response.data;
+        console.log('Result in territory store', result);
 
         // Update player resources based on action result
         const playerStore = usePlayerStore();
@@ -451,12 +446,7 @@ export const useTerritoryStore = defineStore('territory', {
         }
 
         // Extract the collection result
-        let collectionResult;
-        if ('result' in response.data) {
-          collectionResult = response.data.result;
-        } else {
-          collectionResult = response.data;
-        }
+        const collectionResult = response.data;
 
         // Update the hotspot's pending collection
         const hotspot = this.hotspots.find(h => h.id === hotspotId);
@@ -484,7 +474,10 @@ export const useTerritoryStore = defineStore('territory', {
           }
         }
 
-        return collectionResult;
+        return {
+          collectionResult,
+          gameMessage: response.gameMessage
+        };
       } catch (error) {
         this.error = 'Failed to collect hotspot income';
         console.error('Error collecting hotspot income:', error);
@@ -505,12 +498,7 @@ export const useTerritoryStore = defineStore('territory', {
         }
 
         // Extract the collection result
-        let collectionResult;
-        if ('result' in response.data) {
-          collectionResult = response.data.result;
-        } else {
-          collectionResult = response.data;
-        }
+        const collectionResult = response.data;
 
         // Update all controlled hotspots
         const controlledHotspots = this.hotspots.filter(h => h.controller === usePlayerStore().profile?.id);
@@ -535,7 +523,10 @@ export const useTerritoryStore = defineStore('territory', {
           playerStore.profile.pendingCollections = 0;
         }
 
-        return collectionResult;
+        return {
+          collectionResult,
+          gameMessage: response.gameMessage
+        };
       } catch (error) {
         this.error = 'Failed to collect all hotspot income';
         console.error('Error collecting all hotspot income:', error);

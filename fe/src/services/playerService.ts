@@ -9,14 +9,6 @@ export interface CollectAllResponse {
   message: string;
 }
 
-export interface GameMessageResponse<T> {
-  result: T;
-  gameMessage: {
-    type: string;
-    message: string;
-  };
-}
-
 // Endpoints
 const ENDPOINTS = {
   PROFILE: '/player/profile',
@@ -32,41 +24,41 @@ export default {
    * Get the player's profile
    */
   getProfile() {
-    return api.get<ApiResponse<PlayerProfile>>(ENDPOINTS.PROFILE);
+    return api.get<PlayerProfile>(ENDPOINTS.PROFILE);
   },
-  
+
   /**
    * Get the player's stats
    */
   getStats() {
-    return api.get<ApiResponse<PlayerStats>>(ENDPOINTS.STATS);
+    return api.get<PlayerStats>(ENDPOINTS.STATS);
   },
-  
+
   /**
    * Get the player's notifications
    */
   getNotifications() {
-    return api.get<ApiResponse<Notification[]>>(ENDPOINTS.NOTIFICATIONS);
+    return api.get<Notification[]>(ENDPOINTS.NOTIFICATIONS);
   },
-  
+
   /**
    * Mark all notifications as read
    */
   markAllNotificationsAsRead() {
-    return api.post<ApiResponse<{message: string}>>(ENDPOINTS.MARK_NOTIFICATIONS_READ);
+    return api.post<{message: string}>(ENDPOINTS.MARK_NOTIFICATIONS_READ);
   },
-  
+
   /**
    * Mark a specific notification as read
    */
   markNotificationAsRead(notificationId: string) {
-    return api.post<ApiResponse<{message: string}>>(`${ENDPOINTS.MARK_NOTIFICATION_READ}/${notificationId}/read`);
+    return api.post<{message: string}>(`${ENDPOINTS.MARK_NOTIFICATION_READ}/${notificationId}/read`);
   },
-  
+
   /**
    * Collect all pending resources from controlled hotspots
    */
   collectAllPending() {
-    return api.post<ApiResponse<GameMessageResponse<CollectAllResponse>>>(ENDPOINTS.COLLECT_ALL);
+    return api.post<CollectAllResponse>(ENDPOINTS.COLLECT_ALL);
   }
 };

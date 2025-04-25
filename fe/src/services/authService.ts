@@ -1,6 +1,6 @@
 // src/services/authService.ts
 
-import api, { ApiResponse } from './api';
+import api from './api';
 
 // Define types
 export interface LoginRequest {
@@ -49,23 +49,23 @@ export default {
    * Register a new user
    */
   register(data: RegisterRequest) {
-    return api.post<ApiResponse<AuthResponse>>(ENDPOINTS.REGISTER, data);
+    return api.post<AuthResponse>(ENDPOINTS.REGISTER, data);
   },
-  
+
   /**
    * Login an existing user
    */
   login(data: LoginRequest) {
-    return api.post<ApiResponse<AuthResponse>>(ENDPOINTS.LOGIN, data);
+    return api.post<AuthResponse>(ENDPOINTS.LOGIN, data);
   },
-  
+
   /**
    * Validate token
    */
   validate() {
-    return api.get<ApiResponse<{message: string; user_id: string}>>(ENDPOINTS.VALIDATE);
+    return api.get<{message: string; user_id: string}>(ENDPOINTS.VALIDATE);
   },
-  
+
   /**
    * Logout current user
    */
@@ -73,14 +73,14 @@ export default {
     // Remove token from localStorage
     localStorage.removeItem('auth_token');
   },
-  
+
   /**
    * Check if user is authenticated
    */
   isAuthenticated() {
     return !!localStorage.getItem('auth_token');
   },
-  
+
   /**
    * Save token to localStorage
    */

@@ -1,9 +1,9 @@
 // src/services/marketService.ts
 
-import api, { ApiResponse } from './api';
-import { 
-  MarketListing, 
-  ResourceType, 
+import api from './api';
+import {
+  MarketListing,
+  ResourceType,
   MarketTransaction,
   MarketHistory
 } from '@/types/market';
@@ -25,16 +25,6 @@ export interface MarketTransactionResponse {
   transactionType: string;
 }
 
-export interface GameMessage {
-  type: string;
-  message: string;
-}
-
-export interface MarketTransactionWithMessage {
-  result: MarketTransaction;
-  gameMessage: GameMessage;
-}
-
 // Endpoints
 const ENDPOINTS = {
   LISTINGS: '/market/listings',
@@ -51,37 +41,37 @@ export default {
    * Get all market listings
    */
   getListings() {
-    return api.get<ApiResponse<MarketListing[]>>(ENDPOINTS.LISTINGS);
+    return api.get<MarketListing[]>(ENDPOINTS.LISTINGS);
   },
-  
+
   /**
    * Get a specific listing
    */
   getListing(resourceType: ResourceType) {
-    return api.get<ApiResponse<MarketListing>>(`${ENDPOINTS.LISTING_BY_TYPE}/${resourceType}`);
+    return api.get<MarketListing>(`${ENDPOINTS.LISTING_BY_TYPE}/${resourceType}`);
   },
-  
+
   /**
    * Get player's transaction history
    */
   getTransactions() {
-    return api.get<ApiResponse<MarketTransaction[]>>(ENDPOINTS.TRANSACTIONS);
+    return api.get<MarketTransaction[]>(ENDPOINTS.TRANSACTIONS);
   },
-  
+
   /**
    * Get market price history
    */
   getPriceHistory() {
-    return api.get<ApiResponse<MarketHistory[]>>(ENDPOINTS.HISTORY);
+    return api.get<MarketHistory[]>(ENDPOINTS.HISTORY);
   },
-  
+
   /**
    * Get price history for a specific resource
    */
   getResourcePriceHistory(resourceType: ResourceType) {
-    return api.get<ApiResponse<MarketHistory>>(`${ENDPOINTS.RESOURCE_HISTORY}/${resourceType}`);
+    return api.get<MarketHistory>(`${ENDPOINTS.RESOURCE_HISTORY}/${resourceType}`);
   },
-  
+
   /**
    * Buy a resource from the market
    */
@@ -90,9 +80,9 @@ export default {
       resourceType,
       quantity
     };
-    return api.post<ApiResponse<MarketTransactionWithMessage>>(ENDPOINTS.BUY, request);
+    return api.post<MarketTransaction>(ENDPOINTS.BUY, request);
   },
-  
+
   /**
    * Sell a resource to the market
    */
@@ -101,6 +91,6 @@ export default {
       resourceType,
       quantity
     };
-    return api.post<ApiResponse<MarketTransactionWithMessage>>(ENDPOINTS.SELL, request);
+    return api.post<MarketTransaction>(ENDPOINTS.SELL, request);
   }
 };

@@ -1,24 +1,16 @@
 // src/services/operationsService.ts
 
 import api, { ApiResponse } from './api';
-import { 
-  Operation, 
-  OperationAttempt, 
-  OperationResources, 
-  OperationResult 
+import {
+  Operation,
+  OperationAttempt,
+  OperationResources,
+  OperationResult
 } from '@/types/operations';
 
 // Define types that match backend models
 export interface StartOperationRequest {
   resources: OperationResources;
-}
-
-export interface OperationResultWithMessage {
-  result: OperationResult;
-  gameMessage: {
-    type: string;
-    message: string;
-  };
 }
 
 // Endpoints
@@ -33,30 +25,30 @@ export default {
    * Get all available operations
    */
   getAvailableOperations() {
-    return api.get<ApiResponse<Operation[]>>(ENDPOINTS.OPERATIONS);
+    return api.get<Operation[]>(ENDPOINTS.OPERATIONS);
   },
-  
+
   /**
    * Get a specific operation
    */
   getOperation(operationId: string) {
-    return api.get<ApiResponse<Operation>>(`${ENDPOINTS.OPERATIONS}/${operationId}`);
+    return api.get<Operation>(`${ENDPOINTS.OPERATIONS}/${operationId}`);
   },
-  
+
   /**
    * Get operations in progress
    */
   getCurrentOperations() {
-    return api.get<ApiResponse<OperationAttempt[]>>(ENDPOINTS.CURRENT);
+    return api.get<OperationAttempt[]>(ENDPOINTS.CURRENT);
   },
-  
+
   /**
    * Get completed operations
    */
   getCompletedOperations() {
-    return api.get<ApiResponse<OperationAttempt[]>>(ENDPOINTS.COMPLETED);
+    return api.get<OperationAttempt[]>(ENDPOINTS.COMPLETED);
   },
-  
+
   /**
    * Start a new operation
    */
@@ -64,20 +56,20 @@ export default {
     const request: StartOperationRequest = {
       resources
     };
-    return api.post<ApiResponse<OperationAttempt>>(`${ENDPOINTS.OPERATIONS}/${operationId}/start`, request);
+    return api.post<OperationAttempt>(`${ENDPOINTS.OPERATIONS}/${operationId}/start`, request);
   },
-  
+
   /**
    * Cancel an in-progress operation
    */
   cancelOperation(operationId: string) {
-    return api.post<ApiResponse<{status: string}>>(`${ENDPOINTS.OPERATIONS}/${operationId}/cancel`);
+    return api.post<{status: string}>(`${ENDPOINTS.OPERATIONS}/${operationId}/cancel`);
   },
-  
+
   /**
    * Collect rewards from a completed operation
    */
   collectOperation(operationId: string) {
-    return api.post<ApiResponse<OperationResultWithMessage>>(`${ENDPOINTS.OPERATIONS}/${operationId}/collect`);
+    return api.post<OperationResult>(`${ENDPOINTS.OPERATIONS}/${operationId}/collect`);
   }
 };

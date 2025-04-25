@@ -1,13 +1,13 @@
 // src/services/territoryService.ts
 
 import api, { ApiResponse } from './api';
-import { 
-  Region, 
-  District, 
-  City, 
-  Hotspot, 
-  TerritoryAction, 
-  TerritoryActionType, 
+import {
+  Region,
+  District,
+  City,
+  Hotspot,
+  TerritoryAction,
+  TerritoryActionType,
   ActionResources,
   ActionResult,
   CollectResponse,
@@ -18,14 +18,6 @@ import {
 export interface PerformActionRequest {
   hotspotId: string;
   resources: ActionResources;
-}
-
-export interface GameMessageResponse<T> {
-  result: T;
-  gameMessage: {
-    type: string;
-    message: string;
-  };
 }
 
 // Endpoints
@@ -45,93 +37,93 @@ export default {
    * Get all regions
    */
   getRegions() {
-    return api.get<ApiResponse<Region[]>>(ENDPOINTS.REGIONS);
+    return api.get<Region[]>(ENDPOINTS.REGIONS)
   },
-  
+
   /**
    * Get a specific region
    */
   getRegion(regionId: string) {
-    return api.get<ApiResponse<Region>>(`${ENDPOINTS.REGIONS}/${regionId}`);
+    return api.get<Region>(`${ENDPOINTS.REGIONS}/${regionId}`);
   },
-  
+
   /**
    * Get all districts
    */
   getDistricts() {
-    return api.get<ApiResponse<District[]>>(ENDPOINTS.DISTRICTS);
+    return api.get<District[]>(ENDPOINTS.DISTRICTS);
   },
-  
+
   /**
    * Get districts in a specific region
    */
   getDistrictsInRegion(regionId: string) {
-    return api.get<ApiResponse<District[]>>(`${ENDPOINTS.DISTRICTS}?regionId=${regionId}`);
+    return api.get<District[]>(`${ENDPOINTS.DISTRICTS}?regionId=${regionId}`);
   },
-  
+
   /**
    * Get a specific district
    */
   getDistrict(districtId: string) {
-    return api.get<ApiResponse<District>>(`${ENDPOINTS.DISTRICTS}/${districtId}`);
+    return api.get<District>(`${ENDPOINTS.DISTRICTS}/${districtId}`);
   },
-  
+
   /**
    * Get all cities
    */
   getCities() {
-    return api.get<ApiResponse<City[]>>(ENDPOINTS.CITIES);
+    return api.get<City[]>(ENDPOINTS.CITIES);
   },
-  
+
   /**
    * Get cities in a specific district
    */
   getCitiesInDistrict(districtId: string) {
-    return api.get<ApiResponse<City[]>>(`${ENDPOINTS.CITIES}?districtId=${districtId}`);
+    return api.get<City[]>(`${ENDPOINTS.CITIES}?districtId=${districtId}`);
   },
-  
+
   /**
    * Get a specific city
    */
   getCity(cityId: string) {
-    return api.get<ApiResponse<City>>(`${ENDPOINTS.CITIES}/${cityId}`);
+    return api.get<City>(`${ENDPOINTS.CITIES}/${cityId}`);
   },
-  
+
   /**
    * Get all hotspots
    */
   getHotspots() {
-    return api.get<ApiResponse<Hotspot[]>>(ENDPOINTS.HOTSPOTS);
+    return api.get<Hotspot[]>(ENDPOINTS.HOTSPOTS);
   },
-  
+
   /**
    * Get hotspots in a specific city
    */
   getHotspotsInCity(cityId: string) {
-    return api.get<ApiResponse<Hotspot[]>>(`${ENDPOINTS.HOTSPOTS}?cityId=${cityId}`);
+    return api.get<Hotspot[]>(`${ENDPOINTS.HOTSPOTS}?cityId=${cityId}`);
   },
-  
+
   /**
    * Get a specific hotspot
    */
   getHotspot(hotspotId: string) {
-    return api.get<ApiResponse<Hotspot>>(`${ENDPOINTS.HOTSPOTS}/${hotspotId}`);
+    return api.get<Hotspot>(`${ENDPOINTS.HOTSPOTS}/${hotspotId}`);
   },
-  
+
   /**
    * Get hotspots controlled by the player
    */
   getControlledHotspots() {
-    return api.get<ApiResponse<Hotspot[]>>(ENDPOINTS.CONTROLLED_HOTSPOTS);
+    return api.get<Hotspot[]>(ENDPOINTS.CONTROLLED_HOTSPOTS);
   },
-  
+
   /**
    * Get recent territory actions
    */
   getRecentActions() {
-    return api.get<ApiResponse<TerritoryAction[]>>(ENDPOINTS.ACTIONS);
+    return api.get<TerritoryAction[]>(ENDPOINTS.ACTIONS);
   },
-  
+
   /**
    * Perform a territory action (extortion, takeover, collection, defend)
    */
@@ -140,30 +132,30 @@ export default {
       hotspotId,
       resources
     };
-    return api.post<ApiResponse<GameMessageResponse<ActionResult>>>(`${ENDPOINTS.ACTIONS}/${actionType}`, request);
+    return api.post<ActionResult>(`${ENDPOINTS.ACTIONS}/${actionType}`, request);
   },
-  
+
   /**
    * Extort an illegal business
    */
   extort(hotspotId: string, resources: ActionResources) {
     return this.performAction(TerritoryActionType.EXTORTION, hotspotId, resources);
   },
-  
+
   /**
    * Attempt to take over a legal business
    */
   takeover(hotspotId: string, resources: ActionResources) {
     return this.performAction(TerritoryActionType.TAKEOVER, hotspotId, resources);
   },
-  
+
   /**
    * Collect resources from a controlled hotspot
    */
   collect(hotspotId: string, resources: ActionResources) {
     return this.performAction(TerritoryActionType.COLLECTION, hotspotId, resources);
   },
-  
+
   /**
    * Allocate resources to defend a hotspot
    */
@@ -175,13 +167,13 @@ export default {
    * Collect income from a specific hotspot
    */
   collectHotspotIncome(hotspotId: string) {
-    return api.post<ApiResponse<GameMessageResponse<CollectResponse>>>(`${ENDPOINTS.COLLECT_HOTSPOT}/${hotspotId}/collect`);
+    return api.post<CollectResponse>(`${ENDPOINTS.COLLECT_HOTSPOT}/${hotspotId}/collect`);
   },
-  
+
   /**
    * Collect income from all controlled hotspots
    */
   collectAllHotspotIncome() {
-    return api.post<ApiResponse<GameMessageResponse<CollectAllResponse>>>(ENDPOINTS.COLLECT_ALL);
+    return api.post<CollectAllResponse>(ENDPOINTS.COLLECT_ALL);
   }
 };
