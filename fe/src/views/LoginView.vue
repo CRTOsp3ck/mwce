@@ -221,7 +221,7 @@ function closeNotification() {
   display: flex;
   justify-content: center;
   align-items: center;
-  background-image: url('https://images.unsplash.com/photo-1574071318508-1cdbab80d002?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80');
+  background-image: url('@/assets/images/city-skyline.png');
   background-size: cover;
   background-position: center;
   position: relative;
@@ -233,7 +233,7 @@ function closeNotification() {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: rgba(37, 34, 34, 0.7);
     z-index: 1;
   }
 
