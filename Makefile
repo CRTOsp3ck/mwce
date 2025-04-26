@@ -2,12 +2,16 @@
 
 # Run both backend and frontend in new terminals
 run:
-	xterm -fa 'Monospace' -fs 11 -geometry 120x30 -hold -e "bash -c 'make run-be; bash'" & \
+	xterm -fa 'Monospace' -fs 11 -geometry 120x30 -hold -e "bash -c 'make run-be-air; bash'" & \
 	xterm -fa 'Monospace' -fs 11 -geometry 120x30 -hold -e "bash -c 'make run-fe; bash'"
 
 # Run the back-end
 run-be:
 	cd be/cmd/server && go run .
+
+# Run the back-end with air
+run-be-air:
+	cd be/cmd/server && air
 
 # Run the back-end seeder
 run-be-seed:
