@@ -19,6 +19,8 @@ interface OperationsState {
   selectedOperationId: string | null;
   isLoading: boolean;
   error: string | null;
+  timerRefreshCounter: number; // Used to force timer updates
+  incomeTimerInterval: number | null;
 }
 
 export const useOperationsStore = defineStore('operations', {
@@ -28,7 +30,9 @@ export const useOperationsStore = defineStore('operations', {
     completedOperations: [],
     selectedOperationId: null,
     isLoading: false,
-    error: null
+    error: null,
+    timerRefreshCounter: 0,
+    incomeTimerInterval: null
   }),
 
   getters: {
@@ -62,6 +66,50 @@ export const useOperationsStore = defineStore('operations', {
       return state.completedOperations.filter(o =>
         o.status === OperationStatus.FAILED || (o.result && !o.result.success)
       );
+    },
+
+    // Time-related getters with reactivity through timerRefreshCounter
+    getTimeRemaining: (state) => (operationId: string): string => {
+      // Use the refresh counter to make this getter reactive to timer changes
+      const _ = state.timerRefreshCounter;
+
+      const inProgressOp = state.currentOperations.find(op => op.id === operationId);
+      if (!inProgressOp || inProgressOp.status !== OperationStatus.IN_PROGRESS) {
+        return 'Completed';
+      }
+
+      const operation = state.availableOperations.find(op => op.id === inProgressOp.operationId);
+      if (!operation) return 'Unknown';
+
+      const startTime = new Date(inProgressOp.timestamp);
+      const endTime = new Date(startTime.getTime() + (operation.duration * 1000));
+      const now = new Date();
+
+      if (now >= endTime) {
+        return 'Ready to collect';
+      }
+
+      const remainingSeconds = Math.floor((endTime.getTime() - now.getTime()) / 1000);
+      return formatDuration(remainingSeconds);
+    },
+
+    isOpCompletionSoon: (state) => (operationId: string): boolean => {
+      // Use the refresh counter to make this getter reactive to timer changes
+      const _ = state.timerRefreshCounter;
+
+      const inProgressOp = state.currentOperations.find(op => op.id === operationId);
+      if (!inProgressOp || inProgressOp.status !== OperationStatus.IN_PROGRESS) return false;
+
+      const operation = state.availableOperations.find(op => op.id === inProgressOp.operationId);
+      if (!operation) return false;
+
+      const startTime = new Date(inProgressOp.timestamp);
+      const endTime = new Date(startTime.getTime() + (operation.duration * 1000));
+      const now = new Date();
+
+      // If already passed or less than 5 minutes remaining
+      const diffMs = endTime.getTime() - now.getTime();
+      return diffMs <= 5 * 60 * 1000 && diffMs >= 0;
     }
   },
 
@@ -139,6 +187,9 @@ export const useOperationsStore = defineStore('operations', {
           }
         }
 
+        // Start the operation timer
+        this.startOperationTimer();
+
         return {
           operation: newOperation,
           gameMessage: response.gameMessage
@@ -168,7 +219,7 @@ export const useOperationsStore = defineStore('operations', {
           this.currentOperations[operationIndex].status = OperationStatus.CANCELLED;
 
           // Move to completed list
-          this.completedOperations.push(this.currentOperations[operationIndex]);
+          this.completedOperations.unshift(this.currentOperations[operationIndex]);
           this.currentOperations.splice(operationIndex, 1);
         }
 
@@ -208,63 +259,11 @@ export const useOperationsStore = defineStore('operations', {
           this.currentOperations[operationIndex].completionTime = new Date().toISOString();
 
           // Move to completed list
-          this.completedOperations.push(this.currentOperations[operationIndex]);
+          this.completedOperations.unshift(this.currentOperations[operationIndex]);
           this.currentOperations.splice(operationIndex, 1);
 
-          // Update player resources based on result
-          const playerStore = usePlayerStore();
-          if (playerStore.profile) {
-            // Update money
-            if (result.moneyGained) {
-              playerStore.profile.money += result.moneyGained;
-            }
-            if (result.moneyLost) {
-              playerStore.profile.money -= result.moneyLost;
-            }
-
-            // Update crew
-            if (result.crewGained) {
-              playerStore.profile.crew += result.crewGained;
-            }
-            if (result.crewLost) {
-              playerStore.profile.crew -= result.crewLost;
-            }
-
-            // Update weapons
-            if (result.weaponsGained) {
-              playerStore.profile.weapons += result.weaponsGained;
-            }
-            if (result.weaponsLost) {
-              playerStore.profile.weapons -= result.weaponsLost;
-            }
-
-            // Update vehicles
-            if (result.vehiclesGained) {
-              playerStore.profile.vehicles += result.vehiclesGained;
-            }
-            if (result.vehiclesLost) {
-              playerStore.profile.vehicles -= result.vehiclesLost;
-            }
-
-            // Update respect/influence
-            if (result.respectGained) {
-              playerStore.profile.respect += result.respectGained;
-            }
-            if (result.influenceGained) {
-              playerStore.profile.influence += result.influenceGained;
-            }
-
-            // Update heat
-            if (result.heatGenerated) {
-              playerStore.profile.heat += result.heatGenerated;
-            }
-            if (result.heatReduced) {
-              playerStore.profile.heat -= result.heatReduced;
-              if (playerStore.profile.heat < 0) {
-                playerStore.profile.heat = 0;
-              }
-            }
-          }
+          // Apply resource changes to the player
+          this.applyOperationResultToPlayer(result);
         }
 
         return {
@@ -277,6 +276,89 @@ export const useOperationsStore = defineStore('operations', {
         return null;
       } finally {
         this.isLoading = false;
+      }
+    },
+
+    // Helper function to apply operation result to player resources
+    applyOperationResultToPlayer(result: OperationResult) {
+      const playerStore = usePlayerStore();
+      if (playerStore.profile) {
+        // Update money
+        if (result.moneyGained) {
+          playerStore.profile.money += result.moneyGained;
+        }
+        if (result.moneyLost) {
+          playerStore.profile.money = Math.max(0, playerStore.profile.money - result.moneyLost);
+        }
+
+        // Update crew
+        if (result.crewGained) {
+          playerStore.profile.crew += result.crewGained;
+        }
+        if (result.crewLost) {
+          playerStore.profile.crew = Math.max(0, playerStore.profile.crew - result.crewLost);
+        }
+
+        // Update weapons
+        if (result.weaponsGained) {
+          playerStore.profile.weapons += result.weaponsGained;
+        }
+        if (result.weaponsLost) {
+          playerStore.profile.weapons = Math.max(0, playerStore.profile.weapons - result.weaponsLost);
+        }
+
+        // Update vehicles
+        if (result.vehiclesGained) {
+          playerStore.profile.vehicles += result.vehiclesGained;
+        }
+        if (result.vehiclesLost) {
+          playerStore.profile.vehicles = Math.max(0, playerStore.profile.vehicles - result.vehiclesLost);
+        }
+
+        // Update respect/influence
+        if (result.respectGained) {
+          playerStore.profile.respect += result.respectGained;
+        }
+        if (result.influenceGained) {
+          playerStore.profile.influence += result.influenceGained;
+        }
+
+        // Update heat
+        if (result.heatGenerated) {
+          playerStore.profile.heat += result.heatGenerated;
+        }
+        if (result.heatReduced) {
+          playerStore.profile.heat = Math.max(0, playerStore.profile.heat - result.heatReduced);
+        }
+      }
+    },
+
+    // Start timer to update operation progress
+    startOperationTimer() {
+      // Clean up existing timer if any
+      if (this.incomeTimerInterval) {
+        clearInterval(this.incomeTimerInterval);
+        this.incomeTimerInterval = null;
+      }
+
+      // Set up new timer that updates every second
+      this.incomeTimerInterval = window.setInterval(() => {
+        // Increment the refresh counter to trigger reactivity
+        this.timerRefreshCounter++;
+
+        // Check for operations that have reached their end time
+        this.checkOperationStatus();
+      }, 1000);
+
+      console.log('Operation timer started');
+    },
+
+    // Stop timer when component unmounts
+    stopOperationTimer() {
+      if (this.incomeTimerInterval) {
+        clearInterval(this.incomeTimerInterval);
+        this.incomeTimerInterval = null;
+        console.log('Operation timer stopped');
       }
     },
 
@@ -294,13 +376,69 @@ export const useOperationsStore = defineStore('operations', {
             const startTime = new Date(operation.timestamp);
             const completionTime = new Date(startTime.getTime() + (operationDetails.duration * 1000));
 
-            // If operation is complete
+            // If operation is complete but not yet collected, update the UI to reflect this
+            // We're NOT auto-collecting here, just updating the UI to show it's ready
             if (now >= completionTime) {
-              this.collectOperation(operation.id);
+              // This is handled by the isOperationReady function now
             }
           }
         }
       });
+    },
+
+    // Handle operation completion from SSE notification
+    handleOperationCompletion(completedOperation: OperationAttempt) {
+      console.log('Handling operation completion from SSE:', completedOperation);
+
+      // For our new flow, operations received from SSE are NOT moved to completed
+      // They stay in currentOperations, just with updated status
+
+      // Find if this operation is in our current operations list
+      const operationIndex = this.currentOperations.findIndex(op => op.id === completedOperation.id);
+
+      if (operationIndex !== -1) {
+        // Update the operation with readiness indicator
+        // but keep it in the current operations list
+        this.currentOperations[operationIndex] = {
+          ...this.currentOperations[operationIndex],
+          // We DON'T change the status here - it stays as IN_PROGRESS until collected
+          completionTime: completedOperation.completionTime
+        };
+
+        console.log('Operation updated and kept in current operations:', completedOperation.id);
+      } else {
+        // If not found in current operations, check if it's in completed
+        const existingCompleted = this.completedOperations.findIndex(op => op.id === completedOperation.id);
+
+        // If not in either list, add it to current operations
+        if (existingCompleted === -1) {
+          // Make sure the status is still IN_PROGRESS
+          this.currentOperations.push({
+            ...completedOperation,
+            status: OperationStatus.IN_PROGRESS
+          });
+          console.log('Added new operation to current operations list:', completedOperation.id);
+        }
+      }
     }
   }
 });
+
+// Helper function to format remaining time
+function formatDuration(seconds: number): string {
+  if (seconds <= 0) {
+    return 'Now';
+  }
+
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m ${secs}s`;
+  } else if (minutes > 0) {
+    return `${minutes}m ${secs}s`;
+  } else {
+    return `${secs}s`;
+  }
+}

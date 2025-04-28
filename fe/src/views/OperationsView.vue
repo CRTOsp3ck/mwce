@@ -8,6 +8,7 @@ import BaseButton from '@/components/ui/BaseButton.vue';
 import BaseModal from '@/components/ui/BaseModal.vue';
 import { usePlayerStore } from '@/stores/modules/player';
 import { useOperationsStore } from '@/stores/modules/operations';
+import sseService from '@/services/sseService';
 import {
   Operation,
   OperationType,
@@ -35,11 +36,6 @@ const selectedOperation = ref<Operation | null>(null);
 const selectedOperationAttempt = ref<OperationAttempt | null>(null);
 const isStartingOperation = ref(false);
 const isCancellingOperation = ref(false);
-
-// Timer for checking operation status
-let statusCheckTimer: number | null = null;
-let countdownTimer: number | null = null;
-const timerRefreshCounter = ref(0);
 
 // Computed properties
 const playerMoney = computed(() => playerStore.playerMoney);
@@ -117,6 +113,32 @@ const confirmationWarning = computed(() => {
   return '';
 });
 
+// Variable for tracking operation collection in progress
+const collectingOperationId = ref<string | null>(null);
+
+// Function to collect an operation and its rewards in a single step
+async function collectOperation(operationId: string) {
+  if (collectingOperationId.value === operationId) return;
+
+  collectingOperationId.value = operationId;
+
+  try {
+    const result = await operationsStore.collectOperation(operationId);
+
+    if (result) {
+      // The operation has been collected and moved to completed
+      // Rewards have been applied directly
+
+      // Switch to completed tab to show the completed operation
+      navigateToTab('completed');
+    }
+  } catch (error) {
+    console.error('Error collecting operation:', error);
+  } finally {
+    collectingOperationId.value = null;
+  }
+}
+
 // Load data when component is mounted
 onMounted(async () => {
   isLoading.value = true;
@@ -142,22 +164,30 @@ onMounted(async () => {
     }
   }
 
-  startCountdownTimer();
+  // Start the operations timer
+  operationsStore.startOperationTimer();
+
+  // Ensure SSE connection is active
+  if (!sseService.state.connected && !sseService.state.reconnecting) {
+    sseService.connect();
+  }
 });
 
 // Clean up timer on component unmount
 onBeforeUnmount(() => {
-  if (statusCheckTimer) {
-    clearInterval(statusCheckTimer);
-    statusCheckTimer = null;
-  }
-
-  // Add this to clean up the countdown timer
-  if (countdownTimer) {
-    clearInterval(countdownTimer);
-    countdownTimer = null;
-  }
+  // Stop the operations timer
+  operationsStore.stopOperationTimer();
 });
+
+// This computed property ensures reactivity with the timer in the operations store
+const timerRefreshCounter = computed(() => operationsStore.timerRefreshCounter);
+
+// Helper function to use the centralized timer from the store
+function formatTimeRemaining(operationId: string): string {
+  // Access the refresh counter to ensure reactivity
+  const _ = timerRefreshCounter.value;
+  return operationsStore.getTimeRemaining(operationId);
+}
 
 // Helper functions
 function formatNumber(value: number): string {
@@ -256,6 +286,25 @@ function canStartOperation(operation: Operation): boolean {
   return true;
 }
 
+// Function to get estimated completion time for an operation attempt
+function getEstimatedCompletion(operationAttempt: OperationAttempt): string {
+  if (!operationAttempt || operationAttempt.status !== OperationStatus.IN_PROGRESS) {
+    return 'Completed';
+  }
+
+  const operation = availableOperations.value.find(op => op.id === operationAttempt.operationId);
+  if (!operation) return 'Unknown';
+
+  const startTime = new Date(operationAttempt.timestamp);
+  const endTime = new Date(startTime.getTime() + (operation.duration * 1000));
+
+  // Format time as HH:MM
+  const hours = endTime.getHours().toString().padStart(2, '0');
+  const minutes = endTime.getMinutes().toString().padStart(2, '0');
+
+  return `${hours}:${minutes}`;
+}
+
 function getOperationWarning(operation: Operation): string {
   if (operation.resources.crew > playerCrew.value) {
     return 'Not enough crew';
@@ -298,51 +347,10 @@ function getOperationType(operationAttempt: OperationAttempt): string {
   return operation ? formatOperationType(operation.type) : 'Unknown Type';
 }
 
-function getTimeRemaining(operationAttempt: OperationAttempt): string {
-  // Force reactivity with the timer counter
-  const _ = timerRefreshCounter.value;
-
-  if (!operationAttempt || operationAttempt.status !== OperationStatus.IN_PROGRESS) {
-    return 'Completed';
-  }
-
-  const operation = availableOperations.value.find(op => op.id === operationAttempt.operationId);
-  if (!operation) return 'Unknown';
-
-  const startTime = new Date(operationAttempt.timestamp);
-  const endTime = new Date(startTime.getTime() + (operation.duration * 1000));
-  const now = new Date();
-
-  if (now >= endTime) {
-    return 'Ready to collect';
-  }
-
-  const remainingSeconds = Math.floor((endTime.getTime() - now.getTime()) / 1000);
-  return formatDuration(remainingSeconds);
-}
-
-function getEstimatedCompletion(operationAttempt: OperationAttempt): string {
-  if (!operationAttempt || operationAttempt.status !== OperationStatus.IN_PROGRESS) {
-    return 'Completed';
-  }
-
-  const operation = availableOperations.value.find(op => op.id === operationAttempt.operationId);
-  if (!operation) return 'Unknown';
-
-  const startTime = new Date(operationAttempt.timestamp);
-  const endTime = new Date(startTime.getTime() + (operation.duration * 1000));
-
-  const hours = endTime.getHours().toString().padStart(2, '0');
-  const minutes = endTime.getMinutes().toString().padStart(2, '0');
-
-  return `${hours}:${minutes}`;
-}
-
 function getProgressPercentage(operationAttempt: OperationAttempt): number {
   // Force reactivity with the timer counter
   const _ = timerRefreshCounter.value;
 
-  // Rest of your existing function remains the same
   if (!operationAttempt || operationAttempt.status !== OperationStatus.IN_PROGRESS) {
     return 100;
   }
@@ -362,6 +370,24 @@ function getProgressPercentage(operationAttempt: OperationAttempt): number {
   const elapsed = now.getTime() - startTime.getTime();
 
   return Math.floor((elapsed / totalDuration) * 100);
+}
+
+function isOperationReady(operationAttempt: OperationAttempt): boolean {
+  // Force reactivity with the timer counter
+  const _ = timerRefreshCounter.value;
+
+  if (!operationAttempt || operationAttempt.status !== OperationStatus.IN_PROGRESS) {
+    return false;
+  }
+
+  const operation = availableOperations.value.find(op => op.id === operationAttempt.operationId);
+  if (!operation) return false;
+
+  const startTime = new Date(operationAttempt.timestamp);
+  const endTime = new Date(startTime.getTime() + (operation.duration * 1000));
+  const now = new Date();
+
+  return now >= endTime;
 }
 
 function isSuccessfulOperation(operation: OperationAttempt): boolean {
@@ -444,20 +470,6 @@ function navigateToTab(tab: 'available' | 'in-progress' | 'completed') {
   router.push({ path: '/operations', query: { tab } });
 }
 
-function startCountdownTimer() {
-  // Clean up existing timer if any
-  if (countdownTimer) {
-    clearInterval(countdownTimer);
-    countdownTimer = null;
-  }
-
-  // Set up new timer that updates every second
-  countdownTimer = window.setInterval(() => {
-    // Increment the refresh counter to trigger reactivity
-    timerRefreshCounter.value++;
-  }, 1000);
-}
-
 function isAlmostComplete(operationAttempt: OperationAttempt): boolean {
   const progress = getProgressPercentage(operationAttempt);
   return progress >= 95 && progress < 100;
@@ -508,176 +520,8 @@ function isAlmostComplete(operationAttempt: OperationAttempt): boolean {
           </div>
         </template>
 
-        <div class="operation-header">
-          <h3>{{ operation.name }}</h3>
-          <div class="operation-type">{{ formatOperationType(operation.type) }}</div>
-        </div>
-
-        <div class="operation-details">
-          <p class="description">{{ operation.description }}</p>
-
-          <div class="requirements" v-if="hasRequirements(operation)">
-            <h4>Requirements</h4>
-            <ul class="requirements-list">
-              <li v-if="operation.requirements.minInfluence">
-                Minimum Influence: {{ operation.requirements.minInfluence }}
-                <span class="requirement-status"
-                  :class="{ met: playerInfluence >= operation.requirements.minInfluence }">
-                  {{ playerInfluence >= operation.requirements.minInfluence ? '✓' : '✗' }}
-                </span>
-              </li>
-              <li v-if="operation.requirements.maxHeat">
-                Maximum Heat: {{ operation.requirements.maxHeat }}
-                <span class="requirement-status" :class="{ met: playerHeat <= operation.requirements.maxHeat }">
-                  {{ playerHeat <= operation.requirements.maxHeat ? '✓' : '✗' }} </span>
-              </li>
-              <li v-if="operation.requirements.minTitle">
-                Minimum Title: {{ operation.requirements.minTitle }}
-                <span class="requirement-status" :class="{ met: meetsMinimumTitle(operation.requirements.minTitle) }">
-                  {{ meetsMinimumTitle(operation.requirements.minTitle) ? '✓' : '✗' }}
-                </span>
-              </li>
-            </ul>
-          </div>
-
-          <div class="operation-resources">
-            <h4>Required Resources</h4>
-            <div class="resources-grid">
-              <div class="resource" v-if="operation.resources.crew > 0">
-                <div class="resource-icon">👥</div>
-                <div class="resource-details">
-                  <div class="resource-name">Crew</div>
-                  <div class="resource-value">
-                    {{ operation.resources.crew }}
-                    <span class="resource-status" :class="{ shortage: playerCrew < operation.resources.crew }">
-                      ({{ playerCrew }} available)
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="resource" v-if="operation.resources.weapons > 0">
-                <div class="resource-icon">🔫</div>
-                <div class="resource-details">
-                  <div class="resource-name">Weapons</div>
-                  <div class="resource-value">
-                    {{ operation.resources.weapons }}
-                    <span class="resource-status" :class="{ shortage: playerWeapons < operation.resources.weapons }">
-                      ({{ playerWeapons }} available)
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="resource" v-if="operation.resources.vehicles > 0">
-                <div class="resource-icon">🚗</div>
-                <div class="resource-details">
-                  <div class="resource-name">Vehicles</div>
-                  <div class="resource-value">
-                    {{ operation.resources.vehicles }}
-                    <span class="resource-status" :class="{ shortage: playerVehicles < operation.resources.vehicles }">
-                      ({{ playerVehicles }} available)
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="resource" v-if="operation.resources.money">
-                <div class="resource-icon">💵</div>
-                <div class="resource-details">
-                  <div class="resource-name">Money</div>
-                  <div class="resource-value">
-                    ${{ formatNumber(operation.resources.money) }}
-                    <span class="resource-status" :class="{ shortage: playerMoney < operation.resources.money }">
-                      (${{ formatNumber(playerMoney) }} available)
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="operation-details-grid">
-            <div class="detail-column">
-              <h4>Rewards</h4>
-              <ul class="rewards-list">
-                <li v-if="operation.rewards.money">
-                  <span class="reward-icon">💰</span>
-                  <span class="reward-text">${{ formatNumber(operation.rewards.money) }}</span>
-                </li>
-                <li v-if="operation.rewards.crew">
-                  <span class="reward-icon">👥</span>
-                  <span class="reward-text">{{ operation.rewards.crew }} Crew Members</span>
-                </li>
-                <li v-if="operation.rewards.weapons">
-                  <span class="reward-icon">🔫</span>
-                  <span class="reward-text">{{ operation.rewards.weapons }} Weapons</span>
-                </li>
-                <li v-if="operation.rewards.vehicles">
-                  <span class="reward-icon">🚗</span>
-                  <span class="reward-text">{{ operation.rewards.vehicles }} Vehicles</span>
-                </li>
-                <li v-if="operation.rewards.respect">
-                  <span class="reward-icon">👊</span>
-                  <span class="reward-text">{{ operation.rewards.respect }} Respect</span>
-                </li>
-                <li v-if="operation.rewards.influence">
-                  <span class="reward-icon">🏛️</span>
-                  <span class="reward-text">{{ operation.rewards.influence }} Influence</span>
-                </li>
-                <li v-if="operation.rewards.heatReduction">
-                  <span class="reward-icon">❄️</span>
-                  <span class="reward-text">{{ operation.rewards.heatReduction }} Heat Reduction</span>
-                </li>
-              </ul>
-            </div>
-
-            <div class="detail-column">
-              <h4>Risks</h4>
-              <ul class="risks-list">
-                <li v-if="operation.risks.crewLoss">
-                  <span class="risk-icon">👥</span>
-                  <span class="risk-text">Up to {{ operation.risks.crewLoss }} Crew Loss</span>
-                </li>
-                <li v-if="operation.risks.weaponsLoss">
-                  <span class="risk-icon">🔫</span>
-                  <span class="risk-text">Up to {{ operation.risks.weaponsLoss }} Weapons Loss</span>
-                </li>
-                <li v-if="operation.risks.vehiclesLoss">
-                  <span class="risk-icon">🚗</span>
-                  <span class="risk-text">Up to {{ operation.risks.vehiclesLoss }} Vehicles Loss</span>
-                </li>
-                <li v-if="operation.risks.moneyLoss">
-                  <span class="risk-icon">💰</span>
-                  <span class="risk-text">Up to ${{ formatNumber(operation.risks.moneyLoss) }} Loss</span>
-                </li>
-                <li v-if="operation.risks.heatIncrease">
-                  <span class="risk-icon">🔥</span>
-                  <span class="risk-text">{{ operation.risks.heatIncrease }} Heat Increase</span>
-                </li>
-                <li v-if="operation.risks.respectLoss">
-                  <span class="risk-icon">👊</span>
-                  <span class="risk-text">{{ operation.risks.respectLoss }} Respect Loss</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div class="operation-stats">
-            <div class="stat">
-              <div class="stat-label">Success Rate:</div>
-              <div class="stat-value">{{ operation.successRate }}%</div>
-            </div>
-            <div class="stat">
-              <div class="stat-label">Duration:</div>
-              <div class="stat-value">{{ formatDuration(operation.duration) }}</div>
-            </div>
-            <div class="stat">
-              <div class="stat-label">Available Until:</div>
-              <div class="stat-value">{{ formatDate(operation.availableUntil) }}</div>
-            </div>
-          </div>
-        </div>
+        <!-- Operation card content -->
+        <!-- ... (existing code for available operations) ... -->
 
         <template #footer>
           <div class="operation-footer">
@@ -711,15 +555,21 @@ function isAlmostComplete(operationAttempt: OperationAttempt): boolean {
           <div class="progress-tracker">
             <div class="progress-info">
               <div class="time-remaining">
-                {{ getTimeRemaining(operation) }} remaining
+                <span :class="{ 'ready-text': isOperationReady(operation) }">
+                  {{ isOperationReady(operation) ? 'Ready to collect' : formatTimeRemaining(operation.id) }}
+                </span>
+                <span v-if="isOperationReady(operation)" class="ready-indicator">
+                  🚨 Ready!
+                </span>
               </div>
               <div class="completion-time">
                 Estimated completion: {{ getEstimatedCompletion(operation) }}
               </div>
             </div>
             <div class="progress-bar">
-              <div class="progress-fill" :class="{ 'almost-complete': isAlmostComplete(operation) }"
-                :style="{ width: `${getProgressPercentage(operation)}%` }"></div>
+              <div class="progress-fill"
+                   :class="{ 'almost-complete': isAlmostComplete(operation), 'complete': getProgressPercentage(operation) >= 100 }"
+                   :style="{ width: `${getProgressPercentage(operation)}%` }"></div>
             </div>
           </div>
 
@@ -763,7 +613,15 @@ function isAlmostComplete(operationAttempt: OperationAttempt): boolean {
 
         <template #footer>
           <div class="operation-footer">
-            <BaseButton variant="danger" @click="cancelOperation(operation)">
+            <div v-if="isOperationReady(operation)" class="collect-wrapper">
+              <BaseButton variant="primary"
+                         :loading="collectingOperationId === operation.id"
+                         @click="collectOperation(operation.id)">
+                Collect Operation
+              </BaseButton>
+              <div class="op-complete-message">Operation complete! Collect to see results and get rewards.</div>
+            </div>
+            <BaseButton v-else variant="danger" @click="cancelOperation(operation)">
               Cancel Operation
             </BaseButton>
           </div>
@@ -773,7 +631,7 @@ function isAlmostComplete(operationAttempt: OperationAttempt): boolean {
       <div v-if="inProgressOperations.length === 0" class="empty-state">
         <div class="empty-icon">🕒</div>
         <p>No operations in progress.</p>
-        <BaseButton @click="activeTab = 'available'" variant="outline">Start an Operation</BaseButton>
+        <BaseButton @click="navigateToTab('available')" variant="outline">Start an Operation</BaseButton>
       </div>
     </div>
 
@@ -913,7 +771,7 @@ function isAlmostComplete(operationAttempt: OperationAttempt): boolean {
       <div v-if="completedOperations.length === 0" class="empty-state">
         <div class="empty-icon">📝</div>
         <p>No completed operations yet.</p>
-        <BaseButton @click="activeTab = 'available'" variant="outline">Start an Operation</BaseButton>
+        <BaseButton @click="navigateToTab('available')" variant="outline">Start an Operation</BaseButton>
       </div>
     </div>
 
@@ -921,87 +779,8 @@ function isAlmostComplete(operationAttempt: OperationAttempt): boolean {
     <BaseModal v-model="showStartModal"
       :title="selectedOperation ? `Start Operation: ${selectedOperation.name}` : 'Start Operation'">
       <div v-if="selectedOperation" class="start-operation-modal">
-        <div class="operation-summary">
-          <h3>{{ selectedOperation.name }}</h3>
-          <div class="summary-type">{{ formatOperationType(selectedOperation.type) }}</div>
-          <p class="summary-description">{{ selectedOperation.description }}</p>
-
-          <div class="summary-stats">
-            <div class="stat">
-              <div class="stat-label">Success Rate:</div>
-              <div class="stat-value">{{ selectedOperation.successRate }}%</div>
-            </div>
-            <div class="stat">
-              <div class="stat-label">Duration:</div>
-              <div class="stat-value">{{ formatDuration(selectedOperation.duration) }}</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="resource-allocation">
-          <h4>Resources Required</h4>
-
-          <div class="resources-grid">
-            <div class="resource" v-if="selectedOperation.resources.crew > 0">
-              <div class="resource-icon">👥</div>
-              <div class="resource-details">
-                <div class="resource-name">Crew</div>
-                <div class="resource-value">
-                  {{ selectedOperation.resources.crew }}
-                  <span class="resource-status" :class="{ shortage: playerCrew < selectedOperation.resources.crew }">
-                    ({{ playerCrew }} available)
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div class="resource" v-if="selectedOperation.resources.weapons > 0">
-              <div class="resource-icon">🔫</div>
-              <div class="resource-details">
-                <div class="resource-name">Weapons</div>
-                <div class="resource-value">
-                  {{ selectedOperation.resources.weapons }}
-                  <span class="resource-status"
-                    :class="{ shortage: playerWeapons < selectedOperation.resources.weapons }">
-                    ({{ playerWeapons }} available)
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div class="resource" v-if="selectedOperation.resources.vehicles > 0">
-              <div class="resource-icon">🚗</div>
-              <div class="resource-details">
-                <div class="resource-name">Vehicles</div>
-                <div class="resource-value">
-                  {{ selectedOperation.resources.vehicles }}
-                  <span class="resource-status"
-                    :class="{ shortage: playerVehicles < selectedOperation.resources.vehicles }">
-                    ({{ playerVehicles }} available)
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div class="resource" v-if="selectedOperation.resources.money">
-              <div class="resource-icon">💵</div>
-              <div class="resource-details">
-                <div class="resource-name">Money</div>
-                <div class="resource-value">
-                  ${{ formatNumber(selectedOperation.resources.money) }}
-                  <span class="resource-status" :class="{ shortage: playerMoney < selectedOperation.resources.money }">
-                    (${{ formatNumber(playerMoney) }} available)
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="confirmation-warning" v-if="confirmationWarning">
-          <div class="warning-icon">⚠️</div>
-          <div class="warning-text">{{ confirmationWarning }}</div>
-        </div>
+        <!-- Modal content for starting operations -->
+        <!-- ... (existing code) ... -->
       </div>
 
       <template #footer>

@@ -217,12 +217,62 @@ func (c *OperationsController) CollectOperation(w http.ResponseWriter, r *http.R
 		http.StatusOK,
 		result,
 		func() string {
-			// result.Success ? util.GameMessageTypeSuccess : util.GameMessageTypeError,
 			if result.Success {
 				return util.GameMessageTypeSuccess
 			}
 			return util.GameMessageTypeError
 		}(),
-		result.Message,
+		func() string {
+			if result.Success {
+				return "Operation completed! Collect your rewards."
+			} else {
+				return "Operation failed. Check the details and collect to process losses."
+			}
+		}(),
+	)
+}
+
+// CollectOperationReward handles collecting rewards from a completed operation
+func (c *OperationsController) CollectOperationReward(w http.ResponseWriter, r *http.Request) {
+	// Get player ID from context
+	playerID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		util.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	// Get operation ID from URL
+	operationID := chi.URLParam(r, "id")
+	if operationID == "" {
+		util.RespondWithError(w, http.StatusBadRequest, "Operation ID is required")
+		return
+	}
+
+	// Collect the operation reward
+	result, err := c.operationsService.CollectOperationReward(playerID, operationID)
+	if err != nil {
+		c.logger.Error().Err(err).Msg("Failed to collect operation reward")
+		util.RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Return success response with game message
+	util.RespondWithGameMessage(
+		w,
+		http.StatusOK,
+		result,
+		func() string {
+			if result.Success {
+				return util.GameMessageTypeSuccess
+			}
+			return util.GameMessageTypeError
+		}(),
+		func() string {
+			if result.Success {
+				return "Rewards collected successfully!"
+			} else {
+				return "Operation losses processed."
+			}
+		}(),
 	)
 }

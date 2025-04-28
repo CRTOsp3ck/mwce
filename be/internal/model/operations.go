@@ -1,4 +1,3 @@
-
 // internal/model/operations.go
 
 package model
@@ -83,6 +82,7 @@ type OperationAttempt struct {
 	Result         *OperationResult   `json:"result,omitempty" gorm:"embedded"`
 	CompletionTime *time.Time         `json:"completionTime,omitempty"`
 	Status         string             `json:"status" gorm:"not null"` // in_progress, completed, failed, cancelled
+	Notified       bool               `json:"notified" gorm:"default:false"`
 	CreatedAt      time.Time          `json:"-" gorm:"not null"`
 	UpdatedAt      time.Time          `json:"-" gorm:"not null"`
 }
@@ -97,20 +97,21 @@ func (o *OperationAttempt) BeforeCreate(tx *gorm.DB) error {
 
 // OperationResult represents the result of an operation attempt
 type OperationResult struct {
-	Success         bool   `json:"success" gorm:"default:false"`
-	MoneyGained     int    `json:"moneyGained,omitempty" gorm:"default:0"`
-	MoneyLost       int    `json:"moneyLost,omitempty" gorm:"default:0"`
-	CrewGained      int    `json:"crewGained,omitempty" gorm:"default:0"`
-	CrewLost        int    `json:"crewLost,omitempty" gorm:"default:0"`
-	WeaponsGained   int    `json:"weaponsGained,omitempty" gorm:"default:0"`
-	WeaponsLost     int    `json:"weaponsLost,omitempty" gorm:"default:0"`
-	VehiclesGained  int    `json:"vehiclesGained,omitempty" gorm:"default:0"`
-	VehiclesLost    int    `json:"vehiclesLost,omitempty" gorm:"default:0"`
-	RespectGained   int    `json:"respectGained,omitempty" gorm:"default:0"`
-	InfluenceGained int    `json:"influenceGained,omitempty" gorm:"default:0"`
-	HeatGenerated   int    `json:"heatGenerated,omitempty" gorm:"default:0"`
-	HeatReduced     int    `json:"heatReduced,omitempty" gorm:"default:0"`
-	Message         string `json:"message" gorm:"not null"`
+	Success          bool   `json:"success" gorm:"default:false"`
+	MoneyGained      int    `json:"moneyGained,omitempty" gorm:"default:0"`
+	MoneyLost        int    `json:"moneyLost,omitempty" gorm:"default:0"`
+	CrewGained       int    `json:"crewGained,omitempty" gorm:"default:0"`
+	CrewLost         int    `json:"crewLost,omitempty" gorm:"default:0"`
+	WeaponsGained    int    `json:"weaponsGained,omitempty" gorm:"default:0"`
+	WeaponsLost      int    `json:"weaponsLost,omitempty" gorm:"default:0"`
+	VehiclesGained   int    `json:"vehiclesGained,omitempty" gorm:"default:0"`
+	VehiclesLost     int    `json:"vehiclesLost,omitempty" gorm:"default:0"`
+	RespectGained    int    `json:"respectGained,omitempty" gorm:"default:0"`
+	InfluenceGained  int    `json:"influenceGained,omitempty" gorm:"default:0"`
+	HeatGenerated    int    `json:"heatGenerated,omitempty" gorm:"default:0"`
+	HeatReduced      int    `json:"heatReduced,omitempty" gorm:"default:0"`
+	RewardsCollected bool   `json:"rewardsCollected" gorm:"default:false"`
+	Message          string `json:"message" gorm:"not null"`
 }
 
 // StartOperationRequest represents a request to start an operation

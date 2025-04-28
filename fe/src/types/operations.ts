@@ -80,6 +80,7 @@ export interface OperationResult {
   vehiclesGained?: number;
   vehiclesLost?: number;
   respectGained?: number;
+  respectLost?: number;
   influenceGained?: number;
   heatGenerated?: number;
   heatReduced?: number;
