@@ -13,6 +13,9 @@ import {
   TerritoryAction
 } from '@/types/territory';
 
+import HotspotTooltip from '@/components/HotspotTooltip.vue';
+import HotspotDetailModal from '@/components/HotspotDetailModal.vue';
+
 const route = useRoute();
 const router = useRouter();
 
@@ -47,6 +50,15 @@ const isPerformingAction = ref(false);
 const showResultModal = ref(false);
 const actionResult = ref<ActionResult | null>(null);
 const actionSuccess = ref(false);
+
+// For tooltip functionality
+const tooltipVisible = ref(false);
+const tooltipPosition = ref({ x: 0, y: 0 });
+const tooltipHotspot = ref<Hotspot | null>(null);
+
+// For detail modal functionality
+const showDetailModal = ref(false);
+const detailModalHotspot = ref<Hotspot | null>(null);
 
 // Computed properties
 const regions = computed(() => territoryStore.regions);
@@ -189,8 +201,8 @@ const successChance = computed(() => {
 
   // Calculate player strength based on the resources allocated
   const playerStrength = (actionResources.value.crew * 10) +
-                         (actionResources.value.weapons * 15) +
-                         (actionResources.value.vehicles * 20);
+    (actionResources.value.weapons * 15) +
+    (actionResources.value.vehicles * 20);
 
   // Base chance depends on action type
   let baseChance = 50;
@@ -721,6 +733,38 @@ async function collectHotspotIncome(hotspotId: string) {
   }
 }
 
+// Tooltip methods
+function showTooltip(hotspot: Hotspot, event: MouseEvent) {
+  // Don't show tooltip when in modal mode
+  if (showActionModal.value || showResultModal.value || showDetailModal.value) return;
+
+  tooltipHotspot.value = hotspot;
+
+  // Position tooltip near the info icon but with slight offset
+  tooltipPosition.value = {
+    x: event.clientX + 10,
+    y: event.clientY + 10
+  };
+
+  tooltipVisible.value = true;
+}
+
+function hideTooltip() {
+  tooltipVisible.value = false;
+}
+
+// Detail modal methods
+function openDetailModal(hotspot: Hotspot) {
+  hideTooltip();
+  detailModalHotspot.value = hotspot;
+  showDetailModal.value = true;
+}
+
+// Method to forward action request from detail modal to action modal
+function handleOpenActionModal(hotspot: Hotspot, action: TerritoryActionType) {
+  openActionModal(hotspot, action);
+}
+
 // OnMounted hook
 onMounted(async () => {
   isLoading.value = true;
@@ -820,28 +864,8 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <!-- Region distribution chart -->
-      <div class="empire-regions-overview">
-        <div class="overview-header">
-          <h4>Regional Distribution</h4>
-          <span class="help-text">Your territorial influence across the city</span>
-        </div>
-        <div class="regions-chart">
-          <div v-for="region in regionsWithControlledHotspots" :key="region.id" class="region-bar">
-            <div class="region-name">{{ region.name }}</div>
-            <div class="bar-wrapper">
-              <div class="bar-fill" :style="{ width: `${region.controlPercentage}%` }"
-                :class="{ 'powerful': region.controlPercentage > 60 }"></div>
-              <span class="bar-value">{{ region.controlled }}/{{ region.total }}</span>
-            </div>
-          </div>
-
-          <div v-if="regionsWithControlledHotspots.length === 0" class="no-regions">
-            <p>You don't control any territories yet.</p>
-            <p>Explore the city to find businesses to take over.</p>
-          </div>
-        </div>
-      </div>
+      <!-- Section Separator -->
+      <div class="section-separator"></div>
 
       <!-- Controlled hotspots grid -->
       <div class="hotspots-section">
@@ -864,15 +888,21 @@ onBeforeUnmount(() => {
 
         <div class="hotspots-grid empire-grid">
           <div v-for="hotspot in sortedControlledHotspots" :key="hotspot.id" class="hotspot-card controlled"
-            :class="{ 'has-pending': hotspot.pendingCollection > 0 }" @click="selectHotspot(hotspot)">
+            :class="{ 'has-pending': hotspot.pendingCollection > 0 }" @click="openDetailModal(hotspot)">
+
             <div class="card-badge" v-if="hotspot.pendingCollection > 0">
               <span class="badge-icon">💰</span>
               ${{ formatNumber(hotspot.pendingCollection) }}
             </div>
 
             <div class="hotspot-header">
-              <h3>{{ hotspot.name }}</h3>
-              <div class="hotspot-type">{{ hotspot.type }}</div>
+              <div class="hotspot-title-area">
+                <h3>{{ hotspot.name }}</h3>
+                <div class="hotspot-type">{{ hotspot.type }}</div>
+              </div>
+              <div class="hotspot-info-icon" @mouseover.stop="showTooltip(hotspot, $event)" @mouseleave.stop="hideTooltip">
+                <span class="info-icon">ℹ️</span>
+              </div>
             </div>
 
             <div class="hotspot-details">
@@ -951,6 +981,34 @@ onBeforeUnmount(() => {
           </div>
         </div>
       </div>
+
+      <!-- Section Separator -->
+      <div class="section-separator">
+        <!-- <span class="separator-text">Regional Influence</span> -->
+      </div>
+
+      <!-- Region distribution chart -->
+      <div class="empire-regions-overview">
+        <div class="overview-header">
+          <h4>Regional Distribution</h4>
+          <span class="help-text">Your territorial influence across the city</span>
+        </div>
+        <div class="regions-chart">
+          <div v-for="region in regionsWithControlledHotspots" :key="region.id" class="region-bar">
+            <div class="region-name">{{ region.name }}</div>
+            <div class="bar-wrapper">
+              <div class="bar-fill" :style="{ width: `${region.controlPercentage}%` }"
+                :class="{ 'powerful': region.controlPercentage > 60 }"></div>
+              <span class="bar-value">{{ region.controlled }}/{{ region.total }}</span>
+            </div>
+          </div>
+
+          <div v-if="regionsWithControlledHotspots.length === 0" class="no-regions">
+            <p>You don't control any territories yet.</p>
+            <p>Explore the city to find businesses to take over.</p>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Explore Tab Content -->
@@ -1020,7 +1078,8 @@ onBeforeUnmount(() => {
             'controlled': isPlayerControlled(hotspot),
             'rival-controlled': isRivalControlled(hotspot),
             'illegal': !hotspot.isLegal
-          }" @click="selectHotspot(hotspot)">
+          }" @click="openDetailModal(hotspot)">
+
             <div v-if="!hotspot.isLegal" class="card-badge illegal">
               <span class="badge-icon">⚠️</span>
               Illegal
@@ -1035,8 +1094,13 @@ onBeforeUnmount(() => {
             </div>
 
             <div class="hotspot-header">
-              <h3>{{ hotspot.name }}</h3>
-              <div class="hotspot-type">{{ hotspot.type }}</div>
+              <div class="hotspot-title-area">
+                <h3>{{ hotspot.name }}</h3>
+                <div class="hotspot-type">{{ hotspot.type }}</div>
+              </div>
+              <div class="hotspot-info-icon" @mouseover.stop="showTooltip(hotspot, $event)" @mouseleave.stop="hideTooltip">
+                <span class="info-icon">ℹ️</span>
+              </div>
             </div>
 
             <div class="hotspot-details">
@@ -1445,11 +1509,65 @@ onBeforeUnmount(() => {
       </template>
     </BaseModal>
   </div>
+
+  <!-- Hotspot Tooltip -->
+  <HotspotTooltip v-if="tooltipHotspot" :hotspot="tooltipHotspot" :visible="tooltipVisible"
+    :position="tooltipPosition" />
+
+  <!-- Hotspot Detail Modal -->
+  <HotspotDetailModal
+    :visible="showDetailModal"
+    @update:visible="showDetailModal = $event"
+    :hotspot="detailModalHotspot"
+    @open-action-modal="handleOpenActionModal"
+  />
 </template>
 
 <style lang="scss">
 .territory-view {
   // @include page-container;
+
+  .hotspot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: $spacing-md;
+
+  .hotspot-title-area {
+    flex: 1;
+  }
+
+  h3 {
+    margin: 0 0 $spacing-xs 0;
+    font-size: $font-size-lg;
+  }
+
+  .hotspot-type {
+    color: $text-secondary;
+    font-size: $font-size-sm;
+  }
+
+  .hotspot-info-icon {
+    cursor: help;
+    height: 24px;
+    width: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: rgba($background-lighter, 0.2);
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: rgba($gold-color, 0.2);
+      transform: scale(1.1);
+    }
+
+    .info-icon {
+      font-size: 14px;
+    }
+  }
+}
 
   .page-header {
     @include flex-column;
@@ -1488,7 +1606,7 @@ onBeforeUnmount(() => {
         .stat-content {
           .stat-value {
             font-size: $font-size-xl;
-            font-weight:600;
+            font-weight: 600;
             @include gold-accent;
           }
 
@@ -1545,6 +1663,40 @@ onBeforeUnmount(() => {
 
   /* Empire Tab Styles */
   .empire-tab {
+
+    /* Reversed the order of sections */
+    .hotspots-section {
+      margin-bottom: $spacing-xl;
+
+      .section-header {
+        @include flex-between;
+        margin-bottom: $spacing-lg;
+
+        // h4 {
+        //   @include section-title;
+        // }
+
+        .section-filters {
+          display: flex;
+          gap: $spacing-md;
+
+          .filter-group {
+            display: flex;
+            align-items: center;
+            gap: $spacing-sm;
+
+            select {
+              background-color: $background-lighter;
+              color: $text-color;
+              border: 1px solid $border-color;
+              border-radius: $border-radius-sm;
+              padding: 6px 12px;
+            }
+          }
+        }
+      }
+    }
+
     .empire-header {
       @include flex-between;
       margin-bottom: $spacing-lg;
@@ -1626,36 +1778,6 @@ onBeforeUnmount(() => {
         }
       }
     }
-
-    .hotspots-section {
-      .section-header {
-        @include flex-between;
-        margin-bottom: $spacing-lg;
-
-        // h4 {
-        //   @include section-title;
-        // }
-
-        .section-filters {
-          display: flex;
-          gap: $spacing-md;
-
-          .filter-group {
-            display: flex;
-            align-items: center;
-            gap: $spacing-sm;
-
-            select {
-              background-color: $background-lighter;
-              color: $text-color;
-              border: 1px solid $border-color;
-              border-radius: $border-radius-sm;
-              padding: 6px 12px;
-            }
-          }
-        }
-      }
-    }
   }
 
   /* Empire Grid Styles */
@@ -1665,6 +1787,14 @@ onBeforeUnmount(() => {
 
       &.has-pending {
         box-shadow: 0 0 0 2px $secondary-color;
+      }
+
+      /* Added the golden glow effect on hover */
+      &:hover {
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.7), 0 0 30px rgba(255, 215, 0, 0.4);
+        border-color: rgba(255, 215, 0, 0.8);
+        transform: translateY(-5px);
+        transition: all 0.3s ease;
       }
 
       .card-badge {
@@ -1858,6 +1988,14 @@ onBeforeUnmount(() => {
     .hotspot-card {
       position: relative;
 
+      /* Added the golden glow effect on hover */
+      &:hover {
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.7), 0 0 30px rgba(255, 215, 0, 0.4);
+        border-color: rgba(255, 215, 0, 0.8);
+        transform: translateY(-5px);
+        transition: all 0.3s ease;
+      }
+
       .card-badge {
         position: absolute;
         top: -10px;
@@ -2047,13 +2185,15 @@ onBeforeUnmount(() => {
     .hotspot-card {
       @include card;
       cursor: pointer;
-      transition: $transition-base;
+      transition: all 0.3s ease;
+      /* Updated for smoother transitions */
       display: flex;
       flex-direction: column;
+      border: 1px solid rgba($border-color, 0.5);
 
+      /* Removed the original hover effect as it's replaced by the golden glow */
       &:hover {
-        transform: translateY(-3px);
-        box-shadow: $shadow-lg;
+        transform: translateY(-5px);
       }
 
       .hotspot-header {
@@ -2551,6 +2691,40 @@ onBeforeUnmount(() => {
     }
   }
 
+  /* New Section Separator */
+  .section-separator {
+    position: relative;
+    text-align: center;
+    margin: $spacing-xl;
+    height: 20px;
+
+    &:before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg,
+          rgba($gold-color, 0) 0%,
+          rgba($gold-color, 0.5) 15%,
+          rgba($gold-color, 1) 50%,
+          rgba($gold-color, 0.5) 85%,
+          rgba($gold-color, 0) 100%);
+    }
+
+    .separator-text {
+      position: relative;
+      background-color: $background-dark;
+      padding: 0 $spacing-md;
+      font-size: $font-size-md;
+      font-weight: 600;
+      color: $gold-color;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+  }
+
   @keyframes pulse {
     0% {
       opacity: 1;
@@ -2569,6 +2743,30 @@ onBeforeUnmount(() => {
   .hotspot-card.has-pending .card-badge {
     background-color: $secondary-color;
     animation: pulse 2s infinite;
+  }
+
+  /* Gold glow pulse animation for important elements */
+  @keyframes goldPulse {
+    0% {
+      box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    }
+
+    50% {
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 30px rgba(255, 215, 0, 0.4);
+    }
+
+    100% {
+      box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    }
+  }
+
+  /* Added additional polish to the hotspot cards */
+  .hotspot-card.controlled {
+    border-top: 2px solid $success-color;
+
+    &.has-pending {
+      animation: goldPulse 3s infinite;
+    }
   }
 }
 </style>
