@@ -520,8 +520,176 @@ function isAlmostComplete(operationAttempt: OperationAttempt): boolean {
           </div>
         </template>
 
-        <!-- Operation card content -->
-        <!-- ... (existing code for available operations) ... -->
+        <div class="operation-header">
+          <h3>{{ operation.name }}</h3>
+          <div class="operation-type">{{ formatOperationType(operation.type) }}</div>
+        </div>
+
+        <div class="operation-details">
+          <p class="description">{{ operation.description }}</p>
+
+          <div class="requirements" v-if="hasRequirements(operation)">
+            <h4>Requirements</h4>
+            <ul class="requirements-list">
+              <li v-if="operation.requirements.minInfluence">
+                Minimum Influence: {{ operation.requirements.minInfluence }}
+                <span class="requirement-status"
+                  :class="{ met: playerInfluence >= operation.requirements.minInfluence }">
+                  {{ playerInfluence >= operation.requirements.minInfluence ? '✓' : '✗' }}
+                </span>
+              </li>
+              <li v-if="operation.requirements.maxHeat">
+                Maximum Heat: {{ operation.requirements.maxHeat }}
+                <span class="requirement-status" :class="{ met: playerHeat <= operation.requirements.maxHeat }">
+                  {{ playerHeat <= operation.requirements.maxHeat ? '✓' : '✗' }} </span>
+              </li>
+              <li v-if="operation.requirements.minTitle">
+                Minimum Title: {{ operation.requirements.minTitle }}
+                <span class="requirement-status" :class="{ met: meetsMinimumTitle(operation.requirements.minTitle) }">
+                  {{ meetsMinimumTitle(operation.requirements.minTitle) ? '✓' : '✗' }}
+                </span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="operation-resources">
+            <h4>Required Resources</h4>
+            <div class="resources-grid">
+              <div class="resource" v-if="operation.resources.crew > 0">
+                <div class="resource-icon">👥</div>
+                <div class="resource-details">
+                  <div class="resource-name">Crew</div>
+                  <div class="resource-value">
+                    {{ operation.resources.crew }}
+                    <span class="resource-status" :class="{ shortage: playerCrew < operation.resources.crew }">
+                      ({{ playerCrew }} available)
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="resource" v-if="operation.resources.weapons > 0">
+                <div class="resource-icon">🔫</div>
+                <div class="resource-details">
+                  <div class="resource-name">Weapons</div>
+                  <div class="resource-value">
+                    {{ operation.resources.weapons }}
+                    <span class="resource-status" :class="{ shortage: playerWeapons < operation.resources.weapons }">
+                      ({{ playerWeapons }} available)
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="resource" v-if="operation.resources.vehicles > 0">
+                <div class="resource-icon">🚗</div>
+                <div class="resource-details">
+                  <div class="resource-name">Vehicles</div>
+                  <div class="resource-value">
+                    {{ operation.resources.vehicles }}
+                    <span class="resource-status" :class="{ shortage: playerVehicles < operation.resources.vehicles }">
+                      ({{ playerVehicles }} available)
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="resource" v-if="operation.resources.money">
+                <div class="resource-icon">💵</div>
+                <div class="resource-details">
+                  <div class="resource-name">Money</div>
+                  <div class="resource-value">
+                    ${{ formatNumber(operation.resources.money) }}
+                    <span class="resource-status" :class="{ shortage: playerMoney < operation.resources.money }">
+                      (${{ formatNumber(playerMoney) }} available)
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="operation-details-grid">
+            <div class="detail-column">
+              <h4>Rewards</h4>
+              <ul class="rewards-list">
+                <li v-if="operation.rewards.money">
+                  <span class="reward-icon">💰</span>
+                  <span class="reward-text">${{ formatNumber(operation.rewards.money) }}</span>
+                </li>
+                <li v-if="operation.rewards.crew">
+                  <span class="reward-icon">👥</span>
+                  <span class="reward-text">{{ operation.rewards.crew }} Crew Members</span>
+                </li>
+                <li v-if="operation.rewards.weapons">
+                  <span class="reward-icon">🔫</span>
+                  <span class="reward-text">{{ operation.rewards.weapons }} Weapons</span>
+                </li>
+                <li v-if="operation.rewards.vehicles">
+                  <span class="reward-icon">🚗</span>
+                  <span class="reward-text">{{ operation.rewards.vehicles }} Vehicles</span>
+                </li>
+                <li v-if="operation.rewards.respect">
+                  <span class="reward-icon">👊</span>
+                  <span class="reward-text">{{ operation.rewards.respect }} Respect</span>
+                </li>
+                <li v-if="operation.rewards.influence">
+                  <span class="reward-icon">🏛️</span>
+                  <span class="reward-text">{{ operation.rewards.influence }} Influence</span>
+                </li>
+                <li v-if="operation.rewards.heatReduction">
+                  <span class="reward-icon">❄️</span>
+                  <span class="reward-text">{{ operation.rewards.heatReduction }} Heat Reduction</span>
+                </li>
+              </ul>
+            </div>
+
+            <div class="detail-column">
+              <h4>Risks</h4>
+              <ul class="risks-list">
+                <li v-if="operation.risks.crewLoss">
+                  <span class="risk-icon">👥</span>
+                  <span class="risk-text">Up to {{ operation.risks.crewLoss }} Crew Loss</span>
+                </li>
+                <li v-if="operation.risks.weaponsLoss">
+                  <span class="risk-icon">🔫</span>
+                  <span class="risk-text">Up to {{ operation.risks.weaponsLoss }} Weapons Loss</span>
+                </li>
+                <li v-if="operation.risks.vehiclesLoss">
+                  <span class="risk-icon">🚗</span>
+                  <span class="risk-text">Up to {{ operation.risks.vehiclesLoss }} Vehicles Loss</span>
+                </li>
+                <li v-if="operation.risks.moneyLoss">
+                  <span class="risk-icon">💰</span>
+                  <span class="risk-text">Up to ${{ formatNumber(operation.risks.moneyLoss) }} Loss</span>
+                </li>
+                <li v-if="operation.risks.heatIncrease">
+                  <span class="risk-icon">🔥</span>
+                  <span class="risk-text">{{ operation.risks.heatIncrease }} Heat Increase</span>
+                </li>
+                <li v-if="operation.risks.respectLoss">
+                  <span class="risk-icon">👊</span>
+                  <span class="risk-text">{{ operation.risks.respectLoss }} Respect Loss</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="operation-stats">
+            <div class="stat">
+              <div class="stat-label">Success Rate:</div>
+              <div class="stat-value">{{ operation.successRate }}%</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Duration:</div>
+              <div class="stat-value">{{ formatDuration(operation.duration) }}</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Available Until:</div>
+              <div class="stat-value">{{ formatDate(operation.availableUntil) }}</div>
+            </div>
+          </div>
+        </div>
 
         <template #footer>
           <div class="operation-footer">
@@ -779,8 +947,87 @@ function isAlmostComplete(operationAttempt: OperationAttempt): boolean {
     <BaseModal v-model="showStartModal"
       :title="selectedOperation ? `Start Operation: ${selectedOperation.name}` : 'Start Operation'">
       <div v-if="selectedOperation" class="start-operation-modal">
-        <!-- Modal content for starting operations -->
-        <!-- ... (existing code) ... -->
+        <div class="operation-summary">
+          <h3>{{ selectedOperation.name }}</h3>
+          <div class="summary-type">{{ formatOperationType(selectedOperation.type) }}</div>
+          <p class="summary-description">{{ selectedOperation.description }}</p>
+
+          <div class="summary-stats">
+            <div class="stat">
+              <div class="stat-label">Success Rate:</div>
+              <div class="stat-value">{{ selectedOperation.successRate }}%</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Duration:</div>
+              <div class="stat-value">{{ formatDuration(selectedOperation.duration) }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="resource-allocation">
+          <h4>Resources Required</h4>
+
+          <div class="resources-grid">
+            <div class="resource" v-if="selectedOperation.resources.crew > 0">
+              <div class="resource-icon">👥</div>
+              <div class="resource-details">
+                <div class="resource-name">Crew</div>
+                <div class="resource-value">
+                  {{ selectedOperation.resources.crew }}
+                  <span class="resource-status" :class="{ shortage: playerCrew < selectedOperation.resources.crew }">
+                    ({{ playerCrew }} available)
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="resource" v-if="selectedOperation.resources.weapons > 0">
+              <div class="resource-icon">🔫</div>
+              <div class="resource-details">
+                <div class="resource-name">Weapons</div>
+                <div class="resource-value">
+                  {{ selectedOperation.resources.weapons }}
+                  <span class="resource-status"
+                    :class="{ shortage: playerWeapons < selectedOperation.resources.weapons }">
+                    ({{ playerWeapons }} available)
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="resource" v-if="selectedOperation.resources.vehicles > 0">
+              <div class="resource-icon">🚗</div>
+              <div class="resource-details">
+                <div class="resource-name">Vehicles</div>
+                <div class="resource-value">
+                  {{ selectedOperation.resources.vehicles }}
+                  <span class="resource-status"
+                    :class="{ shortage: playerVehicles < selectedOperation.resources.vehicles }">
+                    ({{ playerVehicles }} available)
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="resource" v-if="selectedOperation.resources.money">
+              <div class="resource-icon">💵</div>
+              <div class="resource-details">
+                <div class="resource-name">Money</div>
+                <div class="resource-value">
+                  ${{ formatNumber(selectedOperation.resources.money) }}
+                  <span class="resource-status" :class="{ shortage: playerMoney < selectedOperation.resources.money }">
+                    (${{ formatNumber(playerMoney) }} available)
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="confirmation-warning" v-if="confirmationWarning">
+          <div class="warning-icon">⚠️</div>
+          <div class="warning-text">{{ confirmationWarning }}</div>
+        </div>
       </div>
 
       <template #footer>
