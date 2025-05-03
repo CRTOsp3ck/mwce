@@ -1,11 +1,10 @@
 // src/components/layout/AppHeader.vue
 
-
-
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { usePlayerStore } from '@/stores/modules/player';
+import { useTravelStore } from '@/stores/modules/travel';
 import {
     Notification,
     NotificationType
@@ -14,6 +13,7 @@ import {
 const route = useRoute();
 const router = useRouter();
 const playerStore = usePlayerStore();
+const travelStore = useTravelStore();
 
 // UI state
 const currentRoute = computed(() => route.path);
@@ -30,6 +30,10 @@ const isLoggedIn = computed(() => {
 const playerName = computed(() => playerStore.profile?.name || 'Boss');
 const playerTitle = computed(() => playerStore.profile?.title || 'Capo');
 const playerAvatar = ref('🤵');
+
+// Current region info
+const currentRegion = computed(() => travelStore.currentRegion);
+const currentLocationName = computed(() => travelStore.currentLocationName);
 
 // Navigation
 const navItems = [
@@ -112,6 +116,8 @@ function getNotificationIcon(type: NotificationType): string {
             return '🔥';
         case NotificationType.SYSTEM:
             return '🔔';
+        case 'travel' as NotificationType:  // Added travel notification type
+            return '✈️';
         default:
             return '🔔';
     }
@@ -184,6 +190,12 @@ async function logout() {
             </router-link>
         </nav>
 
+        <!-- Region indicator added here -->
+        <div class="region-indicator" @click="router.push('/travel')">
+            <div class="region-icon">{{ currentRegion ? '🌆' : '🏠' }}</div>
+            <div class="region-name">{{ currentLocationName }}</div>
+        </div>
+
         <div class="user-controls">
             <div class="user-menu" v-if="isLoggedIn">
                 <div class="profile-link" @click="toggleProfileMenu">
@@ -255,7 +267,8 @@ async function logout() {
                                 'operation': notification.type === 'operation',
                                 'collection': notification.type === 'collection',
                                 'heat': notification.type === 'heat',
-                                'system': notification.type === 'system'
+                                'system': notification.type === 'system',
+                                'travel': notification.type === 'travel'
                             }">
                             <div class="notification-icon">
                                 {{ getNotificationIcon(notification.type) }}
@@ -359,6 +372,31 @@ async function logout() {
                 background-color: $secondary-color;
                 box-shadow: 0 0 8px rgba($secondary-color, 0.5);
             }
+        }
+    }
+
+    /* New region indicator styling */
+    .region-indicator {
+        display: flex;
+        align-items: center;
+        gap: $spacing-sm;
+        padding: $spacing-sm $spacing-md;
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: $border-radius-md;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin: 0 $spacing-md;
+
+        &:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .region-icon {
+            font-size: 20px;
+        }
+
+        .region-name {
+            font-weight: 500;
         }
     }
 
@@ -672,6 +710,11 @@ async function logout() {
 
                         &.system {
                             border-left-color: $text-secondary;
+                        }
+
+                        /* New travel notification styling */
+                        &.travel {
+                            border-left-color: $primary-color;
                         }
 
                         .notification-icon {

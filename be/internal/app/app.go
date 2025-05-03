@@ -51,6 +51,7 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 		&model.MarketListing{},
 		&model.MarketTransaction{},
 		&model.MarketPriceHistory{},
+		&model.TravelAttempt{}, // Add travel attempt to migrations
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)
@@ -89,6 +90,7 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 	territoryService := service.NewTerritoryService(territoryRepo, playerRepo, sseService, *cfg.Game, logger)
 	operationsService := service.NewOperationsService(operationsRepo, playerRepo, playerService, *cfg.Game, logger)
 	marketService := service.NewMarketService(marketRepo, playerRepo, playerService, cfg.Game, logger)
+	travelService := service.NewTravelService(playerRepo, territoryRepo, *cfg.Game, logger) // New travel service
 
 	// Start scheduled jobs
 	operationsService.StartPeriodicOperationsRefresh()
@@ -97,11 +99,12 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 
 	// Initialize controllers
 	authController := controller.NewAuthController(authService, logger)
-	sseControler := controller.NewSSEController(authService, sseService, logger)
+	sseController := controller.NewSSEController(authService, sseService, logger)
 	playerController := controller.NewPlayerController(playerService, logger)
 	territoryController := controller.NewTerritoryController(territoryService, logger)
 	operationsController := controller.NewOperationsController(operationsService, logger)
 	marketController := controller.NewMarketController(marketService, logger)
+	travelController := controller.NewTravelController(travelService, logger) // New travel controller
 
 	// Auth middleware
 	authMiddleware := appMiddleware.NewAuthMiddleware(authService)
@@ -115,7 +118,7 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 			r.Get("/auth/validate", authController.Validate)
 
 			// SSE route for real-time updates
-			r.Get("/sse", sseControler.HandleConnection)
+			r.Get("/sse", sseController.HandleConnection)
 		})
 
 		// Protected routes
@@ -130,6 +133,14 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 				r.Post("/notifications/read", playerController.MarkAllNotificationsRead)
 				r.Post("/notifications/{id}/read", playerController.MarkNotificationRead)
 				r.Post("/collect-all", playerController.CollectAllPending)
+			})
+
+			// Travel routes
+			r.Route("/travel", func(r chi.Router) {
+				r.Get("/available", travelController.GetAvailableRegions)
+				r.Get("/current", travelController.GetCurrentRegion)
+				r.Post("/", travelController.Travel)
+				r.Get("/history", travelController.GetTravelHistory)
 			})
 
 			// Territory routes

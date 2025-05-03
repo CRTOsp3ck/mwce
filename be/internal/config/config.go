@@ -206,6 +206,7 @@ type MechanicsConfig struct {
 	Heat           HeatConfig               `yaml:"heat"`
 	Notifications  NotificationConfig       `yaml:"notifications"`
 	Operations     OperationsConfig         `yaml:"operations"`
+	Travel         TravelConfig             `yaml:"travel"`
 }
 
 // SuccessChance represents success chance configuration for an action
@@ -261,4 +262,17 @@ type OperationsConfig struct {
 	RewardScaling                map[string]int     `yaml:"reward_scaling"`
 	DifficultyMultipliers        map[string]float64 `yaml:"difficulty_multipliers"`
 	SpecialOperationRequirements map[string]int     `yaml:"special_operation_requirements"`
+}
+
+// TravelConfig represents the travel mechanics configuration
+type TravelConfig struct {
+	BaseCost             int     `yaml:"base_cost"`              // Base cost for travel between regions
+	BaseCatchChance      float64 `yaml:"base_catch_chance"`      // Base chance of getting caught (percentage)
+	HeatMultiplier       float64 `yaml:"heat_multiplier"`        // How much heat increases catch chance
+	MaxCatchChance       float64 `yaml:"max_catch_chance"`       // Maximum chance of getting caught (percentage)
+	BaseFineFactor       float64 `yaml:"base_fine_factor"`       // Base fine as percentage of player's money
+	MinimumFine          int     `yaml:"minimum_fine"`           // Minimum fine amount
+	MaxFinePercent       float64 `yaml:"max_fine_percent"`       // Maximum fine as percentage of player's money
+	CaughtHeatIncrease   int     `yaml:"caught_heat_increase"`   // Heat increase when caught
+	SuccessHeatReduction int     `yaml:"success_heat_reduction"` // Heat reduction on successful travel
 }

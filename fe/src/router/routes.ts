@@ -4,6 +4,7 @@ import { RouteRecordRaw } from 'vue-router';
 
 // Lazy-load components for better performance
 const HomeView = () => import('@/views/HomeView.vue');
+const TravelView = () => import('@/views/TravelView.vue');  // New Travel view
 const TerritoryView = () => import('@/views/TerritoryView.vue');
 const OperationsView = () => import('@/views/OperationsView.vue');
 const MarketView = () => import('@/views/MarketView.vue');
@@ -13,7 +14,7 @@ const LoginView = () => import('@/views/LoginView.vue');
 const RegisterView = () => import('@/views/RegisterView.vue');
 const ProfileView = () => import('@/views/ProfileView.vue');
 const SettingsView = () => import('@/views/SettingsView.vue');
-const NotificationsView = () => import('@/views/NotificationsView.vue')
+const NotificationsView = () => import('@/views/NotificationsView.vue');
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -26,12 +27,22 @@ const routes: Array<RouteRecordRaw> = [
     },
   },
   {
+    path: '/travel',
+    name: 'Travel',
+    component: TravelView,
+    meta: {
+      title: 'Travel - Criminal Empire',
+      requiresAuth: true
+    },
+  },
+  {
     path: '/territory',
     name: 'Territory',
     component: TerritoryView,
     meta: {
       title: 'Territory - Criminal Empire',
-      requiresAuth: true
+      requiresAuth: true,
+      requiresRegion: true  // New meta field to check if player is in a region
     },
   },
   {
@@ -40,7 +51,8 @@ const routes: Array<RouteRecordRaw> = [
     component: OperationsView,
     meta: {
       title: 'Operations - Criminal Empire',
-      requiresAuth: true
+      requiresAuth: true,
+      requiresRegion: true  // New meta field to check if player is in a region
     },
   },
   {
@@ -49,7 +61,8 @@ const routes: Array<RouteRecordRaw> = [
     component: MarketView,
     meta: {
       title: 'Market - Criminal Empire',
-      requiresAuth: true
+      requiresAuth: true,
+      requiresRegion: true  // New meta field to check if player is in a region
     },
   },
   {

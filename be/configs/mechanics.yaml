@@ -23,7 +23,7 @@ success_chances:
       crew: 1.0
       weapons: 1.5
       vehicles: 2.0
-  
+
   # Operations
   carjacking:
     base_chance: 70
@@ -125,7 +125,7 @@ progression:
     godfather:
       respect_influence: 150
   resource_cap_increases:
-    crew: 
+    crew:
       per_influence: 0.5
     weapons:
       per_influence: 0.5
@@ -172,3 +172,14 @@ operations:
   special_operation_requirements:
     min_influence: 30
     max_heat: 50
+
+travel:
+  baseCost: 1000
+  baseCatchChance: 10.0
+  heatMultiplier: 0.5
+  maxCatchChance: 75.0
+  baseFineFactor: 0.15
+  minimumFine: 500
+  maxFinePercent: 0.5
+  caughtHeatIncrease: 20
+  successHeatReduction: 5

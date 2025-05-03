@@ -26,16 +26,18 @@ type TerritoryRepository interface {
 	GetAllHotspots() ([]model.Hotspot, error)
 	GetHotspotsByCity(cityID string) ([]model.Hotspot, error)
 	GetHotspotByID(id string) (*model.Hotspot, error)
+	GetHotspotsByRegion(regionID string) ([]model.Hotspot, error)
 	GetControlledHotspots(playerID string) ([]model.Hotspot, error)
+	GetControlledHotspotsByRegion(playerID string, regionID string) ([]model.Hotspot, error)
 	UpdateHotspot(hotspot *model.Hotspot) error
 	AddTerritoryAction(action *model.TerritoryAction) error
 	GetRecentActions(limit int) ([]model.TerritoryAction, error)
 	GetRecentActionsByPlayer(playerID string, limit int) ([]model.TerritoryAction, error)
+	GetRecentActionsByPlayerAndRegion(playerID string, regionID string, limit int) ([]model.TerritoryAction, error)
 	UpdateHotspotPendingCollection(hotspotID string, amount int) error
-
 	RefreshIllegalBusinesses() error
-
 	GetAllControlledLegalHotspots() ([]model.Hotspot, error)
+	GetAllControlledLegalHotspotsByRegion(regionID string) ([]model.Hotspot, error)
 	UpdateHotspotLastIncomeTime(hotspotID string, lastIncomeTime time.Time) error
 }
 
@@ -193,6 +195,63 @@ func (r *territoryRepository) GetHotspotsByCity(cityID string) ([]model.Hotspot,
 	return hotspots, nil
 }
 
+// GetHotspotsByRegion retrieves all hotspots in a region
+func (r *territoryRepository) GetHotspotsByRegion(regionID string) ([]model.Hotspot, error) {
+	// Get districts in the region
+	var districts []model.District
+	if err := r.db.GetDB().Where("region_id = ?", regionID).Find(&districts).Error; err != nil {
+		return nil, err
+	}
+
+	if len(districts) == 0 {
+		return []model.Hotspot{}, nil
+	}
+
+	// Get district IDs
+	districtIDs := make([]string, len(districts))
+	for i, district := range districts {
+		districtIDs[i] = district.ID
+	}
+
+	// Get cities in these districts
+	var cities []model.City
+	if err := r.db.GetDB().Where("district_id IN ?", districtIDs).Find(&cities).Error; err != nil {
+		return nil, err
+	}
+
+	if len(cities) == 0 {
+		return []model.Hotspot{}, nil
+	}
+
+	// Get city IDs
+	cityIDs := make([]string, len(cities))
+	for i, city := range cities {
+		cityIDs[i] = city.ID
+	}
+
+	// Get hotspots in these cities
+	var hotspots []model.Hotspot
+	if err := r.db.GetDB().Where("city_id IN ?", cityIDs).Find(&hotspots).Error; err != nil {
+		return nil, err
+	}
+
+	// Get controller names for each hotspot
+	for i, hotspot := range hotspots {
+		if hotspot.ControllerID != nil {
+			var player model.Player
+			if err := r.db.GetDB().
+				Select("name").
+				Where("id = ?", *hotspot.ControllerID).
+				First(&player).Error; err == nil {
+				controllerName := player.Name
+				hotspots[i].ControllerName = &controllerName
+			}
+		}
+	}
+
+	return hotspots, nil
+}
+
 // GetHotspotByID retrieves a hotspot by ID
 func (r *territoryRepository) GetHotspotByID(id string) (*model.Hotspot, error) {
 	var hotspot model.Hotspot
@@ -240,6 +299,37 @@ func (r *territoryRepository) GetControlledHotspots(playerID string) ([]model.Ho
 	return hotspots, nil
 }
 
+// GetControlledHotspotsByRegion retrieves hotspots controlled by a player in a specific region
+func (r *territoryRepository) GetControlledHotspotsByRegion(playerID string, regionID string) ([]model.Hotspot, error) {
+	// First get all hotspots in the region
+	regionalHotspots, err := r.GetHotspotsByRegion(regionID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Filter for those controlled by the player
+	controlledHotspots := make([]model.Hotspot, 0)
+	for _, hotspot := range regionalHotspots {
+		if hotspot.ControllerID != nil && *hotspot.ControllerID == playerID {
+			controlledHotspots = append(controlledHotspots, hotspot)
+		}
+	}
+
+	// Set controller name for all hotspots
+	var player model.Player
+	if err := r.db.GetDB().
+		Select("name").
+		Where("id = ?", playerID).
+		First(&player).Error; err == nil {
+		for i := range controlledHotspots {
+			controllerName := player.Name
+			controlledHotspots[i].ControllerName = &controllerName
+		}
+	}
+
+	return controlledHotspots, nil
+}
+
 // UpdateHotspot updates a hotspot
 func (r *territoryRepository) UpdateHotspot(hotspot *model.Hotspot) error {
 	// Calculate defense strength based on allocated resources
@@ -277,6 +367,37 @@ func (r *territoryRepository) GetRecentActionsByPlayer(playerID string, limit in
 	return actions, nil
 }
 
+// GetRecentActionsByPlayerAndRegion retrieves recent territory actions by a player in a specific region
+func (r *territoryRepository) GetRecentActionsByPlayerAndRegion(playerID string, regionID string, limit int) ([]model.TerritoryAction, error) {
+	// Get hotspots in the region
+	regionalHotspots, err := r.GetHotspotsByRegion(regionID)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(regionalHotspots) == 0 {
+		return []model.TerritoryAction{}, nil
+	}
+
+	// Get hotspot IDs
+	hotspotIDs := make([]string, len(regionalHotspots))
+	for i, hotspot := range regionalHotspots {
+		hotspotIDs[i] = hotspot.ID
+	}
+
+	// Get actions for these hotspots by the player
+	var actions []model.TerritoryAction
+	if err := r.db.GetDB().
+		Where("player_id = ? AND hotspot_id IN ?", playerID, hotspotIDs).
+		Order("timestamp DESC").
+		Limit(limit).
+		Find(&actions).Error; err != nil {
+		return nil, err
+	}
+
+	return actions, nil
+}
+
 // UpdateHotspotPendingCollection updates the pending collection amount for a hotspot
 func (r *territoryRepository) UpdateHotspotPendingCollection(hotspotID string, amount int) error {
 	return r.db.GetDB().Model(&model.Hotspot{}).
@@ -311,6 +432,25 @@ func (r *territoryRepository) GetAllControlledLegalHotspots() ([]model.Hotspot, 
 	}
 
 	return hotspots, nil
+}
+
+// GetAllControlledLegalHotspotsByRegion retrieves all legal hotspots with controllers in a specific region
+func (r *territoryRepository) GetAllControlledLegalHotspotsByRegion(regionID string) ([]model.Hotspot, error) {
+	// Get all hotspots in the region
+	regionalHotspots, err := r.GetHotspotsByRegion(regionID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Filter for legal hotspots with controllers
+	controlledLegalHotspots := make([]model.Hotspot, 0)
+	for _, hotspot := range regionalHotspots {
+		if hotspot.IsLegal && hotspot.ControllerID != nil {
+			controlledLegalHotspots = append(controlledLegalHotspots, hotspot)
+		}
+	}
+
+	return controlledLegalHotspots, nil
 }
 
 // UpdateHotspotLastIncomeTime updates the last income time for a hotspot

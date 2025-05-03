@@ -32,6 +32,10 @@ type PlayerRepository interface {
 	CalculateHourlyRevenue(playerID string) (int, error)
 	CalculatePendingCollections(playerID string) (int, error)
 	CollectAllPending(playerID string) (int, error)
+	// New travel-related methods
+	CreateTravelAttempt(attempt *model.TravelAttempt) error
+	GetTravelHistory(playerID string, limit int) ([]model.TravelAttempt, error)
+	GetPlayerCurrentRegion(playerID string) (*string, error)
 }
 
 type playerRepository struct {
@@ -262,4 +266,41 @@ func (r *playerRepository) CollectAllPending(playerID string) (int, error) {
 	}
 
 	return int(pendingTotal), nil
+}
+
+// CreateTravelAttempt creates a new travel attempt record
+func (r *playerRepository) CreateTravelAttempt(attempt *model.TravelAttempt) error {
+	return r.db.GetDB().Create(attempt).Error
+}
+
+// GetTravelHistory retrieves travel history for a player
+func (r *playerRepository) GetTravelHistory(playerID string, limit int) ([]model.TravelAttempt, error) {
+	var attempts []model.TravelAttempt
+
+	query := r.db.GetDB().Where("player_id = ?", playerID).Order("timestamp DESC")
+
+	// Apply limit if provided
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+
+	if err := query.Find(&attempts).Error; err != nil {
+		return nil, err
+	}
+
+	return attempts, nil
+}
+
+// GetPlayerCurrentRegion returns the current region ID for a player
+func (r *playerRepository) GetPlayerCurrentRegion(playerID string) (*string, error) {
+	var player model.Player
+
+	if err := r.db.GetDB().Select("current_region_id").Where("id = ?", playerID).First(&player).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("player not found")
+		}
+		return nil, err
+	}
+
+	return player.CurrentRegionID, nil
 }

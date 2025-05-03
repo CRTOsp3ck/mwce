@@ -2,15 +2,8 @@
 
 package util
 
-// Constants for the game
+// Player titles
 const (
-	// Resource types
-	ResourceTypeCrew     = "crew"
-	ResourceTypeWeapons  = "weapons"
-	ResourceTypeVehicles = "vehicles"
-	ResourceTypeMoney    = "money"
-
-	// Player titles
 	PlayerTitleAssociate   = "Associate"
 	PlayerTitleSoldier     = "Soldier"
 	PlayerTitleCapo        = "Capo"
@@ -18,46 +11,72 @@ const (
 	PlayerTitleConsigliere = "Consigliere"
 	PlayerTitleBoss        = "Boss"
 	PlayerTitleGodfather   = "Godfather"
+)
 
-	// Notification types
-	NotificationTypeTerritory  = "territory"
-	NotificationTypeOperation  = "operation"
-	NotificationTypeCollection = "collection"
-	NotificationTypeHeat       = "heat"
-	NotificationTypeSystem     = "system"
+// Resource types
+const (
+	ResourceTypeCrew      = "crew"
+	ResourceTypeWeapons   = "weapons"
+	ResourceTypeVehicles  = "vehicles"
+	ResourceTypeMoney     = "money"
+	ResourceTypeRespect   = "respect"
+	ResourceTypeInfluence = "influence"
+	ResourceTypeHeat      = "heat"
+)
 
-	// Operation types
+// Territory action types
+const (
+	TerritoryActionTypeExtortion  = "extortion"
+	TerritoryActionTypeTakeover   = "takeover"
+	TerritoryActionTypeCollection = "collection"
+	TerritoryActionTypeDefend     = "defend"
+)
+
+// Operation types
+const (
 	OperationTypeCarjacking      = "carjacking"
 	OperationTypeGoodsSmuggling  = "goods_smuggling"
 	OperationTypeDrugTrafficking = "drug_trafficking"
 	OperationTypeOfficialBribing = "official_bribing"
 	OperationTypeIntelligence    = "intelligence_gathering"
 	OperationTypeCrewRecruitment = "crew_recruitment"
+)
 
-	// Operation statuses
+// Operation statuses
+const (
 	OperationStatusInProgress = "in_progress"
 	OperationStatusCompleted  = "completed"
 	OperationStatusFailed     = "failed"
 	OperationStatusCancelled  = "cancelled"
+)
 
-	// Territory action types
-	TerritoryActionTypeExtortion  = "extortion"
-	TerritoryActionTypeTakeover   = "takeover"
-	TerritoryActionTypeCollection = "collection"
-	TerritoryActionTypeDefend     = "defend"
-
-	// Market transaction types
-	TransactionTypeBuy  = "buy"
-	TransactionTypeSell = "sell"
-
-	// Market price trends
+// Market price trends
+const (
 	PriceTrendUp     = "up"
 	PriceTrendDown   = "down"
 	PriceTrendStable = "stable"
+)
 
-	// Game message types
+// Transaction types
+const (
+	TransactionTypeBuy  = "buy"
+	TransactionTypeSell = "sell"
+)
+
+// Notification types
+const (
+	NotificationTypeTerritory  = "territory"
+	NotificationTypeOperation  = "operation"
+	NotificationTypeCollection = "collection"
+	NotificationTypeHeat       = "heat"
+	NotificationTypeSystem     = "system"
+	NotificationTypeTravel     = "travel" // New notification type for travel
+)
+
+// Game message types
+const (
 	GameMessageTypeSuccess = "success"
-	GameMessageTypeWarning = "warning"
 	GameMessageTypeError   = "error"
 	GameMessageTypeInfo    = "info"
+	GameMessageTypeWarning = "warning"
 )

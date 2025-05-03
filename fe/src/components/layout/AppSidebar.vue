@@ -1,16 +1,23 @@
 // src/components/layout/AppSidebar.vue
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import BaseButton from '@/components/ui/BaseButton.vue';
 import { usePlayerStore } from '@/stores/modules/player';
-// Import territory store
-import { useTerritoryStore } from '@/stores/modules/territory';
+import { useTravelStore } from '@/stores/modules/travel';
 
-// Access the territory store
-const territoryStore = useTerritoryStore();
-
-// Access the player store
+const router = useRouter();
+const route = useRoute();
 const playerStore = usePlayerStore();
+const territoryStore = useTravelStore();
+
+// Access the travel store
+const travelStore = useTravelStore();
+
+// Check if the player is in a region
+const currentRegion = computed(() => travelStore.currentRegion);
+const isInRegion = computed(() => !!currentRegion.value);
 
 // Load player data on component mount
 onMounted(async () => {
@@ -63,6 +70,38 @@ function formatNumber(value: number): string {
     return (value / 1000).toFixed(1) + 'K';
   }
   return value.toString();
+}
+
+// Navigation menu items with region requirements
+const menuItems = computed(() => [
+  { path: '/', name: 'Dashboard', icon: '📊', requiresRegion: false },
+  { path: '/travel', name: 'Travel Agency', icon: '✈️', requiresRegion: false },
+  { path: '/territory', name: 'Territory', icon: '🏙️', requiresRegion: true },
+  { path: '/operations', name: 'Operations', icon: '🎯', requiresRegion: true },
+  { path: '/market', name: 'Market', icon: '💹', requiresRegion: true },
+  { path: '/rankings', name: 'Rankings', icon: '🏆', requiresRegion: false },
+  { path: '/nft', name: 'NFT', icon: '💎', requiresRegion: false },
+]);
+
+// Check if a menu item is active
+function isActive(path: string): boolean {
+  return route.path === path;
+}
+
+// Navigate to a path, respecting region requirements
+function navigateTo(item: { path: string, requiresRegion: boolean }): void {
+  if (item.requiresRegion && !isInRegion.value) {
+    // If requires region but player has no region, go to travel view
+    router.push({
+      path: '/travel',
+      query: {
+        returnTo: item.path,
+        message: 'You need to travel to a region first'
+      }
+    });
+  } else {
+    router.push(item.path);
+  }
 }
 </script>
 
@@ -150,6 +189,28 @@ function formatNumber(value: number): string {
       </div>
     </div>
 
+    <!-- Updated Navigation Menu -->
+    <nav class="sidebar-nav">
+      <div
+        v-for="item in menuItems"
+        :key="item.path"
+        class="nav-item"
+        :class="{
+          active: isActive(item.path),
+          disabled: item.requiresRegion && !isInRegion
+        }"
+        @click="navigateTo(item)"
+      >
+        <span class="nav-icon">{{ item.icon }}</span>
+        <span class="nav-label">{{ item.name }}</span>
+        <span
+          v-if="item.requiresRegion && !isInRegion"
+          class="region-required"
+          title="You need to travel to a region first"
+        >🌎</span>
+      </div>
+    </nav>
+
     <div class="sidebar-actions">
       <button class="action-btn collect-all" @click="collectAllPending"
         :disabled="pendingCollections <= 0 || isLoading">
@@ -161,8 +222,6 @@ function formatNumber(value: number): string {
   </aside>
 </template>
 
-
-
 <style lang="scss">
 .app-sidebar {
   width: 280px;
@@ -172,8 +231,6 @@ function formatNumber(value: number): string {
   @include flex-column;
   gap: $spacing-lg;
   height: 100%;
-  // position: sticky;
-  // top:8em;
   overflow-y: auto;
 
   .player-profile {
@@ -197,9 +254,6 @@ function formatNumber(value: number): string {
       }
 
       .player-level {
-        // position: absolute;
-        // bottom: 0;
-        // right: 0;
         background-color: $primary-color;
         color: white;
         font-size: 12px;
@@ -311,6 +365,66 @@ function formatNumber(value: number): string {
         .control-value {
           font-weight: 600;
         }
+      }
+    }
+  }
+
+  /* Updated navigation menu styling */
+  .sidebar-nav {
+    @include flex-column;
+    gap: $spacing-xs;
+    margin: $spacing-md 0;
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: $spacing-md;
+      padding: $spacing-sm $spacing-md;
+      border-radius: $border-radius-sm;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      position: relative;
+
+      &:hover {
+        background-color: rgba($background-lighter, 0.2);
+      }
+
+      &.active {
+        background-color: rgba($primary-color, 0.2);
+
+        &:before {
+          content: '';
+          position: absolute;
+          left: 0;
+          top: 0;
+          bottom: 0;
+          width: 3px;
+          background-color: $primary-color;
+        }
+      }
+
+      &.disabled {
+        opacity: 0.6;
+        cursor: pointer; // Still clickable, but will redirect to travel
+
+        &:hover {
+          background-color: rgba($warning-color, 0.1);
+        }
+      }
+
+      .nav-icon {
+        font-size: 20px;
+        width: 24px;
+        text-align: center;
+      }
+
+      .nav-label {
+        flex: 1;
+      }
+
+      .region-required {
+        font-size: $font-size-sm;
+        color: $warning-color;
       }
     }
   }
