@@ -62,9 +62,12 @@ func NewOperationsService(
 
 // GetAvailableOperations retrieves available operations for a player
 func (s *operationsService) GetAvailableOperations(playerID string) ([]model.Operation, error) {
-	// Get all operations
-	operations, err := s.operationsRepo.GetAllOperations()
-	if err != nil {
+	// Get all active operations
+	var operations []model.Operation
+	if err := s.operationsRepo.GetDB().
+		Where("is_active = ?", true).
+		Where("available_until > ?", time.Now()).
+		Find(&operations).Error; err != nil {
 		return nil, err
 	}
 
@@ -77,11 +80,6 @@ func (s *operationsService) GetAvailableOperations(playerID string) ([]model.Ope
 	// Filter operations based on requirements
 	var availableOperations []model.Operation
 	for _, op := range operations {
-		// Check if it's available
-		if op.AvailableUntil.Before(time.Now()) {
-			continue
-		}
-
 		// For special operations, check requirements
 		if op.IsSpecial {
 			// Check influence

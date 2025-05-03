@@ -16,6 +16,7 @@ type Operation struct {
 	Description    string                `json:"description" gorm:"not null"`
 	Type           string                `json:"type" gorm:"not null"` // carjacking, goods_smuggling, etc.
 	IsSpecial      bool                  `json:"isSpecial" gorm:"not null;default:false"`
+	IsActive       bool                  `json:"isActive" gorm:"not null;default:true"`
 	Requirements   OperationRequirements `json:"requirements" gorm:"embedded"`
 	Resources      OperationResources    `json:"resources" gorm:"embedded"`
 	Rewards        OperationRewards      `json:"rewards" gorm:"embedded"`
