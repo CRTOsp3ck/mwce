@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"mwce-be/internal/model"
@@ -688,6 +689,9 @@ func (r *campaignRepository) LoadCampaignsFromYAML(dirPath string) error {
 			continue
 		}
 
+		// Map to store ID mappings for cross-references
+		idMap := make(map[string]string)
+
 		// Create the campaign
 		now := time.Now()
 		campaign := model.Campaign{
@@ -695,7 +699,7 @@ func (r *campaignRepository) LoadCampaignsFromYAML(dirPath string) error {
 			Title:            campaignData.Title,
 			Description:      campaignData.Description,
 			ImageURL:         campaignData.ImageURL,
-			InitialChapterID: campaignData.InitialChapterID,
+			InitialChapterID: "", // Will be updated once we have the new chapter ID
 			IsActive:         true,
 			RequiredLevel:    campaignData.RequiredLevel,
 			CreatedAt:        now,
@@ -710,20 +714,31 @@ func (r *campaignRepository) LoadCampaignsFromYAML(dirPath string) error {
 
 		// Create chapters
 		for _, chapterData := range campaignData.Chapters {
+			// Create a unique ID for the chapter
+			uniqueChapterID := chapterData.ID + "_" + shortUUID()
+
+			// Store the mapping
+			idMap[chapterData.ID] = uniqueChapterID
+
+			// Update campaign's initial chapter ID if needed
+			if chapterData.ID == campaignData.InitialChapterID {
+				campaign.InitialChapterID = uniqueChapterID
+			}
+
 			chapter := model.Chapter{
-				ID:          chapterData.ID,
+				ID:          uniqueChapterID,
 				CampaignID:  campaignData.ID,
 				Title:       chapterData.Title,
 				Description: chapterData.Description,
 				ImageURL:    chapterData.ImageURL,
-				IsLocked:    chapterData.ID != campaignData.InitialChapterID, // Initial chapter is unlocked
+				IsLocked:    chapterData.ID != campaignData.InitialChapterID,
 				Order:       chapterData.Order,
 				CreatedAt:   now,
 				UpdatedAt:   now,
 			}
 
 			if err := tx.Create(&chapter).Error; err != nil {
-				r.logger.Error().Err(err).Str("id", chapterData.ID).Msg("Failed to create chapter")
+				r.logger.Error().Err(err).Str("id", uniqueChapterID).Msg("Failed to create chapter")
 				tx.Rollback()
 				continue
 			}
@@ -796,9 +811,15 @@ func (r *campaignRepository) LoadCampaignsFromYAML(dirPath string) error {
 					missionRewards.UnlockMissionID = val
 				}
 
+				// Create unique mission ID
+				uniqueMissionID := missionData.ID + "_" + shortUUID()
+
+				// Store the mapping
+				idMap[missionData.ID] = uniqueMissionID
+
 				mission := model.Mission{
-					ID:           missionData.ID,
-					ChapterID:    chapterData.ID,
+					ID:           uniqueMissionID,
+					ChapterID:    uniqueChapterID,
 					Title:        missionData.Title,
 					Description:  missionData.Description,
 					Narrative:    missionData.Narrative,
@@ -813,7 +834,7 @@ func (r *campaignRepository) LoadCampaignsFromYAML(dirPath string) error {
 				}
 
 				if err := tx.Create(&mission).Error; err != nil {
-					r.logger.Error().Err(err).Str("id", missionData.ID).Msg("Failed to create mission")
+					r.logger.Error().Err(err).Str("id", uniqueMissionID).Msg("Failed to create mission")
 					tx.Rollback()
 					continue
 				}
@@ -868,11 +889,20 @@ func (r *campaignRepository) LoadCampaignsFromYAML(dirPath string) error {
 						choiceRewards.UnlockHotspotID = val
 					}
 
+					// Create unique choice ID
+					uniqueChoiceID := choiceData.ID + "_" + shortUUID()
+
+					// Store the mapping and next mission reference
+					idMap[choiceData.ID] = uniqueChoiceID
+					if choiceData.NextMission != "" {
+						idMap[choiceData.ID+"_nextMission"] = choiceData.NextMission
+					}
+
 					choice := model.MissionChoice{
-						ID:              choiceData.ID,
-						MissionID:       missionData.ID,
+						ID:              uniqueChoiceID,
+						MissionID:       uniqueMissionID,
 						Text:            choiceData.Text,
-						NextMissionID:   choiceData.NextMission,
+						NextMissionID:   "", // Will be updated later
 						Requirements:    choiceRequirements,
 						Rewards:         choiceRewards,
 						SequentialOrder: choiceData.SequentialOrder,
@@ -881,7 +911,7 @@ func (r *campaignRepository) LoadCampaignsFromYAML(dirPath string) error {
 					}
 
 					if err := tx.Create(&choice).Error; err != nil {
-						r.logger.Error().Err(err).Str("id", choiceData.ID).Msg("Failed to create choice")
+						r.logger.Error().Err(err).Str("id", uniqueChoiceID).Msg("Failed to create choice")
 						tx.Rollback()
 						continue
 					}
@@ -890,7 +920,7 @@ func (r *campaignRepository) LoadCampaignsFromYAML(dirPath string) error {
 					for i, conditionData := range choiceData.Conditions {
 						condition := model.ConditionTemplate{
 							ID:              uuid.New().String(),
-							ChoiceID:        choiceData.ID,
+							ChoiceID:        uniqueChoiceID,
 							Type:            conditionData.Type,
 							RequiredValue:   conditionData.RequiredValue,
 							AdditionalValue: conditionData.AdditionalValue,
@@ -914,8 +944,8 @@ func (r *campaignRepository) LoadCampaignsFromYAML(dirPath string) error {
 							Description:  poiData.Description,
 							LocationType: poiData.LocationType,
 							LocationID:   poiData.LocationID,
-							MissionID:    missionData.ID,
-							ChoiceID:     choiceData.ID,
+							MissionID:    uniqueMissionID,
+							ChoiceID:     uniqueChoiceID,
 							CreatedAt:    now,
 							UpdatedAt:    now,
 						}
@@ -994,8 +1024,8 @@ func (r *campaignRepository) LoadCampaignsFromYAML(dirPath string) error {
 							Name:          opData.Name,
 							Description:   opData.Description,
 							OperationType: opData.OperationType,
-							MissionID:     missionData.ID,
-							ChoiceID:      choiceData.ID,
+							MissionID:     uniqueMissionID,
+							ChoiceID:      uniqueChoiceID,
 							Resources:     resources,
 							Rewards:       rewards,
 							Risks:         risks,
@@ -1015,6 +1045,35 @@ func (r *campaignRepository) LoadCampaignsFromYAML(dirPath string) error {
 			}
 		}
 
+		// Update campaign with initial chapter ID
+		if campaign.InitialChapterID != "" {
+			if err := tx.Model(&campaign).Update("initial_chapter_id", campaign.InitialChapterID).Error; err != nil {
+				r.logger.Error().Err(err).Str("id", campaign.ID).Msg("Failed to update campaign initial chapter ID")
+				tx.Rollback()
+				continue
+			}
+		}
+
+		// Update NextMissionID references for all choices
+		for choiceOriginalID, uniqueChoiceID := range idMap {
+			nextMissionOriginalID, exists := idMap[choiceOriginalID+"_nextMission"]
+			if !exists {
+				continue
+			}
+
+			nextMissionUniqueID, exists := idMap[nextMissionOriginalID]
+			if !exists {
+				continue
+			}
+
+			if err := tx.Model(&model.MissionChoice{}).Where("id = ?", uniqueChoiceID).Update("next_mission_id", nextMissionUniqueID).Error; err != nil {
+				r.logger.Error().Err(err).Str("id", uniqueChoiceID).Msg("Failed to update NextMissionID")
+			}
+		}
+
+		// Update UnlockChapterID and UnlockMissionID references
+		// TODO: Add logic to update these references from Rewards if needed
+
 		// Commit the transaction
 		if err := tx.Commit().Error; err != nil {
 			r.logger.Error().Err(err).Str("id", campaignData.ID).Msg("Failed to commit transaction")
@@ -1025,4 +1084,9 @@ func (r *campaignRepository) LoadCampaignsFromYAML(dirPath string) error {
 	}
 
 	return nil
+}
+
+// shortUUID generates a short unique ID suffix
+func shortUUID() string {
+	return strings.ReplaceAll(uuid.New().String(), "-", "")[:8]
 }
