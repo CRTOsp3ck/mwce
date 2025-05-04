@@ -1,0 +1,1641 @@
+# File: be/configs/campaigns/family_matters.yaml
+
+id: "family_matters"
+title: "Family Matters"
+description: "Internal conflicts threaten to tear your criminal family apart as suspicions of an informant arise."
+image_url: "/images/campaigns/family_matters.jpg"
+initial_chapter: "ch_seeds_of_doubt"
+required_level: 3
+
+chapters:
+  - id: "ch_seeds_of_doubt"
+    title: "Seeds of Doubt"
+    description: "Strange coincidences and failed operations lead you to suspect a traitor in your midst."
+    image_url: "/images/chapters/seeds_of_doubt.jpg"
+    order: 1
+
+    missions:
+      - id: "m_failed_shipment"
+        title: "The Failed Shipment"
+        description: "A routine weapons shipment is intercepted by police in suspicious circumstances."
+        narrative: |
+          It should have been a routine operation. A shipment of weapons coming in through the docks, with all the usual precautions taken. Your people have run this exact operation a dozen times before without incident.
+
+          But this time, the police were waiting. They knew exactly when and where the shipment would arrive. Your crew barely escaped, and the weapons - worth over $500,000 - are now in police custody.
+
+          This isn't just bad luck. The police had specific information that only someone within your organization could have provided. A troubling thought begins to form: there might be an informant in your family.
+        image_url: "/images/missions/failed_shipment.jpg"
+        type: "operation"
+        order: 1
+        requirements:
+          respect: 100
+          influence: 80
+        rewards:
+          respect: 15
+          influence: 10
+
+        choices:
+          - id: "choice_investigate_quietly"
+            text: "Begin a quiet investigation without alerting the organization"
+            next_mission: "m_second_incident"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+            operations:
+              - id: "op_quiet_investigation"
+                name: "Begin Quiet Investigation"
+                description: "Start a discreet investigation into the weapons shipment leak."
+                operation_type: "intelligence_gathering"
+                duration: 7200
+                success_rate: 85
+                resources:
+                  crew: 3
+                  weapons: 0
+                  vehicles: 1
+                  money: 10000
+                rewards:
+                  influence: 15
+                risks:
+                  money_loss: 10000
+                  heat_increase: 5
+
+          - id: "choice_public_statement"
+            text: "Publicly address the issue to flush out the informant"
+            next_mission: "m_second_incident"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "crew_recruitment"
+                order_index: 0
+            operations:
+              - id: "op_public_address"
+                name: "Organization Meeting"
+                description: "Call a meeting of all key personnel to publicly address the leak issue."
+                operation_type: "crew_recruitment"
+                duration: 3600
+                success_rate: 90
+                resources:
+                  crew: 5
+                  weapons: 2
+                  vehicles: 3
+                  money: 5000
+                rewards:
+                  respect: 20
+                risks:
+                  heat_increase: 10
+
+      - id: "m_second_incident"
+        title: "Pattern of Betrayal"
+        description: "A second incident confirms your suspicions of an informant."
+        narrative: |
+          Just as you begin investigating the weapons shipment leak, another operation goes wrong. A protected gambling establishment in your territory is raided by police during a high-stakes game attended by several important clients.
+
+          The timing is too perfect to be coincidence. The raid occurred on a special night known only to insiders - information closely guarded within your organization. This confirms your worst fears: someone with access to sensitive information is working against you.
+
+          The betrayal stings, but more concerning is the pattern forming. If the leak isn't identified soon, your entire organization could be compromised.
+        image_url: "/images/missions/second_incident.jpg"
+        type: "operation"
+        order: 2
+        requirements:
+          respect: 110
+          influence: 85
+        rewards:
+          respect: 20
+          influence: 15
+
+        choices:
+          - id: "choice_restrict_information"
+            text: "Restrict information flow and set up compartmentalized operations"
+            next_mission: "m_first_suspects"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 1
+            operations:
+              - id: "op_security_protocols"
+                name: "Implement New Security Protocols"
+                description: "Establish new information security measures within your organization."
+                operation_type: "intelligence_gathering"
+                duration: 5400
+                success_rate: 90
+                resources:
+                  crew: 5
+                  weapons: 0
+                  vehicles: 0
+                  money: 15000
+                rewards:
+                  influence: 20
+                risks:
+                  money_loss: 15000
+              - id: "op_information_control"
+                name: "Information Control System"
+                description: "Set up a system to track who has access to what information."
+                operation_type: "official_bribing"
+                duration: 7200
+                success_rate: 85
+                resources:
+                  crew: 3
+                  weapons: 0
+                  vehicles: 0
+                  money: 20000
+                rewards:
+                  influence: 15
+                risks:
+                  money_loss: 20000
+                  heat_increase: 5
+
+          - id: "choice_plant_false_info"
+            text: "Plant false information to catch the informant"
+            next_mission: "m_first_suspects"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+            operations:
+              - id: "op_misinformation"
+                name: "Plant Misinformation"
+                description: "Strategically distribute false information about upcoming operations to different suspects."
+                operation_type: "intelligence_gathering"
+                duration: 8600
+                success_rate: 70
+                resources:
+                  crew: 4
+                  weapons: 0
+                  vehicles: 2
+                  money: 25000
+                rewards:
+                  respect: 15
+                  influence: 25
+                risks:
+                  crew_loss: 1
+                  money_loss: 25000
+                  heat_increase: 15
+
+      - id: "m_first_suspects"
+        title: "The First Suspects"
+        description: "Your investigation yields three primary suspects within your organization."
+        narrative: |
+          Your countermeasures and investigation have paid off, narrowing down the list of potential informants to three key members of your organization:
+
+          Marco Venucci, your long-time accountant who manages the books for all your operations. He has access to financial details that could map your entire organization.
+
+          Sophia Rossi, your operations coordinator who schedules and organizes most major activities. Few things happen without her knowledge.
+
+          Vincent Calabrese, your security chief responsible for protection and enforcement. He knows the vulnerabilities in your security protocols.
+
+          All three are trusted members of your inner circle, making the betrayal even more painful to contemplate. But one of them is almost certainly working with the authorities.
+        image_url: "/images/missions/first_suspects.jpg"
+        type: "operation"
+        order: 3
+        requirements:
+          respect: 120
+          influence: 90
+        rewards:
+          respect: 25
+          influence: 20
+
+        choices:
+          - id: "choice_investigate_marco"
+            text: "Focus investigation on Marco the accountant"
+            next_mission: "m_deeper_investigation"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 1
+            operations:
+              - id: "op_marco_background_check"
+                name: "Investigate Marco's Background"
+                description: "Conduct a deep background check on Marco, looking for any suspicious connections or activities."
+                operation_type: "intelligence_gathering"
+                duration: 10800
+                success_rate: 80
+                resources:
+                  crew: 2
+                  weapons: 0
+                  vehicles: 1
+                  money: 15000
+                rewards:
+                  influence: 10
+                risks:
+                  money_loss: 15000
+                  heat_increase: 5
+              - id: "op_marco_surveillance"
+                name: "Place Marco Under Surveillance"
+                description: "Monitor Marco's movements, communications, and contacts."
+                operation_type: "intelligence_gathering"
+                duration: 14400
+                success_rate: 75
+                resources:
+                  crew: 4
+                  weapons: 0
+                  vehicles: 2
+                  money: 10000
+                rewards:
+                  influence: 15
+                risks:
+                  crew_loss: 1
+                  money_loss: 10000
+                  heat_increase: 10
+
+          - id: "choice_investigate_sophia"
+            text: "Focus investigation on Sophia the operations coordinator"
+            next_mission: "m_deeper_investigation"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 1
+            operations:
+              - id: "op_sophia_background_check"
+                name: "Investigate Sophia's Background"
+                description: "Conduct a deep background check on Sophia, looking for any suspicious connections or activities."
+                operation_type: "intelligence_gathering"
+                duration: 10800
+                success_rate: 80
+                resources:
+                  crew: 2
+                  weapons: 0
+                  vehicles: 1
+                  money: 15000
+                rewards:
+                  influence: 10
+                risks:
+                  money_loss: 15000
+                  heat_increase: 5
+              - id: "op_sophia_surveillance"
+                name: "Place Sophia Under Surveillance"
+                description: "Monitor Sophia's movements, communications, and contacts."
+                operation_type: "intelligence_gathering"
+                duration: 14400
+                success_rate: 75
+                resources:
+                  crew: 4
+                  weapons: 0
+                  vehicles: 2
+                  money: 10000
+                rewards:
+                  influence: 15
+                risks:
+                  crew_loss: 1
+                  money_loss: 10000
+                  heat_increase: 10
+
+          - id: "choice_investigate_vincent"
+            text: "Focus investigation on Vincent the security chief"
+            next_mission: "m_deeper_investigation"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 1
+            operations:
+              - id: "op_vincent_background_check"
+                name: "Investigate Vincent's Background"
+                description: "Conduct a deep background check on Vincent, looking for any suspicious connections or activities."
+                operation_type: "intelligence_gathering"
+                duration: 10800
+                success_rate: 80
+                resources:
+                  crew: 2
+                  weapons: 0
+                  vehicles: 1
+                  money: 15000
+                rewards:
+                  influence: 10
+                risks:
+                  money_loss: 15000
+                  heat_increase: 5
+              - id: "op_vincent_surveillance"
+                name: "Place Vincent Under Surveillance"
+                description: "Monitor Vincent's movements, communications, and contacts."
+                operation_type: "intelligence_gathering"
+                duration: 14400
+                success_rate: 75
+                resources:
+                  crew: 4
+                  weapons: 0
+                  vehicles: 2
+                  money: 10000
+                rewards:
+                  influence: 15
+                risks:
+                  crew_loss: 1
+                  money_loss: 10000
+                  heat_increase: 10
+
+      - id: "m_deeper_investigation"
+        title: "Deepening Investigation"
+        description: "Your investigation uncovers troubling details about your primary suspect."
+        narrative: |
+          As your investigation deepens, troubling evidence begins to emerge. Bank records show unexplained deposits. Phone records reveal mysterious calls at odd hours. Movements don't align with stated alibis.
+
+          But most damning is the discovery of encrypted communication equipment hidden in your suspect's home - equipment that matches what federal agencies use for their confidential informants.
+
+          The evidence is compelling but not yet conclusive. You need absolute certainty before taking action. A false accusation could tear your organization apart, while hesitation allows the betrayal to continue.
+        image_url: "/images/missions/deeper_investigation.jpg"
+        type: "operation"
+        order: 4
+        requirements:
+          respect: 130
+          influence: 100
+        rewards:
+          respect: 30
+          influence: 25
+
+        choices:
+          - id: "choice_gather_conclusive_evidence"
+            text: "Gather conclusive evidence before confrontation"
+            next_mission: "m_unexpected_twist"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 1
+            operations:
+              - id: "op_electronic_surveillance"
+                name: "Electronic Surveillance Operation"
+                description: "Implement advanced electronic surveillance to monitor all communications."
+                operation_type: "intelligence_gathering"
+                duration: 18000
+                success_rate: 70
+                resources:
+                  crew: 5
+                  weapons: 0
+                  vehicles: 2
+                  money: 35000
+                rewards:
+                  influence: 20
+                risks:
+                  crew_loss: 1
+                  money_loss: 35000
+                  heat_increase: 15
+              - id: "op_raid_evidence"
+                name: "Raid for Physical Evidence"
+                description: "Conduct a covert raid to obtain physical evidence from suspect's premises."
+                operation_type: "carjacking"
+                duration: 7200
+                success_rate: 75
+                resources:
+                  crew: 8
+                  weapons: 5
+                  vehicles: 3
+                  money: 0
+                rewards:
+                  respect: 20
+                  influence: 15
+                risks:
+                  crew_loss: 2
+                  weapons_loss: 1
+                  vehicles_loss: 1
+                  heat_increase: 20
+
+          - id: "choice_immediate_confrontation"
+            text: "Confront the suspect immediately with what you have"
+            next_mission: "m_unexpected_twist"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 0
+            operations:
+              - id: "op_abduction_interrogation"
+                name: "Abduction and Interrogation"
+                description: "Abduct the suspect for direct interrogation at a secure location."
+                operation_type: "carjacking"
+                duration: 5400
+                success_rate: 80
+                resources:
+                  crew: 10
+                  weapons: 6
+                  vehicles: 2
+                  money: 0
+                rewards:
+                  respect: 35
+                  influence: 10
+                risks:
+                  crew_loss: 2
+                  weapons_loss: 1
+                  heat_increase: 25
+
+      - id: "m_unexpected_twist"
+        title: "An Unexpected Twist"
+        description: "Your investigation takes a surprising turn when new evidence emerges."
+        narrative: |
+          Just as you're preparing to act against your primary suspect, a critical piece of information changes everything. Your most trusted lieutenant brings evidence that points to a completely different betrayal.
+
+          It appears the leak may not be coming from within your inner circle at all, but from someone unexpected - a corrupt police detective named Hargrove who has been manipulating information and setting up your people to advance his career.
+
+          This new information doesn't completely exonerate your original suspects, but it introduces significant doubt. You need to reconsider your approach and determine if Detective Hargrove is the true source of your problems.
+        image_url: "/images/missions/unexpected_twist.jpg"
+        type: "operation"
+        order: 5
+        requirements:
+          respect: 140
+          influence: 110
+        rewards:
+          respect: 35
+          influence: 30
+
+        choices:
+          - id: "choice_investigate_detective"
+            text: "Shift investigation to focus on Detective Hargrove"
+            next_mission: "m_truth_revealed"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 1
+            operations:
+              - id: "op_detective_investigation"
+                name: "Investigate Detective Hargrove"
+                description: "Thoroughly investigate Detective Hargrove's activities and connections."
+                operation_type: "intelligence_gathering"
+                duration: 14400
+                success_rate: 75
+                resources:
+                  crew: 6
+                  weapons: 0
+                  vehicles: 3
+                  money: 25000
+                rewards:
+                  influence: 25
+                risks:
+                  crew_loss: 1
+                  vehicles_loss: 1
+                  money_loss: 25000
+                  heat_increase: 20
+              - id: "op_police_insider"
+                name: "Recruit Police Insider"
+                description: "Find and recruit someone inside the police department who can provide information on Hargrove."
+                operation_type: "official_bribing"
+                duration: 10800
+                success_rate: 65
+                resources:
+                  crew: 2
+                  weapons: 0
+                  vehicles: 1
+                  money: 50000
+                rewards:
+                  influence: 30
+                risks:
+                  money_loss: 50000
+                  heat_increase: 15
+
+          - id: "choice_continue_original_investigation"
+            text: "Continue investigating the original suspects while also looking into Hargrove"
+            next_mission: "m_truth_revealed"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 1
+            operations:
+              - id: "op_parallel_investigations"
+                name: "Dual Investigation Tracks"
+                description: "Maintain surveillance on internal suspects while also investigating Detective Hargrove."
+                operation_type: "intelligence_gathering"
+                duration: 21600
+                success_rate: 70
+                resources:
+                  crew: 10
+                  weapons: 0
+                  vehicles: 5
+                  money: 40000
+                rewards:
+                  respect: 20
+                  influence: 30
+                risks:
+                  crew_loss: 2
+                  vehicles_loss: 1
+                  money_loss: 40000
+                  heat_increase: 30
+
+              - id: "op_information_network"
+                name: "Expand Information Network"
+                description: "Develop additional sources of intelligence to get a complete picture of the situation."
+                operation_type: "intelligence_gathering"
+                duration: 18000
+                success_rate: 80
+                resources:
+                  crew: 8
+                  weapons: 0
+                  vehicles: 4
+                  money: 35000
+                rewards:
+                  influence: 25
+                risks:
+                  money_loss: 35000
+                  heat_increase: 15
+
+  - id: "ch_the_investigation"
+    title: "The Investigation"
+    description: "Unravel the complex web of betrayal to find the true informant."
+    image_url: "/images/chapters/the_investigation.jpg"
+    order: 2
+
+    missions:
+      - id: "m_truth_revealed"
+        title: "The Truth Revealed"
+        description: "Your investigation finally uncovers the real betrayal at the heart of your organization."
+        narrative: |
+          After weeks of intensive investigation, the truth emerges from the tangled web of lies and deception. The betrayal is more complex than you initially thought.
+
+          Detective Hargrove has indeed been deliberately targeting your operations, but he's been receiving information from not one, but two sources within your organization - one knowingly betraying you, the other being manipulated without their knowledge.
+
+          The willing informant is Vincent, your security chief, who's been feeding information to Hargrove in exchange for immunity and witness protection. Meanwhile, Sophia has unknowingly been providing information through conversations with her therapist, who is secretly working with Hargrove.
+
+          The revelation is devastating, but it gives you the clarity needed to act decisively.
+        image_url: "/images/missions/truth_revealed.jpg"
+        type: "operation"
+        order: 1
+        requirements:
+          respect: 150
+          influence: 120
+        rewards:
+          respect: 40
+          influence: 35
+
+        choices:
+          - id: "choice_confront_vincent"
+            text: "Confront Vincent directly about his betrayal"
+            next_mission: "m_handling_detective"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 0
+            operations:
+              - id: "op_vincent_confrontation"
+                name: "Confront the Traitor"
+                description: "Capture Vincent and directly confront him about his betrayal."
+                operation_type: "carjacking"
+                duration: 5400
+                success_rate: 85
+                resources:
+                  crew: 15
+                  weapons: 10
+                  vehicles: 3
+                  money: 0
+                rewards:
+                  respect: 50
+                  influence: 20
+                risks:
+                  crew_loss: 3
+                  weapons_loss: 2
+                  heat_increase: 30
+
+          - id: "choice_elaborate_trap"
+            text: "Set an elaborate trap to catch Vincent in the act"
+            next_mission: "m_handling_detective"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 1
+            operations:
+              - id: "op_trap_planning"
+                name: "Plan Elaborate Trap"
+                description: "Develop a sophisticated plan to catch Vincent passing information to Hargrove."
+                operation_type: "intelligence_gathering"
+                duration: 8600
+                success_rate: 75
+                resources:
+                  crew: 6
+                  weapons: 0
+                  vehicles: 3
+                  money: 20000
+                rewards:
+                  influence: 25
+                risks:
+                  money_loss: 20000
+                  heat_increase: 10
+              - id: "op_spring_trap"
+                name: "Spring the Trap"
+                description: "Execute the planned trap to catch Vincent in the act of betrayal."
+                operation_type: "carjacking"
+                duration: 7200
+                success_rate: 70
+                resources:
+                  crew: 12
+                  weapons: 8
+                  vehicles: 4
+                  money: 0
+                rewards:
+                  respect: 45
+                  influence: 30
+                risks:
+                  crew_loss: 3
+                  weapons_loss: 2
+                  vehicles_loss: 1
+                  heat_increase: 25
+
+      - id: "m_handling_detective"
+        title: "Handling Detective Hargrove"
+        description: "Deal with the detective who has been targeting your organization."
+        narrative: |
+          With Vincent's betrayal confirmed, your attention turns to Detective Hargrove. The ambitious detective has been building a case against your organization for months, using Vincent's information and manipulating Sophia through her therapist.
+
+          Hargrove represents an immediate threat that must be neutralized. However, simply eliminating a police detective would bring unprecedented heat on your organization and potentially trigger a dedicated task force investigation.
+
+          You need a more sophisticated approach to remove the threat while minimizing the consequences.
+        image_url: "/images/missions/handling_detective.jpg"
+        type: "operation"
+        order: 2
+        requirements:
+          respect: 160
+          influence: 130
+          money: 100000
+        rewards:
+          heat_reduction: 40
+          influence: 40
+
+        choices:
+          - id: "choice_blackmail_detective"
+            text: "Find leverage to blackmail Detective Hargrove"
+            next_mission: "m_sophia_situation"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 1
+            operations:
+              - id: "op_detective_dirt"
+                name: "Dig Up Dirt on Hargrove"
+                description: "Investigate Detective Hargrove's personal and professional life to find compromising information."
+                operation_type: "intelligence_gathering"
+                duration: 14400
+                success_rate: 70
+                resources:
+                  crew: 5
+                  weapons: 0
+                  vehicles: 2
+                  money: 30000
+                rewards:
+                  influence: 25
+                risks:
+                  crew_loss: 1
+                  money_loss: 30000
+                  heat_increase: 15
+              - id: "op_leverage_application"
+                name: "Apply Leverage"
+                description: "Use the discovered information to blackmail Detective Hargrove into backing off."
+                operation_type: "official_bribing"
+                duration: 7200
+                success_rate: 80
+                resources:
+                  crew: 3
+                  weapons: 2
+                  vehicles: 1
+                  money: 0
+                rewards:
+                  heat_reduction: 50
+                  influence: 20
+                risks:
+                  heat_increase: 30
+
+          - id: "choice_frame_detective"
+            text: "Frame Hargrove for corruption and destroy his credibility"
+            next_mission: "m_sophia_situation"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 1
+            operations:
+              - id: "op_evidence_fabrication"
+                name: "Fabricate Evidence"
+                description: "Create convincing evidence of Detective Hargrove's corruption and criminal activities."
+                operation_type: "intelligence_gathering"
+                duration: 10800
+                success_rate: 75
+                resources:
+                  crew: 4
+                  weapons: 0
+                  vehicles: 1
+                  money: 50000
+                rewards:
+                  influence: 20
+                risks:
+                  money_loss: 50000
+                  heat_increase: 20
+              - id: "op_evidence_planting"
+                name: "Plant Evidence and Tip Off Internal Affairs"
+                description: "Strategically plant the fabricated evidence and anonymously tip off Internal Affairs."
+                operation_type: "official_bribing"
+                duration: 8600
+                success_rate: 65
+                resources:
+                  crew: 6
+                  weapons: 2
+                  vehicles: 3
+                  money: 50000
+                rewards:
+                  heat_reduction: 60
+                  respect: 25
+                  influence: 30
+                risks:
+                  crew_loss: 2
+                  money_loss: 50000
+                  heat_increase: 40
+
+      - id: "m_sophia_situation"
+        title: "The Sophia Situation"
+        description: "Address Sophia's unwitting role in the information leak."
+        narrative: |
+          With Vincent and Detective Hargrove dealt with, you must now address Sophia's situation. Unlike Vincent, she wasn't deliberately betraying you - she was manipulated by her therapist, Dr. Elaine Powell, who has been feeding information to Hargrove.
+
+          Sophia has been loyal for years, and her skills are valuable to your organization. However, she has inadvertently compromised operations and security. This presents a delicate situation that requires careful handling.
+
+          Your decision regarding Sophia will send a message to your entire organization about how you handle such situations.
+        image_url: "/images/missions/sophia_situation.jpg"
+        type: "operation"
+        order: 3
+        requirements:
+          respect: 170
+          influence: 140
+        rewards:
+          respect: 45
+          influence: 35
+
+        choices:
+          - id: "choice_forgive_sophia"
+            text: "Forgive Sophia and deal with the therapist"
+            next_mission: "m_organization_restructuring"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 0
+              - type: "operation"
+                required_value: "crew_recruitment"
+                order_index: 1
+            operations:
+              - id: "op_therapist_elimination"
+                name: "Eliminate the Therapist"
+                description: "Remove Dr. Powell as a threat to your organization."
+                operation_type: "carjacking"
+                duration: 5400
+                success_rate: 80
+                resources:
+                  crew: 6
+                  weapons: 4
+                  vehicles: 2
+                  money: 0
+                rewards:
+                  respect: 30
+                risks:
+                  crew_loss: 1
+                  weapons_loss: 1
+                  heat_increase: 25
+              - id: "op_sophia_counseling"
+                name: "Support and Reintegrate Sophia"
+                description: "Help Sophia process the betrayal and reintegrate her into the organization with new security protocols."
+                operation_type: "crew_recruitment"
+                duration: 12600
+                success_rate: 90
+                resources:
+                  crew: 2
+                  weapons: 0
+                  vehicles: 0
+                  money: 15000
+                rewards:
+                  crew: 1
+                  respect: 15
+                  influence: 25
+                risks:
+                  money_loss: 15000
+
+          - id: "choice_demote_sophia"
+            text: "Keep Sophia but demote her and restrict her access"
+            next_mission: "m_organization_restructuring"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 0
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 1
+            operations:
+              - id: "op_therapist_elimination_alt"
+                name: "Eliminate the Therapist"
+                description: "Remove Dr. Powell as a threat to your organization."
+                operation_type: "carjacking"
+                duration: 5400
+                success_rate: 80
+                resources:
+                  crew: 6
+                  weapons: 4
+                  vehicles: 2
+                  money: 0
+                rewards:
+                  respect: 30
+                risks:
+                  crew_loss: 1
+                  weapons_loss: 1
+                  heat_increase: 25
+              - id: "op_sophia_restructuring"
+                name: "Restructure Sophia's Role"
+                description: "Demote Sophia and implement strict information access restrictions."
+                operation_type: "intelligence_gathering"
+                duration: 8600
+                success_rate: 95
+                resources:
+                  crew: 3
+                  weapons: 0
+                  vehicles: 0
+                  money: 10000
+                rewards:
+                  respect: 25
+                  influence: 15
+                risks:
+                  money_loss: 10000
+
+      - id: "m_organization_restructuring"
+        title: "Organization Restructuring"
+        description: "Reorganize your criminal family to prevent future betrayals."
+        narrative: |
+          The betrayal has exposed critical vulnerabilities in your organization's structure and security protocols. To prevent similar incidents in the future, a comprehensive restructuring is necessary.
+
+          You need to implement new information compartmentalization, improve vetting procedures for new members, establish counterintelligence measures, and possibly reorganize leadership positions given Vincent's betrayal and the changes to Sophia's role.
+
+          This restructuring represents an opportunity to strengthen your organization while demonstrating your leadership in crisis.
+        image_url: "/images/missions/organization_restructuring.jpg"
+        type: "operation"
+        order: 4
+        requirements:
+          money: 200000
+          respect: 180
+          influence: 150
+        rewards:
+          respect: 50
+          influence: 45
+
+        choices:
+          - id: "choice_cell_structure"
+            text: "Implement a cell structure with strict information compartmentalization"
+            next_mission: "m_family_meeting"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "crew_recruitment"
+                order_index: 1
+            operations:
+              - id: "op_security_overhaul"
+                name: "Complete Security Overhaul"
+                description: "Design and implement a comprehensive new security structure for your organization."
+                operation_type: "intelligence_gathering"
+                duration: 21600
+                success_rate: 85
+                resources:
+                  crew: 10
+                  weapons: 0
+                  vehicles: 0
+                  money: 100000
+                rewards:
+                  influence: 35
+                risks:
+                  money_loss: 100000
+                  heat_increase: 5
+              - id: "op_security_training"
+                name: "Comprehensive Security Training"
+                description: "Train all organization members on new security protocols and information handling."
+                operation_type: "crew_recruitment"
+                duration: 18000
+                success_rate: 90
+                resources:
+                  crew: 20
+                  weapons: 0
+                  vehicles: 0
+                  money: 50000
+                rewards:
+                  respect: 30
+                  influence: 20
+                risks:
+                  money_loss: 50000
+
+          - id: "choice_loyalty_enforcement"
+            text: "Emphasize loyalty through incentives and harsh consequences"
+            next_mission: "m_family_meeting"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 0
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 1
+            operations:
+              - id: "op_loyalty_demonstration"
+                name: "Public Loyalty Demonstration"
+                description: "Make an example of betrayal consequences while also rewarding loyal members."
+                operation_type: "carjacking"
+                duration: 7200
+                success_rate: 85
+                resources:
+                  crew: 25
+                  weapons: 15
+                  vehicles: 5
+                  money: 0
+                rewards:
+                  respect: 60
+                risks:
+                  heat_increase: 30
+              - id: "op_loyalty_rewards"
+                name: "Establish Loyalty Reward System"
+                description: "Create a comprehensive system of bonuses, benefits, and advancement opportunities tied to loyalty and performance."
+                operation_type: "official_bribing"
+                duration: 14400
+                success_rate: 95
+                resources:
+                  crew: 5
+                  weapons: 0
+                  vehicles: 0
+                  money: 150000
+                rewards:
+                  respect: 25
+                  influence: 40
+                risks:
+                  money_loss: 150000
+
+      - id: "m_family_meeting"
+        title: "Family Meeting"
+        description: "Hold a formal meeting to address the organization about recent events."
+        narrative: |
+          With the traitor identified, the detective neutralized, and organizational changes implemented, it's time to address your criminal family directly. Everyone has heard rumors and fragments of information about recent events, creating uncertainty and tension.
+
+          You need to present a unified narrative that acknowledges what happened while projecting strength and control. This meeting is your opportunity to reassure loyal members, set expectations for the future, and definitively close this troubling chapter.
+
+          How you frame these events will significantly impact your organization's morale and cohesion moving forward.
+        image_url: "/images/missions/family_meeting.jpg"
+        type: "operation"
+        order: 5
+        requirements:
+          respect: 200
+          influence: 160
+        rewards:
+          respect: 60
+          influence: 50
+
+        choices:
+          - id: "choice_transparency_approach"
+            text: "Be relatively transparent about what happened and the changes made"
+            next_mission: "m_internal_tensions"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "crew_recruitment"
+                order_index: 0
+            operations:
+              - id: "op_transparent_meeting"
+                name: "Transparent Family Meeting"
+                description: "Hold a meeting where you openly discuss what happened and the changes implemented."
+                operation_type: "crew_recruitment"
+                duration: 7200
+                success_rate: 90
+                resources:
+                  crew: 50
+                  weapons: 20
+                  vehicles: 15
+                  money: 25000
+                rewards:
+                  respect: 30
+                  influence: 60
+                risks:
+                  money_loss: 25000
+
+          - id: "choice_controlled_narrative"
+            text: "Present a carefully controlled narrative that emphasizes strength"
+            next_mission: "m_internal_tensions"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "crew_recruitment"
+                order_index: 0
+            operations:
+              - id: "op_controlled_meeting"
+                name: "Strategic Family Meeting"
+                description: "Hold a meeting where you present a carefully crafted narrative emphasizing organizational strength."
+                operation_type: "crew_recruitment"
+                duration: 7200
+                success_rate: 90
+                resources:
+                  crew: 50
+                  weapons: 20
+                  vehicles: 15
+                  money: 25000
+                rewards:
+                  respect: 70
+                  influence: 25
+                risks:
+                  money_loss: 25000
+
+  - id: "ch_blood_and_loyalty"
+    title: "Blood and Loyalty"
+    description: "Deal with the aftermath of betrayal and restore order to your criminal family."
+    image_url: "/images/chapters/blood_and_loyalty.jpg"
+    order: 3
+
+    missions:
+      - id: "m_internal_tensions"
+        title: "Internal Tensions"
+        description: "Address growing tensions between loyal members and the old guard."
+        narrative: |
+          Despite your efforts to restore stability, tensions have emerged within your organization. The recent betrayal and subsequent changes have created two factions: the old guard who were close to Vincent and resist the new security measures, and loyal members who embrace the changes but demand harsher consequences for suspected sympathizers.
+
+          These tensions threaten to evolve into a dangerous internal conflict if not addressed. Already, there have been heated arguments and a few physical altercations between members of the opposing factions.
+
+          You need to resolve these tensions before they weaken your organization from within.
+        image_url: "/images/missions/internal_tensions.jpg"
+        type: "operation"
+        order: 1
+        requirements:
+          respect: 210
+          influence: 170
+        rewards:
+          respect: 50
+          influence: 45
+
+        choices:
+          - id: "choice_mediated_solution"
+            text: "Bring faction leaders together for a mediated resolution"
+            next_mission: "m_police_pressure"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 0
+            operations:
+              - id: "op_mediation_meeting"
+                name: "Faction Mediation"
+                description: "Hold a structured meeting with leaders from both factions to address concerns and find common ground."
+                operation_type: "official_bribing"
+                duration: 10800
+                success_rate: 80
+                resources:
+                  crew: 10
+                  weapons: 0
+                  vehicles: 0
+                  money: 50000
+                rewards:
+                  influence: 50
+                risks:
+                  money_loss: 50000
+
+          - id: "choice_decisive_leadership"
+            text: "Make decisive leadership changes to end the factionalism"
+            next_mission: "m_police_pressure"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 0
+              - type: "operation"
+                required_value: "crew_recruitment"
+                order_index: 1
+            operations:
+              - id: "op_leadership_removal"
+                name: "Remove Faction Leaders"
+                description: "Forcefully remove the most vocal opponents from both factions from the organization."
+                operation_type: "carjacking"
+                duration: 7200
+                success_rate: 85
+                resources:
+                  crew: 20
+                  weapons: 15
+                  vehicles: 5
+                  money: 0
+                rewards:
+                  respect: 65
+                risks:
+                  crew_loss: 5
+                  heat_increase: 25
+              - id: "op_promote_neutrals"
+                name: "Promote Neutral Members"
+                description: "Identify and promote members who haven't taken sides to key leadership positions."
+                operation_type: "crew_recruitment"
+                duration: 14400
+                success_rate: 90
+                resources:
+                  crew: 5
+                  weapons: 0
+                  vehicles: 0
+                  money: 75000
+                rewards:
+                  respect: 30
+                  influence: 40
+                risks:
+                  money_loss: 75000
+
+      - id: "m_police_pressure"
+        title: "Increased Police Pressure"
+        description: "Deal with heightened police scrutiny following recent events."
+        narrative: |
+          While you've been managing internal issues, external pressure has been mounting. Despite neutralizing Detective Hargrove, his investigation has sparked increased interest from other law enforcement agencies. Police patrols in your territories have doubled, and there are rumors of a task force being formed.
+
+          This increased scrutiny is disrupting operations and making your people nervous. Revenue is down, and some of your more cautious business partners are keeping their distance until things cool down.
+
+          You need to reduce this police pressure before it does lasting damage to your organization.
+        image_url: "/images/missions/police_pressure.jpg"
+        type: "operation"
+        order: 2
+        requirements:
+          money: 300000
+          respect: 220
+          influence: 180
+        rewards:
+          heat_reduction: 60
+          influence: 40
+
+        choices:
+          - id: "choice_police_corruption"
+            text: "Expand your network of corrupt officers and officials"
+            next_mission: "m_business_recovery"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 1
+            operations:
+              - id: "op_identify_corruptible"
+                name: "Identify Corruptible Officials"
+                description: "Investigate police and government officials to identify those susceptible to bribery or blackmail."
+                operation_type: "intelligence_gathering"
+                duration: 18000
+                success_rate: 75
+                resources:
+                  crew: 8
+                  weapons: 0
+                  vehicles: 4
+                  money: 50000
+                rewards:
+                  influence: 25
+                risks:
+                  crew_loss: 1
+                  vehicles_loss: 1
+                  money_loss: 50000
+                  heat_increase: 20
+              - id: "op_corruption_network"
+                name: "Establish Corruption Network"
+                description: "Systematically bribe or blackmail identified officials to create a protective network."
+                operation_type: "official_bribing"
+                duration: 21600
+                success_rate: 70
+                resources:
+                  crew: 5
+                  weapons: 0
+                  vehicles: 2
+                  money: 250000
+                rewards:
+                  heat_reduction: 70
+                  influence: 35
+                risks:
+                  crew_loss: 2
+                  money_loss: 250000
+                  heat_increase: 40
+
+          - id: "choice_diversion_tactic"
+            text: "Create a major criminal diversion in another part of the city"
+            next_mission: "m_business_recovery"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 1
+            operations:
+              - id: "op_diversion_planning"
+                name: "Plan Criminal Diversion"
+                description: "Develop a plan for a major criminal event that will divert police resources away from your territories."
+                operation_type: "intelligence_gathering"
+                duration: 14400
+                success_rate: 80
+                resources:
+                  crew: 10
+                  weapons: 0
+                  vehicles: 3
+                  money: 75000
+                rewards:
+                  influence: 30
+                risks:
+                  money_loss: 75000
+                  heat_increase: 15
+              - id: "op_execute_diversion"
+                name: "Execute Diversion Operation"
+                description: "Carry out the planned diversion to redirect police attention away from your organization."
+                operation_type: "carjacking"
+                duration: 10800
+                success_rate: 75
+                resources:
+                  crew: 25
+                  weapons: 20
+                  vehicles: 10
+                  money: 100000
+                rewards:
+                  heat_reduction: 80
+                  respect: 35
+                  influence: 25
+                risks:
+                  crew_loss: 6
+                  weapons_loss: 5
+                  vehicles_loss: 3
+                  money_loss: 100000
+                  heat_increase: 50
+
+      - id: "m_business_recovery"
+        title: "Business Recovery"
+        description: "Restore normal operations and recover lost revenue."
+        narrative: |
+          With internal tensions addressed and police pressure reduced, it's time to focus on business recovery. Recent disruptions have significantly impacted your revenue streams, and some territories have seen decreased activity or even encroachment by opportunistic rivals.
+
+          You need to jumpstart operations, reassure business partners, and reclaim any lost territory. This is a critical moment to demonstrate that your organization has emerged stronger from recent challenges.
+
+          A strong economic recovery will cement your leadership and provide resources for future expansion.
+        image_url: "/images/missions/business_recovery.jpg"
+        type: "territory"
+        order: 3
+        requirements:
+          money: 200000
+          crew: 60
+          vehicles: 20
+          respect: 230
+        rewards:
+          money: 500000
+          respect: 45
+          influence: 40
+
+        choices:
+          - id: "choice_aggressive_expansion"
+            text: "Launch an aggressive campaign to reclaim and expand territory"
+            next_mission: "m_new_leadership"
+            sequential_order: true
+            conditions:
+              - type: "territory"
+                required_value: "takeover_downtown_club"
+                order_index: 0
+              - type: "territory"
+                required_value: "takeover_shipping_warehouse"
+                order_index: 1
+              - type: "territory"
+                required_value: "takeover_luxury_hotel"
+                order_index: 2
+            pois:
+              - id: "poi_downtown_club"
+                name: "Downtown Club"
+                description: "A high-end nightclub that would provide significant revenue and prestige."
+                location_type: "hotspot"
+                location_id: "downtown_club"
+              - id: "poi_shipping_warehouse"
+                name: "Shipping Warehouse"
+                description: "A strategic warehouse for smuggling operations and contraband storage."
+                location_type: "hotspot"
+                location_id: "shipping_warehouse"
+              - id: "poi_luxury_hotel"
+                name: "Luxury Hotel"
+                description: "A prestigious hotel perfect for money laundering and high-level meetings."
+                location_type: "hotspot"
+                location_id: "luxury_hotel"
+
+          - id: "choice_business_development"
+            text: "Focus on developing more sophisticated and profitable operations"
+            next_mission: "m_new_leadership"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "drug_trafficking"
+                order_index: 0
+              - type: "operation"
+                required_value: "goods_smuggling"
+                order_index: 1
+            operations:
+              - id: "op_premium_drug_operation"
+                name: "Establish Premium Drug Operation"
+                description: "Develop a sophisticated operation focused on high-end designer drugs for wealthy clients."
+                operation_type: "drug_trafficking"
+                duration: 25200
+                success_rate: 75
+                resources:
+                  crew: 20
+                  weapons: 10
+                  vehicles: 8
+                  money: 150000
+                rewards:
+                  money: 350000
+                  respect: 30
+                  influence: 25
+                risks:
+                  crew_loss: 3
+                  weapons_loss: 2
+                  vehicles_loss: 1
+                  money_loss: 150000
+                  heat_increase: 35
+              - id: "op_luxury_goods_smuggling"
+                name: "Luxury Goods Smuggling Ring"
+                description: "Establish an operation smuggling counterfeit luxury goods with enormous profit margins."
+                operation_type: "goods_smuggling"
+                duration: 21600
+                success_rate: 80
+                resources:
+                  crew: 15
+                  weapons: 5
+                  vehicles: 12
+                  money: 100000
+                rewards:
+                  money: 300000
+                  respect: 20
+                  influence: 30
+                risks:
+                  crew_loss: 2
+                  vehicles_loss: 2
+                  money_loss: 100000
+                  heat_increase: 25
+
+      - id: "m_new_leadership"
+        title: "New Leadership Structure"
+        description: "Finalize your new leadership team after all the recent changes."
+        narrative: |
+          After months of turmoil, betrayal, and reorganization, it's time to solidify your new leadership structure. With Vincent gone and other personnel changes, several key positions need permanent appointments.
+
+          You need a trustworthy team that balances loyalty with competence, tradition with innovation. These leaders will shape your organization's future and determine whether it truly emerges stronger from this period of crisis.
+
+          The decisions you make now will define your criminal family for years to come.
+        image_url: "/images/missions/new_leadership.jpg"
+        type: "operation"
+        order: 4
+        requirements:
+          respect: 250
+          influence: 200
+        rewards:
+          respect: 60
+          influence: 50
+
+        choices:
+          - id: "choice_loyal_old_guard"
+            text: "Promote loyal veterans who weathered the crisis with you"
+            next_mission: "m_ceremony"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "crew_recruitment"
+                order_index: 0
+            operations:
+              - id: "op_veteran_promotions"
+                name: "Veteran Leadership Appointments"
+                description: "Identify and promote loyal veterans who proved themselves during the crisis."
+                operation_type: "crew_recruitment"
+                duration: 14400
+                success_rate: 95
+                resources:
+                  crew: 10
+                  weapons: 0
+                  vehicles: 0
+                  money: 200000
+                rewards:
+                  respect: 65
+                  influence: 35
+                risks:
+                  money_loss: 200000
+
+          - id: "choice_fresh_blood"
+            text: "Bring in fresh talent untainted by recent events"
+            next_mission: "m_ceremony"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "crew_recruitment"
+                order_index: 1
+            operations:
+              - id: "op_talent_search"
+                name: "Criminal Talent Search"
+                description: "Identify promising talent from outside your organization for leadership roles."
+                operation_type: "intelligence_gathering"
+                duration: 21600
+                success_rate: 80
+                resources:
+                  crew: 8
+                  weapons: 0
+                  vehicles: 4
+                  money: 50000
+                rewards:
+                  influence: 20
+                risks:
+                  money_loss: 50000
+                  heat_increase: 10
+              - id: "op_external_recruitment"
+                name: "External Leadership Recruitment"
+                description: "Recruit and integrate talented outsiders into your leadership structure."
+                operation_type: "crew_recruitment"
+                duration: 18000
+                success_rate: 75
+                resources:
+                  crew: 15
+                  weapons: 0
+                  vehicles: 0
+                  money: 150000
+                rewards:
+                  respect: 40
+                  influence: 45
+                risks:
+                  money_loss: 150000
+                  heat_increase: 20
+
+      - id: "m_ceremony"
+        title: "Family Ceremony"
+        description: "Hold a formal ceremony to celebrate your organization's renewal and unity."
+        narrative: |
+          The time has come to formally close this chapter and celebrate your organization's successful navigation of this crisis. A traditional ceremony will reinforce the bonds of loyalty, acknowledge sacrifices made, and mark the beginning of a new era under your strengthened leadership.
+
+          Such ceremonies have been part of your criminal tradition for generations. They combine elements of ritual, celebration, and solemn oaths of allegiance. This is an opportunity to heal remaining wounds and unite your people behind a shared vision for the future.
+
+          After months of turmoil, this ceremony represents the final resolution of the internal conflict and betrayal that threatened to destroy everything you've built.
+        image_url: "/images/missions/ceremony.jpg"
+        type: "operation"
+        order: 5
+        requirements:
+          money: 300000
+          respect: 270
+          influence: 220
+        rewards:
+          respect: 75
+          influence: 65
+
+        choices:
+          - id: "choice_traditional_ceremony"
+            text: "Hold a traditional ceremony emphasizing history and continuity"
+            next_mission: "m_epilogue"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "crew_recruitment"
+                order_index: 0
+            operations:
+              - id: "op_traditional_ceremony"
+                name: "Traditional Family Ceremony"
+                description: "Organize an elaborate ceremony following traditional criminal family customs."
+                operation_type: "crew_recruitment"
+                duration: 10800
+                success_rate: 95
+                resources:
+                  crew: 100
+                  weapons: 0
+                  vehicles: 20
+                  money: 200000
+                rewards:
+                  respect: 80
+                  influence: 40
+                risks:
+                  money_loss: 200000
+                  heat_increase: 15
+
+          - id: "choice_modern_ceremony"
+            text: "Create a new ceremony symbolizing reform and transformation"
+            next_mission: "m_epilogue"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "crew_recruitment"
+                order_index: 0
+            operations:
+              - id: "op_modern_ceremony"
+                name: "Modern Renewal Ceremony"
+                description: "Design and execute a new type of ceremony emphasizing transformation and the future."
+                operation_type: "crew_recruitment"
+                duration: 10800
+                success_rate: 90
+                resources:
+                  crew: 100
+                  weapons: 0
+                  vehicles: 20
+                  money: 250000
+                rewards:
+                  respect: 60
+                  influence: 70
+                risks:
+                  money_loss: 250000
+                  heat_increase: 10
+
+  - id: "ch_epilogue"
+    title: "Epilogue"
+    description: "Reflect on the lessons learned and make decisions for the future of your criminal family."
+    image_url: "/images/chapters/epilogue_family_matters.jpg"
+    order: 4
+
+    missions:
+      - id: "m_epilogue"
+        title: "Lessons in Blood and Loyalty"
+        description: "Contemplate the crisis your organization weathered and the lessons learned."
+        narrative: |
+          Six months have passed since the family ceremony that marked the resolution of the betrayal crisis. Your organization has not only recovered but thrived under the new leadership structure and security protocols. The painful lessons of Vincent's betrayal have made your criminal family stronger and more resilient.
+
+          As you look out over the city from your office, you reflect on everything that happened - the initial suspicions, the investigation, the revelations, and the difficult decisions you had to make. Every criminal empire faces threats from without, but betrayal from within cuts deepest.
+
+          Now you must decide how these experiences will shape your leadership philosophy moving forward. The choices you make will define not just your criminal empire, but your legacy.
+        image_url: "/images/missions/epilogue_family.jpg"
+        type: "operation"
+        order: 1
+        requirements:
+          respect: 300
+          influence: 250
+        rewards:
+          respect: 80
+          influence: 70
+
+        choices:
+          - id: "choice_balance_approach"
+            text: "Lead with a balanced approach of mercy and justice"
+            next_mission: ""
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "crew_recruitment"
+                order_index: 0
+            operations:
+              - id: "op_balanced_leadership"
+                name: "Balanced Leadership Philosophy"
+                description: "Establish a leadership approach that balances mercy with justice, pragmatism with tradition."
+                operation_type: "crew_recruitment"
+                duration: 25200
+                success_rate: 90
+                resources:
+                  crew: 20
+                  weapons: 0
+                  vehicles: 0
+                  money: 100000
+                rewards:
+                  respect: 50
+                  influence: 80
+                risks:
+                  money_loss: 100000
+
+          - id: "choice_ruthless_approach"
+            text: "Embrace ruthless pragmatism to prevent future betrayals"
+            next_mission: ""
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 0
+            operations:
+              - id: "op_ruthless_leadership"
+                name: "Ruthless Leadership Philosophy"
+                description: "Establish a leadership approach focused on strength, deterrence, and ruthless pragmatism."
+                operation_type: "carjacking"
+                duration: 18000
+                success_rate: 85
+                resources:
+                  crew: 30
+                  weapons: 20
+                  vehicles: 5
+                  money: 50000
+                rewards:
+                  respect: 100
+                  influence: 40
+                risks:
+                  crew_loss: 5
+                  heat_increase: 25

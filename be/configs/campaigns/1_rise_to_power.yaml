@@ -1,0 +1,2032 @@
+# File: be/configs/campaigns/rise_to_power.yaml
+
+id: "rise_to_power"
+title: "Rise to Power"
+description: "After your family's betrayal and murder, rebuild your criminal empire from nothing while seeking revenge against those who wronged you."
+image_url: "/images/campaigns/rise_to_power.jpg"
+initial_chapter: "ch_betrayals_aftermath"
+required_level: 1
+
+chapters:
+  - id: "ch_betrayals_aftermath"
+    title: "Betrayal's Aftermath"
+    description: "Escape the family massacre and establish yourself in a new city."
+    image_url: "/images/chapters/betrayals_aftermath.jpg"
+    order: 1
+
+    missions:
+      - id: "m_escape_city"
+        title: "Escape from the City"
+        description: "Escape the hit squad hunting you after your family's massacre."
+        narrative: |
+          The rain beats down relentlessly as you crouch behind a dumpster, your expensive suit now torn and stained with blood - both yours and others'. Just hours ago, you were attending your father's 50th birthday celebration at the family compound. Now, everyone you've ever loved is dead.
+
+          The betrayal came from within. Uncle Sal, your father's right-hand man for twenty years, orchestrated everything. Now his men are combing the city for you, the only surviving witness.
+
+          You need to get out of the city immediately, but you're wounded and have limited resources. The South district has a port where you might find a way out.
+        image_url: "/images/missions/escape_city.jpg"
+        type: "travel"
+        order: 1
+        requirements:
+          money: 100
+        rewards:
+          money: 500
+          respect: 5
+          heat_reduction: 20
+
+        choices:
+          - id: "choice_port_escape"
+            text: "Escape through the South district port"
+            next_mission: "m_new_identity"
+            sequential_order: true
+            conditions:
+              - type: "travel"
+                required_value: "south"
+                order_index: 0
+            pois:
+              - id: "poi_south_port"
+                name: "South District Port"
+                description: "A busy shipping port with cargo ships that could provide passage to another city."
+                location_type: "region"
+                location_id: "south"
+
+          - id: "choice_underground_escape"
+            text: "Escape through underground tunnels"
+            next_mission: "m_new_identity"
+            sequential_order: true
+            conditions:
+              - type: "travel"
+                required_value: "west"
+                order_index: 0
+            pois:
+              - id: "poi_sewer_entrance"
+                name: "Abandoned Sewer Entrance"
+                description: "An entrance to the city's old sewer system, which could provide a hidden escape route."
+                location_type: "region"
+                location_id: "west"
+
+      - id: "m_new_identity"
+        title: "New Identity"
+        description: "Establish a new identity to hide from your pursuers."
+        narrative: |
+          You've managed to escape the immediate danger, but you're still not safe. Uncle Sal has connections everywhere, and your face is too well-known in criminal circles.
+
+          You need a new identity - papers, background, the works. You've heard rumors of a forger named Felix who operates out of the East district. He's expensive but discreet.
+
+          With a new identity, you can begin planning your next moves without constantly looking over your shoulder.
+        image_url: "/images/missions/new_identity.jpg"
+        type: "operation"
+        order: 2
+        requirements:
+          money: 1000
+        rewards:
+          respect: 10
+          heat_reduction: 15
+
+        choices:
+          - id: "choice_premium_identity"
+            text: "Purchase a premium-quality new identity"
+            next_mission: "m_temporary_residence"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 0
+            operations:
+              - id: "op_forge_documents"
+                name: "Premium Identity Forge"
+                description: "Have Felix create a complete, high-quality new identity that will withstand scrutiny."
+                operation_type: "official_bribing"
+                duration: 3600
+                success_rate: 85
+                resources:
+                  crew: 0
+                  weapons: 0
+                  vehicles: 0
+                  money: 5000
+                rewards:
+                  heat_reduction: 30
+                risks:
+                  money_loss: 5000
+                  heat_increase: 10
+
+          - id: "choice_basic_identity"
+            text: "Get a basic new identity to save money"
+            next_mission: "m_temporary_residence"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 0
+            operations:
+              - id: "op_basic_documents"
+                name: "Basic Identity Forge"
+                description: "Have Felix create a simple new identity that will pass casual inspection."
+                operation_type: "official_bribing"
+                duration: 1800
+                success_rate: 75
+                resources:
+                  crew: 0
+                  weapons: 0
+                  vehicles: 0
+                  money: 2000
+                rewards:
+                  heat_reduction: 15
+                risks:
+                  money_loss: 2000
+                  heat_increase: 20
+
+      - id: "m_temporary_residence"
+        title: "Temporary Residence"
+        description: "Find a place to stay while you plan your next move."
+        narrative: |
+          With your new identity in hand, you need to find somewhere to lay low. Hotels are too exposed, and you don't have any friends in this city...yet.
+
+          The Northwest district has some rundown apartments where landlords don't ask questions. It's not glamorous, but it's a start - somewhere to rest and begin planning.
+
+          Your father always said that a proper base of operations is essential. Right now, you just need four walls and a roof.
+        image_url: "/images/missions/temporary_residence.jpg"
+        type: "territory"
+        order: 3
+        requirements:
+          money: 1500
+        rewards:
+          respect: 5
+          influence: 5
+
+        choices:
+          - id: "choice_cheap_apartment"
+            text: "Rent a cheap apartment in a bad neighborhood"
+            next_mission: "m_first_ally"
+            sequential_order: true
+            conditions:
+              - type: "territory"
+                required_value: "takeover_rundown_apartment"
+                order_index: 0
+            pois:
+              - id: "poi_rundown_apartment"
+                name: "Rundown Apartment"
+                description: "A cheap apartment in a rough neighborhood where nobody asks questions."
+                location_type: "hotspot"
+                location_id: "rundown_apartment"
+
+          - id: "choice_motel_room"
+            text: "Pay weekly for a motel room"
+            next_mission: "m_first_ally"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+            operations:
+              - id: "op_secure_motel"
+                name: "Secure Motel Room"
+                description: "Pay for a longer-term stay at a motel under your new identity."
+                operation_type: "intelligence_gathering"
+                duration: 1800
+                success_rate: 90
+                resources:
+                  crew: 0
+                  weapons: 0
+                  vehicles: 0
+                  money: 1000
+                rewards:
+                  heat_reduction: 5
+                risks:
+                  money_loss: 1000
+
+      - id: "m_first_ally"
+        title: "First Ally"
+        description: "Find someone who can help you navigate the criminal landscape of your new city."
+        narrative: |
+          You can't rebuild alone. In this new city, you need allies - people with local knowledge who can help you navigate the unfamiliar criminal landscape.
+
+          Word on the street is that a local bar in the Northeast district, The Rusty Nail, is a gathering place for various criminals. The bartender, a woman named Ria, is said to know everyone worth knowing.
+
+          Making connections is the first step toward rebuilding what you've lost.
+        image_url: "/images/missions/first_ally.jpg"
+        type: "operation"
+        order: 4
+        requirements:
+          money: 500
+        rewards:
+          crew: 2
+          respect: 15
+          influence: 10
+
+        choices:
+          - id: "choice_approach_bartender"
+            text: "Approach Ria the bartender directly"
+            next_mission: "m_information_network"
+            sequential_order: true
+            conditions:
+              - type: "travel"
+                required_value: "northeast"
+                order_index: 0
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 1
+            pois:
+              - id: "poi_rusty_nail"
+                name: "The Rusty Nail"
+                description: "A dive bar frequented by local criminals where information flows freely after hours."
+                location_type: "hotspot"
+                location_id: "rusty_nail"
+            operations:
+              - id: "op_meet_ria"
+                name: "Meet with Ria"
+                description: "Strike up a conversation with Ria to learn about the local criminal landscape."
+                operation_type: "intelligence_gathering"
+                duration: 2700
+                success_rate: 80
+                resources:
+                  crew: 0
+                  weapons: 0
+                  vehicles: 0
+                  money: 500
+                rewards:
+                  crew: 1
+                  respect: 10
+                risks:
+                  money_loss: 500
+                  heat_increase: 5
+
+          - id: "choice_observe_first"
+            text: "Observe the bar patrons before making contact"
+            next_mission: "m_information_network"
+            sequential_order: true
+            conditions:
+              - type: "travel"
+                required_value: "northeast"
+                order_index: 0
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 1
+            pois:
+              - id: "poi_rusty_nail_corner"
+                name: "Corner Table at The Rusty Nail"
+                description: "A shadowy corner table with a good view of the entire bar."
+                location_type: "hotspot"
+                location_id: "rusty_nail"
+            operations:
+              - id: "op_observe_bar"
+                name: "Observe Bar Patrons"
+                description: "Spend time watching the bar's customers to identify potential allies."
+                operation_type: "intelligence_gathering"
+                duration: 3600
+                success_rate: 90
+                resources:
+                  crew: 0
+                  weapons: 0
+                  vehicles: 0
+                  money: 200
+                rewards:
+                  crew: 2
+                  respect: 5
+                risks:
+                  money_loss: 200
+
+      - id: "m_information_network"
+        title: "Information Network"
+        description: "Build a basic network of informants to keep you updated on city happenings."
+        narrative: |
+          You've made your first connections in the city, but to truly understand what's happening, you need eyes and ears everywhere. An information network is essential for survival and eventual revenge.
+
+          Ria has introduced you to a few people - a taxi driver, a hotel bellhop, and a street vendor - who are willing to keep you informed... for the right price.
+
+          These aren't hardened criminals, just everyday people trying to make extra cash. But the information they can provide might be invaluable.
+        image_url: "/images/missions/information_network.jpg"
+        type: "operation"
+        order: 5
+        requirements:
+          money: 1000
+          crew: 1
+        rewards:
+          respect: 15
+          influence: 15
+
+        choices:
+          - id: "choice_pay_informants"
+            text: "Set up a payment system for regular information"
+            next_mission: "m_first_racket"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+            operations:
+              - id: "op_recruit_informants"
+                name: "Recruit Informant Network"
+                description: "Establish regular payments to informants across the city."
+                operation_type: "intelligence_gathering"
+                duration: 5400
+                success_rate: 85
+                resources:
+                  crew: 1
+                  weapons: 0
+                  vehicles: 0
+                  money: 2000
+                rewards:
+                  respect: 15
+                  influence: 20
+                risks:
+                  money_loss: 2000
+                  heat_increase: 5
+
+          - id: "choice_leverage_secrets"
+            text: "Use secrets to leverage cooperation instead of money"
+            next_mission: "m_first_racket"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 1
+            operations:
+              - id: "op_gather_leverage"
+                name: "Gather Compromising Information"
+                description: "Collect secrets that can be used to force cooperation from potential informants."
+                operation_type: "intelligence_gathering"
+                duration: 7200
+                success_rate: 70
+                resources:
+                  crew: 2
+                  weapons: 0
+                  vehicles: 1
+                  money: 1000
+                rewards:
+                  influence: 25
+                risks:
+                  crew_loss: 1
+                  heat_increase: 15
+              - id: "op_apply_pressure"
+                name: "Apply Pressure to Informants"
+                description: "Use the gathered secrets to force cooperation from your informants."
+                operation_type: "official_bribing"
+                duration: 3600
+                success_rate: 75
+                resources:
+                  crew: 1
+                  weapons: 1
+                  vehicles: 0
+                  money: 500
+                rewards:
+                  respect: 20
+                risks:
+                  heat_increase: 10
+
+  - id: "ch_building_foundation"
+    title: "Building a Foundation"
+    description: "Establish your first criminal operations and begin recruiting a crew."
+    image_url: "/images/chapters/building_foundation.jpg"
+    order: 2
+
+    missions:
+      - id: "m_first_racket"
+        title: "First Racket"
+        description: "Establish your first revenue-generating criminal operation."
+        narrative: |
+          Information is power, but money is survival. You need a source of steady income to fund your plans for revenge and rebuilding.
+
+          Your new contacts have tipped you off about an opportunity in the Southwest district. A small loan sharking operation run by an elderly man named Gus is up for grabs. He's looking to retire and sell his client list.
+
+          It's not glamorous, but loan sharking is profitable and relatively low-profile if managed correctly.
+        image_url: "/images/missions/first_racket.jpg"
+        type: "operation"
+        order: 1
+        requirements:
+          money: 5000
+          respect: 20
+        rewards:
+          money: 2000
+          respect: 20
+          influence: 15
+
+        choices:
+          - id: "choice_buy_operation"
+            text: "Buy the loan shark operation legitimately"
+            next_mission: "m_recruit_muscle"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 0
+            operations:
+              - id: "op_buy_loan_business"
+                name: "Purchase Loan Shark Business"
+                description: "Negotiate the purchase of Gus's loan sharking client list and territory."
+                operation_type: "official_bribing"
+                duration: 3600
+                success_rate: 95
+                resources:
+                  crew: 0
+                  weapons: 0
+                  vehicles: 0
+                  money: 5000
+                rewards:
+                  money: 2000
+                  influence: 15
+                risks:
+                  money_loss: 5000
+
+          - id: "choice_takeover_operation"
+            text: "Force Gus to hand over the operation"
+            next_mission: "m_recruit_muscle"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 0
+            operations:
+              - id: "op_threaten_gus"
+                name: "Intimidate Gus"
+                description: "Threaten Gus into handing over his loan shark operation."
+                operation_type: "carjacking"
+                duration: 2700
+                success_rate: 70
+                resources:
+                  crew: 2
+                  weapons: 1
+                  vehicles: 0
+                  money: 0
+                rewards:
+                  money: 1000
+                  respect: 25
+                risks:
+                  crew_loss: 1
+                  heat_increase: 20
+
+      - id: "m_recruit_muscle"
+        title: "Recruit Muscle"
+        description: "Find and recruit enforcers to help with collections and protection."
+        narrative: |
+          Now that you have a business, you need people to help run it. Specifically, you need muscle - enforcers who can handle collections and deal with troublesome clients.
+
+          The underground fighting circuit in the North district attracts tough men and women looking for extra cash. It's a perfect recruiting ground for the kind of muscle you need.
+
+          Your father always said the strength of a family lies in its soldiers. It's time to start building yours.
+        image_url: "/images/missions/recruit_muscle.jpg"
+        type: "operation"
+        order: 2
+        requirements:
+          money: 2000
+          respect: 25
+        rewards:
+          crew: 5
+          respect: 15
+
+        choices:
+          - id: "choice_recruit_fighters"
+            text: "Recruit from the underground fighting circuit"
+            next_mission: "m_secure_territory"
+            sequential_order: true
+            conditions:
+              - type: "travel"
+                required_value: "north"
+                order_index: 0
+              - type: "operation"
+                required_value: "crew_recruitment"
+                order_index: 1
+            pois:
+              - id: "poi_fighting_ring"
+                name: "Underground Fighting Ring"
+                description: "A secret venue where illegal fights are held, attracting tough individuals."
+                location_type: "hotspot"
+                location_id: "underground_fighting_ring"
+            operations:
+              - id: "op_scout_fighters"
+                name: "Scout Potential Recruits"
+                description: "Attend underground fights to identify and approach potential enforcers."
+                operation_type: "crew_recruitment"
+                duration: 4800
+                success_rate: 80
+                resources:
+                  crew: 1
+                  weapons: 0
+                  vehicles: 0
+                  money: 2000
+                rewards:
+                  crew: 5
+                  respect: 15
+                risks:
+                  money_loss: 2000
+                  heat_increase: 10
+
+          - id: "choice_recruit_veterans"
+            text: "Recruit desperate military veterans"
+            next_mission: "m_secure_territory"
+            sequential_order: true
+            conditions:
+              - type: "travel"
+                required_value: "west"
+                order_index: 0
+              - type: "operation"
+                required_value: "crew_recruitment"
+                order_index: 1
+            pois:
+              - id: "poi_veterans_bar"
+                name: "Veterans' Bar"
+                description: "A bar frequented by former military personnel, many struggling to find work."
+                location_type: "hotspot"
+                location_id: "veterans_bar"
+            operations:
+              - id: "op_recruit_veterans"
+                name: "Recruit Veterans"
+                description: "Approach former military personnel with job offers for your organization."
+                operation_type: "crew_recruitment"
+                duration: 5400
+                success_rate: 85
+                resources:
+                  crew: 0
+                  weapons: 0
+                  vehicles: 0
+                  money: 3000
+                rewards:
+                  crew: 4
+                  respect: 10
+                risks:
+                  money_loss: 3000
+                  heat_increase: 5
+
+      - id: "m_secure_territory"
+        title: "Secure Territory"
+        description: "Establish control over a small area to serve as your base of operations."
+        narrative: |
+          Your operation is growing, but it's still fragile. You need a secure base of operations - a territory you control where you can conduct business without interference.
+
+          There's a neglected neighborhood in the Southeast district with several vacant storefronts. It's perfect for your needs: low profile, affordable, and with plenty of potential.
+
+          Controlling territory was one of your father's main principles. "Own the ground you stand on," he used to say, "and no one can make you move."
+        image_url: "/images/missions/secure_territory.jpg"
+        type: "territory"
+        order: 3
+        requirements:
+          money: 5000
+          crew: 3
+          respect: 30
+        rewards:
+          respect: 25
+          influence: 20
+
+        choices:
+          - id: "choice_legitimate_purchase"
+            text: "Purchase property through legitimate means"
+            next_mission: "m_expand_business"
+            sequential_order: true
+            conditions:
+              - type: "territory"
+                required_value: "takeover_vacant_storefront"
+                order_index: 0
+              - type: "territory"
+                required_value: "takeover_small_warehouse"
+                order_index: 1
+            pois:
+              - id: "poi_vacant_storefront"
+                name: "Vacant Storefront"
+                description: "An empty commercial property that could serve as a front business."
+                location_type: "hotspot"
+                location_id: "vacant_storefront"
+              - id: "poi_small_warehouse"
+                name: "Small Warehouse"
+                description: "A discreet warehouse space suitable for storage and private meetings."
+                location_type: "hotspot"
+                location_id: "small_warehouse"
+
+          - id: "choice_intimidate_owners"
+            text: "Intimidate current property owners to sell cheap"
+            next_mission: "m_expand_business"
+            sequential_order: true
+            conditions:
+              - type: "territory"
+                required_value: "extortion_local_diner"
+                order_index: 0
+              - type: "territory"
+                required_value: "takeover_vacant_storefront"
+                order_index: 1
+            pois:
+              - id: "poi_local_diner"
+                name: "Local Diner"
+                description: "A family-run diner that could be pressured into selling their property."
+                location_type: "hotspot"
+                location_id: "local_diner"
+              - id: "poi_vacant_storefront_2"
+                name: "Vacant Storefront"
+                description: "An empty commercial property that could serve as a front business."
+                location_type: "hotspot"
+                location_id: "vacant_storefront"
+
+      - id: "m_expand_business"
+        title: "Expand Business"
+        description: "Grow your loan sharking operation into additional criminal activities."
+        narrative: |
+          Loan sharking has provided a steady income, but to truly rebuild, you need to diversify. Different criminal ventures will provide both additional revenue and strategic advantages.
+
+          Your contacts have identified two promising opportunities: expanding into protection rackets for local businesses or setting up a small-scale drug distribution operation.
+
+          Each path has its own risks and rewards. Protection rackets are more visible but generally attract less police attention than drug dealing.
+        image_url: "/images/missions/expand_business.jpg"
+        type: "operation"
+        order: 4
+        requirements:
+          money: 8000
+          crew: 5
+          respect: 40
+        rewards:
+          money: 5000
+          respect: 30
+          influence: 25
+
+        choices:
+          - id: "choice_protection_racket"
+            text: "Establish a protection racket with local businesses"
+            next_mission: "m_handle_competition"
+            sequential_order: true
+            conditions:
+              - type: "territory"
+                required_value: "extortion_local_restaurant"
+                order_index: 0
+              - type: "territory"
+                required_value: "extortion_convenience_store"
+                order_index: 1
+              - type: "territory"
+                required_value: "extortion_laundromat"
+                order_index: 2
+            pois:
+              - id: "poi_local_restaurant"
+                name: "Local Restaurant"
+                description: "A successful restaurant that would benefit from your 'protection'."
+                location_type: "hotspot"
+                location_id: "local_restaurant"
+              - id: "poi_convenience_store"
+                name: "Convenience Store"
+                description: "A 24-hour store that could pay for protection from robberies."
+                location_type: "hotspot"
+                location_id: "convenience_store"
+              - id: "poi_laundromat"
+                name: "Laundromat"
+                description: "A busy laundromat that could serve as both a protection client and money laundering front."
+                location_type: "hotspot"
+                location_id: "laundromat"
+
+          - id: "choice_drug_distribution"
+            text: "Set up a small-scale drug distribution network"
+            next_mission: "m_handle_competition"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "drug_trafficking"
+                order_index: 0
+              - type: "operation"
+                required_value: "drug_trafficking"
+                order_index: 1
+            operations:
+              - id: "op_source_product"
+                name: "Source Drug Supply"
+                description: "Find a reliable supplier for your drug distribution operation."
+                operation_type: "drug_trafficking"
+                duration: 5400
+                success_rate: 75
+                resources:
+                  crew: 2
+                  weapons: 1
+                  vehicles: 1
+                  money: 8000
+                rewards:
+                  money: 3000
+                  respect: 15
+                risks:
+                  crew_loss: 1
+                  money_loss: 8000
+                  heat_increase: 20
+              - id: "op_setup_distribution"
+                name: "Establish Distribution Network"
+                description: "Set up a network of dealers to distribute your product."
+                operation_type: "drug_trafficking"
+                duration: 7200
+                success_rate: 80
+                resources:
+                  crew: 3
+                  weapons: 2
+                  vehicles: 1
+                  money: 3000
+                rewards:
+                  money: 6000
+                  respect: 25
+                  influence: 15
+                risks:
+                  crew_loss: 2
+                  weapons_loss: 1
+                  heat_increase: 25
+
+      - id: "m_handle_competition"
+        title: "Handle Competition"
+        description: "Deal with a local criminal who's challenging your growing operation."
+        narrative: |
+          Success breeds competition. A local criminal named Darius has taken notice of your growing operation and is challenging your authority in the territory you've claimed.
+
+          He's not powerful enough to be a major threat yet, but ignoring him could encourage others to challenge you as well. How you handle this situation will set the tone for your organization's reputation.
+
+          Your father taught you that reputation is everything in this business. "Show weakness once," he said, "and everyone will think you're weak."
+        image_url: "/images/missions/handle_competition.jpg"
+        type: "operation"
+        order: 5
+        requirements:
+          crew: 5
+          weapons: 3
+          respect: 50
+        rewards:
+          respect: 35
+          influence: 20
+
+        choices:
+          - id: "choice_violent_example"
+            text: "Make a violent example of Darius"
+            next_mission: "m_police_attention"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 0
+            operations:
+              - id: "op_eliminate_darius"
+                name: "Eliminate the Competition"
+                description: "Send a clear message by dealing with Darius violently."
+                operation_type: "carjacking"
+                duration: 3600
+                success_rate: 70
+                resources:
+                  crew: 5
+                  weapons: 3
+                  vehicles: 1
+                  money: 0
+                rewards:
+                  respect: 40
+                  influence: 10
+                risks:
+                  crew_loss: 2
+                  weapons_loss: 1
+                  heat_increase: 30
+
+          - id: "choice_strategic_alliance"
+            text: "Offer Darius a place in your organization"
+            next_mission: "m_police_attention"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 1
+            operations:
+              - id: "op_investigate_darius"
+                name: "Investigate Darius"
+                description: "Gather information about Darius to better understand his motivations and weaknesses."
+                operation_type: "intelligence_gathering"
+                duration: 4800
+                success_rate: 90
+                resources:
+                  crew: 2
+                  weapons: 0
+                  vehicles: 1
+                  money: 1000
+                rewards:
+                  influence: 10
+                risks:
+                  money_loss: 1000
+              - id: "op_negotiate_alliance"
+                name: "Negotiate with Darius"
+                description: "Meet with Darius to offer him a position within your organization."
+                operation_type: "official_bribing"
+                duration: 3600
+                success_rate: 75
+                resources:
+                  crew: 3
+                  weapons: 1
+                  vehicles: 0
+                  money: 2000
+                rewards:
+                  crew: 3
+                  respect: 15
+                  influence: 25
+                risks:
+                  money_loss: 2000
+                  heat_increase: 5
+
+  - id: "ch_growing_influence"
+    title: "Growing Influence"
+    description: "Solidify your position and expand your influence across multiple districts."
+    image_url: "/images/chapters/growing_influence.jpg"
+    order: 3
+
+    missions:
+      - id: "m_police_attention"
+        title: "Police Attention"
+        description: "Deal with increased police scrutiny of your operations."
+        narrative: |
+          Your growing operation has attracted unwanted attention. Detective Rivera of the Organized Crime Unit has been asking questions, putting surveillance on your properties, and generally making life difficult.
+
+          This level of police scrutiny could seriously hamper your expansion plans and your ultimate goal of revenge against Uncle Sal. You need to deal with this situation carefully.
+
+          "The police are like any other problem,"your father used to say, "they respond to either fear or greed."
+        image_url: "/images/missions/police_attention.jpg"
+        type: "operation"
+        order: 1
+        requirements:
+          money: 10000
+          respect: 60
+        rewards:
+          heat_reduction: 30
+          influence: 20
+
+        choices:
+          - id: "choice_bribe_detective"
+            text: "Find Detective Rivera's price"
+            next_mission: "m_expand_territory"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 1
+            operations:
+              - id: "op_investigate_detective"
+                name: "Investigate Detective Rivera"
+                description: "Gather information about Detective Rivera to find potential leverage or weaknesses."
+                operation_type: "intelligence_gathering"
+                duration: 5400
+                success_rate: 75
+                resources:
+                  crew: 2
+                  weapons: 0
+                  vehicles: 1
+                  money: 2000
+                rewards:
+                  influence: 10
+                risks:
+                  money_loss: 2000
+                  heat_increase: 10
+              - id: "op_bribe_detective"
+                name: "Bribe Detective Rivera"
+                description: "Offer Detective Rivera money to look the other way regarding your operations."
+                operation_type: "official_bribing"
+                duration: 3600
+                success_rate: 65
+                resources:
+                  crew: 1
+                  weapons: 0
+                  vehicles: 0
+                  money: 10000
+                rewards:
+                  heat_reduction: 40
+                risks:
+                  money_loss: 10000
+                  heat_increase: 50
+
+          - id: "choice_find_leverage"
+            text: "Find leverage to force the detective to back off"
+            next_mission: "m_expand_territory"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 1
+            operations:
+              - id: "op_detective_surveillance"
+                name: "Surveil Detective Rivera"
+                description: "Watch Detective Rivera to find compromising information that can be used as leverage."
+                operation_type: "intelligence_gathering"
+                duration: 7200
+                success_rate: 60
+                resources:
+                  crew: 3
+                  weapons: 0
+                  vehicles: 2
+                  money: 3000
+                rewards:
+                  influence: 15
+                risks:
+                  crew_loss: 1
+                  vehicles_loss: 1
+                  money_loss: 3000
+                  heat_increase: 15
+              - id: "op_apply_detective_pressure"
+                name: "Apply Pressure to Detective"
+                description: "Use the gathered information to blackmail Detective Rivera into backing off."
+                operation_type: "intelligence_gathering"
+                duration: 3600
+                success_rate: 70
+                resources:
+                  crew: 2
+                  weapons: 1
+                  vehicles: 0
+                  money: 1000
+                rewards:
+                  heat_reduction: 35
+                  respect: 20
+                risks:
+                  crew_loss: 1
+                  heat_increase: 25
+
+      - id: "m_expand_territory"
+        title: "Territorial Expansion"
+        description: "Expand your territory to include multiple neighborhoods."
+        narrative: |
+          With the police situation temporarily handled, it's time to expand your territory. Controlling more neighborhoods means more revenue streams and greater influence.
+
+          You've identified several key areas in the Southeast and Southwest districts that would be valuable additions to your territory. Some are unclaimed, while others are controlled by minor players who could be persuaded or forced to align with you.
+
+          Your father always emphasized the importance of strategic expansion. "Don't get greedy," he warned. "Take what you can hold, and hold what you take."
+        image_url: "/images/missions/expand_territory.jpg"
+        type: "territory"
+        order: 2
+        requirements:
+          money: 15000
+          crew: 10
+          weapons: 5
+          respect: 70
+        rewards:
+          money: 5000
+          respect: 30
+          influence: 25
+
+        choices:
+          - id: "choice_aggressive_expansion"
+            text: "Take territory by force"
+            next_mission: "m_rival_problem"
+            sequential_order: true
+            conditions:
+              - type: "territory"
+                required_value: "takeover_commercial_strip"
+                order_index: 0
+              - type: "territory"
+                required_value: "takeover_nightclub"
+                order_index: 1
+              - type: "territory"
+                required_value: "takeover_gambling_den"
+                order_index: 2
+            pois:
+              - id: "poi_commercial_strip"
+                name: "Commercial Strip"
+                description: "A row of shops that would provide steady protection income."
+                location_type: "hotspot"
+                location_id: "commercial_strip"
+              - id: "poi_nightclub"
+                name: "The Neon Lounge"
+                description: "A popular nightclub that would be perfect for laundering money."
+                location_type: "hotspot"
+                location_id: "nightclub"
+              - id: "poi_gambling_den"
+                name: "Underground Gambling Den"
+                description: "An illegal gambling operation that generates significant cash."
+                location_type: "hotspot"
+                location_id: "gambling_den"
+
+          - id: "choice_diplomatic_expansion"
+            text: "Negotiate alliances with local operators"
+            next_mission: "m_rival_problem"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 0
+              - type: "territory"
+                required_value: "takeover_commercial_strip"
+                order_index: 1
+              - type: "territory"
+                required_value: "takeover_nightclub"
+                order_index: 2
+            operations:
+              - id: "op_negotiate_alliances"
+                name: "Negotiate Territorial Alliances"
+                description: "Meet with local criminal operators to form alliances rather than taking over by force."
+                operation_type: "official_bribing"
+                duration: 5400
+                success_rate: 80
+                resources:
+                  crew: 5
+                  weapons: 2
+                  vehicles: 1
+                  money: 15000
+                rewards:
+                  respect: 15
+                  influence: 30
+                risks:
+                  money_loss: 15000
+                  heat_increase: 10
+            pois:
+              - id: "poi_commercial_strip_2"
+                name: "Commercial Strip"
+                description: "A row of shops that would provide steady protection income."
+                location_type: "hotspot"
+                location_id: "commercial_strip"
+              - id: "poi_nightclub_2"
+                name: "The Neon Lounge"
+                description: "A popular nightclub that would be perfect for laundering money."
+                location_type: "hotspot"
+                location_id: "nightclub"
+
+      - id: "m_rival_problem"
+        title: "Rival Problem"
+        description: "Deal with a mid-level rival who's becoming a threat to your expansion."
+        narrative: |
+          Your rapid expansion has caught the attention of Marco Winters, a mid-level crime boss who controls several neighborhoods adjacent to your territory. Unlike Darius, Marco has resources and connections that make him a genuine threat.
+
+          Marco has begun interfering with your operations, poaching your clients, and threatening businesses under your protection. This situation needs to be addressed before it escalates into open warfare.
+
+          Your father had a saying for situations like this: "Always leave your enemy a way out, unless you're sure you want them dead."
+        image_url: "/images/missions/rival_problem.jpg"
+        type: "operation"
+        order: 3
+        requirements:
+          crew: 15
+          weapons: 10
+          vehicles: 5
+          respect: 80
+        rewards:
+          respect: 40
+          influence: 30
+
+        choices:
+          - id: "choice_eliminate_rival"
+            text: "Eliminate Marco and take his territory"
+            next_mission: "m_recruitment_drive"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 1
+            operations:
+              - id: "op_marco_surveillance"
+                name: "Surveil Marco Winters"
+                description: "Gather intelligence on Marco's movements and security to plan an attack."
+                operation_type: "intelligence_gathering"
+                duration: 6800
+                success_rate: 80
+                resources:
+                  crew: 3
+                  weapons: 0
+                  vehicles: 2
+                  money: 2000
+                rewards:
+                  influence: 10
+                risks:
+                  crew_loss: 1
+                  money_loss: 2000
+                  heat_increase: 15
+              - id: "op_eliminate_marco"
+                name: "Eliminate Marco Winters"
+                description: "Take out Marco Winters and his top lieutenants to eliminate the threat."
+                operation_type: "carjacking"
+                duration: 4500
+                success_rate: 65
+                resources:
+                  crew: 15
+                  weapons: 10
+                  vehicles: 3
+                  money: 0
+                rewards:
+                  respect: 50
+                  influence: 25
+                risks:
+                  crew_loss: 5
+                  weapons_loss: 3
+                  vehicles_loss: 1
+                  heat_increase: 40
+
+          - id: "choice_negotiate_truce"
+            text: "Negotiate a truce and territory division"
+            next_mission: "m_recruitment_drive"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 1
+            operations:
+              - id: "op_marco_weaknesses"
+                name: "Find Marco's Weaknesses"
+                description: "Investigate Marco's operation to find leverage for negotiations."
+                operation_type: "intelligence_gathering"
+                duration: 5400
+                success_rate: 85
+                resources:
+                  crew: 4
+                  weapons: 1
+                  vehicles: 2
+                  money: 3000
+                rewards:
+                  influence: 15
+                risks:
+                  crew_loss: 1
+                  money_loss: 3000
+                  heat_increase: 10
+              - id: "op_negotiate_marco"
+                name: "Negotiate with Marco"
+                description: "Arrange a sit-down with Marco to negotiate a truce and territory division."
+                operation_type: "official_bribing"
+                duration: 3600
+                success_rate: 75
+                resources:
+                  crew: 8
+                  weapons: 5
+                  vehicles: 2
+                  money: 10000
+                rewards:
+                  respect: 25
+                  influence: 35
+                risks:
+                  money_loss: 10000
+                  heat_increase: 5
+
+      - id: "m_recruitment_drive"
+        title: "Recruitment Drive"
+        description: "Expand your crew with specialists and skilled criminals."
+        narrative: |
+          Your organization is growing beyond simple muscle. To truly succeed, you need specialists - people with specific skills who can handle more complex aspects of your operation.
+
+          You need accountants who can launder money, technicians who can bypass security systems, drivers who can handle high-speed pursuits, and more. With these specialists, you can take on more lucrative and sophisticated criminal ventures.
+
+          Your father understood the importance of specialists. "Anyone can find a thug with a gun," he said. "The real value is in people with unique skills."
+        image_url: "/images/missions/recruitment_drive.jpg"
+        type: "operation"
+        order: 4
+        requirements:
+          money: 20000
+          respect: 90
+          influence: 60
+        rewards:
+          crew: 10
+          respect: 30
+          influence: 25
+
+        choices:
+          - id: "choice_recruit_specialists"
+            text: "Recruit specialists from across the criminal underworld"
+            next_mission: "m_money_laundering"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "crew_recruitment"
+                order_index: 0
+              - type: "operation"
+                required_value: "crew_recruitment"
+                order_index: 1
+              - type: "operation"
+                required_value: "crew_recruitment"
+                order_index: 2
+            operations:
+              - id: "op_recruit_accountant"
+                name: "Recruit Money Launderer"
+                description: "Find and recruit a skilled accountant who can help launder your illicit funds."
+                operation_type: "crew_recruitment"
+                duration: 4800
+                success_rate: 80
+                resources:
+                  crew: 2
+                  weapons: 0
+                  vehicles: 1
+                  money: 8000
+                rewards:
+                  crew: 1
+                  influence: 10
+                risks:
+                  money_loss: 8000
+                  heat_increase: 5
+              - id: "op_recruit_tech"
+                name: "Recruit Technical Specialist"
+                description: "Find and recruit a hacker who can bypass security systems and provide technical support."
+                operation_type: "crew_recruitment"
+                duration: 5400
+                success_rate: 75
+                resources:
+                  crew: 2
+                  weapons: 0
+                  vehicles: 1
+                  money: 7000
+                rewards:
+                  crew: 1
+                  influence: 10
+                risks:
+                  money_loss: 7000
+                  heat_increase: 10
+              - id: "op_recruit_drivers"
+                name: "Recruit Skilled Drivers"
+                description: "Find and recruit professional drivers who can handle high-speed pursuits and getaways."
+                operation_type: "crew_recruitment"
+                duration: 3600
+                success_rate: 85
+                resources:
+                  crew: 2
+                  weapons: 0
+                  vehicles: 3
+                  money: 5000
+                rewards:
+                  crew: 3
+                  influence: 5
+                risks:
+                  money_loss: 5000
+                  vehicles_loss: 1
+                  heat_increase: 10
+
+          - id: "choice_raid_competitors"
+            text: "Poach talent from competitor organizations"
+            next_mission: "m_money_laundering"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "crew_recruitment"
+                order_index: 1
+            operations:
+              - id: "op_identify_talent"
+                name: "Identify Competitor Talent"
+                description: "Investigate rival organizations to identify valuable specialists who might be poached."
+                operation_type: "intelligence_gathering"
+                duration: 7200
+                success_rate: 80
+                resources:
+                  crew: 4
+                  weapons: 0
+                  vehicles: 2
+                  money: 5000
+                rewards:
+                  influence: 15
+                risks:
+                  crew_loss: 1
+                  money_loss: 5000
+                  heat_increase: 15
+              - id: "op_poach_specialists"
+                name: "Poach Specialists"
+                description: "Approach identified specialists and convince them to join your organization."
+                operation_type: "crew_recruitment"
+                duration: 5400
+                success_rate: 70
+                resources:
+                  crew: 6
+                  weapons: 3
+                  vehicles: 2
+                  money: 15000
+                rewards:
+                  crew: 5
+                  respect: 25
+                  influence: 20
+                risks:
+                  crew_loss: 2
+                  money_loss: 15000
+                  heat_increase: 25
+
+      - id: "m_money_laundering"
+        title: "Money Laundering Operation"
+        description: "Establish a system to launder your illegal profits."
+        narrative: |
+          Your criminal enterprises are generating significant cash, but large amounts of unexplained money attract unwanted attention. You need a proper money laundering operation to legitimize your profits.
+
+          With your newly recruited specialists, you can establish businesses that appear legitimate but primarily exist to clean your dirty money. Restaurants, laundromats, car washes - businesses with high cash flow are ideal.
+
+          Your father was meticulous about money laundering. "Clean money is safe money," he often said. "Don't get sloppy with the books."
+        image_url: "/images/missions/money_laundering.jpg"
+        type: "territory"
+        order: 5
+        requirements:
+          money: 30000
+          crew: 20
+          influence: 70
+        rewards:
+          money: 10000
+          influence: 35
+
+        choices:
+          - id: "choice_restaurant_chain"
+            text: "Establish a restaurant chain for laundering"
+            next_mission: "m_sal_found"
+            sequential_order: true
+            conditions:
+              - type: "territory"
+                required_value: "takeover_italian_restaurant"
+                order_index: 0
+              - type: "territory"
+                required_value: "takeover_cafe"
+                order_index: 1
+              - type: "territory"
+                required_value: "takeover_steakhouse"
+                order_index: 2
+            pois:
+              - id: "poi_italian_restaurant"
+                name: "Vincenzo's Italian Restaurant"
+                description: "An upscale Italian restaurant perfect for laundering money through inflated cash sales."
+                location_type: "hotspot"
+                location_id: "italian_restaurant"
+              - id: "poi_cafe"
+                name: "Morning Brew Café"
+                description: "A busy coffee shop with high cash turnover, ideal for money laundering."
+                location_type: "hotspot"
+                location_id: "cafe"
+              - id: "poi_steakhouse"
+                name: "Prime Cut Steakhouse"
+                description: "An expensive steakhouse where inflated bills can help launder significant amounts."
+                location_type: "hotspot"
+                location_id: "steakhouse"
+
+          - id: "choice_diverse_businesses"
+            text: "Acquire diverse businesses for a complex laundering network"
+            next_mission: "m_sal_found"
+            sequential_order: true
+            conditions:
+              - type: "territory"
+                required_value: "takeover_car_wash"
+                order_index: 0
+              - type: "territory"
+                required_value: "takeover_nightclub"
+                order_index: 1
+              - type: "territory"
+                required_value: "takeover_pawn_shop"
+                order_index: 2
+            pois:
+              - id: "poi_car_wash"
+                name: "Spotless Car Wash"
+                description: "A car wash where it's easy to inflate the number of customers for laundering."
+                location_type: "hotspot"
+                location_id: "car_wash"
+              - id: "poi_nightclub_3"
+                name: "Pulse Nightclub"
+                description: "A nightclub with high cash flow and multiple revenue streams for complex laundering."
+                location_type: "hotspot"
+                location_id: "nightclub"
+              - id: "poi_pawn_shop"
+                name: "Golden Opportunity Pawn"
+                description: "A pawn shop that can be used to launder money through fake sales and purchases."
+                location_type: "hotspot"
+                location_id: "pawn_shop"
+
+  - id: "ch_finding_betrayer"
+    title: "Finding the Betrayer"
+    description: "Track down Uncle Sal and prepare for your revenge."
+    image_url: "/images/chapters/finding_betrayer.jpg"
+    order: 4
+
+    missions:
+      - id: "m_sal_found"
+        title: "Locating Uncle Sal"
+        description: "Your informants have finally located Uncle Sal in a neighboring city."
+        narrative: |
+          After months of building your new criminal empire, your information network has finally paid off. Uncle Sal has been located in Empire Bay, a neighboring city about three hours drive away.
+
+          According to your sources, Sal has established himself as a respected figure in Empire Bay's criminal underworld. He's well-protected and has powerful allies in the city.
+
+          The time for revenge is approaching, but you can't just rush in. You need to plan carefully if you want to succeed where your father failed.
+        image_url: "/images/missions/sal_found.jpg"
+        type: "operation"
+        order: 1
+        requirements:
+          respect: 100
+          influence: 80
+        rewards:
+          respect: 25
+          influence: 20
+
+        choices:
+          - id: "choice_send_scouts"
+            text: "Send scouts to gather intelligence in Empire Bay"
+            next_mission: "m_empire_bay_ally"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 1
+            operations:
+              - id: "op_initial_scouting"
+                name: "Initial Scouting Mission"
+                description: "Send a small team to Empire Bay to confirm Sal's location and assess his security."
+                operation_type: "intelligence_gathering"
+                duration: 7200
+                success_rate: 85
+                resources:
+                  crew: 3
+                  weapons: 0
+                  vehicles: 2
+                  money: 5000
+                rewards:
+                  influence: 15
+                risks:
+                  crew_loss: 1
+                  money_loss: 5000
+                  heat_increase: 10
+              - id: "op_detailed_investigation"
+                name: "Detailed Investigation"
+                description: "Conduct a thorough investigation of Sal's operation, allies, and vulnerabilities."
+                operation_type: "intelligence_gathering"
+                duration: 10800
+                success_rate: 75
+                resources:
+                  crew: 5
+                  weapons: 1
+                  vehicles: 2
+                  money: 10000
+                rewards:
+                  influence: 25
+                risks:
+                  crew_loss: 2
+                  vehicles_loss: 1
+                  money_loss: 10000
+                  heat_increase: 15
+
+          - id: "choice_infiltrate_operation"
+            text: "Plant an infiltrator in Sal's organization"
+            next_mission: "m_empire_bay_ally"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "crew_recruitment"
+                order_index: 0
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 1
+            operations:
+              - id: "op_recruit_infiltrator"
+                name: "Recruit Infiltrator"
+                description: "Find and recruit someone who can infiltrate Sal's organization without raising suspicion."
+                operation_type: "crew_recruitment"
+                duration: 8600
+                success_rate: 70
+                resources:
+                  crew: 2
+                  weapons: 0
+                  vehicles: 1
+                  money: 15000
+                rewards:
+                  crew: 1
+                  influence: 10
+                risks:
+                  money_loss: 15000
+                  heat_increase: 5
+              - id: "op_infiltration"
+                name: "Operation Infiltration"
+                description: "Insert your infiltrator into Sal's organization and establish communication channels."
+                operation_type: "intelligence_gathering"
+                duration: 14400
+                success_rate: 65
+                resources:
+                  crew: 3
+                  weapons: 0
+                  vehicles: 2
+                  money: 8000
+                rewards:
+                  influence: 30
+                risks:
+                  crew_loss: 3
+                  money_loss: 8000
+                  heat_increase: 20
+
+      - id: "m_empire_bay_ally"
+        title: "Empire Bay Ally"
+        description: "Find an ally within Empire Bay's criminal landscape."
+        narrative: |
+          Taking on Uncle Sal in his new territory requires local support. Your scouts have identified potential allies in Empire Bay who might help you - either because they have their own grudges against Sal or because they see an opportunity in aligning with you.
+
+          The Tanino Family controls territory adjacent to Sal's and has had several run-ins with him. Meanwhile, the Jackals are a motorcycle gang who've been pushed around by Sal but lack the strength to challenge him directly.
+
+          "Choose your allies carefully," your father once advised. "The wrong friend is worse than an honest enemy."
+        image_url: "/images/missions/empire_bay_ally.jpg"
+        type: "operation"
+        order: 2
+        requirements:
+          money: 50000
+          respect: 110
+          influence: 90
+        rewards:
+          crew: 15
+          weapons: 10
+          respect: 30
+          influence: 25
+
+        choices:
+          - id: "choice_tanino_family"
+            text: "Ally with the Tanino Family"
+            next_mission: "m_prepare_assault"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 0
+            operations:
+              - id: "op_tanino_meeting"
+                name: "Meet with Tanino Family"
+                description: "Arrange a meeting with the Tanino Family to propose an alliance against Uncle Sal."
+                operation_type: "official_bribing"
+                duration: 7200
+                success_rate: 80
+                resources:
+                  crew: 10
+                  weapons: 5
+                  vehicles: 3
+                  money: 50000
+                rewards:
+                  crew: 15
+                  weapons: 10
+                  respect: 20
+                  influence: 30
+                risks:
+                  crew_loss: 2
+                  money_loss: 50000
+                  heat_increase: 15
+
+          - id: "choice_jackals_gang"
+            text: "Ally with the Jackals motorcycle gang"
+            next_mission: "m_prepare_assault"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 0
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 1
+            operations:
+              - id: "op_jackals_meeting"
+                name: "Meet with Jackals Leadership"
+                description: "Arrange a meeting with the Jackals' leadership to propose an alliance."
+                operation_type: "official_bribing"
+                duration: 5400
+                success_rate: 85
+                resources:
+                  crew: 8
+                  weapons: 4
+                  vehicles: 5
+                  money: 30000
+                rewards:
+                  crew: 20
+                  weapons: 8
+                  respect: 25
+                  influence: 15
+                risks:
+                  crew_loss: 1
+                  money_loss: 30000
+                  heat_increase: 20
+              - id: "op_weapons_raid"
+                name: "Weapons Raid"
+                description: "Help the Jackals raid a weapons shipment to arm them for the coming conflict."
+                operation_type: "carjacking"
+                duration: 3600
+                success_rate: 70
+                resources:
+                  crew: 12
+                  weapons: 6
+                  vehicles: 4
+                  money: 0
+                rewards:
+                  weapons: 15
+                  respect: 20
+                risks:
+                  crew_loss: 3
+                  weapons_loss: 2
+                  vehicles_loss: 1
+                  heat_increase: 25
+
+      - id: "m_prepare_assault"
+        title: "Planning the Assault"
+        description: "Prepare a detailed plan to take down Uncle Sal."
+        narrative: |
+          With allies secured in Empire Bay, it's time to plan your assault on Uncle Sal. Your intelligence has revealed that Sal operates out of a heavily guarded compound in the city's outskirts and also has a penthouse downtown for personal use.
+
+          Your father's downfall came from underestimating the enemy. You won't make the same mistake. Every detail must be considered, every contingency planned for.
+
+          "In our business," your father once said, "the difference between life and death is often in the planning."
+        image_url: "/images/missions/prepare_assault.jpg"
+        type: "operation"
+        order: 3
+        requirements:
+          crew: 30
+          weapons: 20
+          vehicles: 10
+          respect: 120
+        rewards:
+          respect: 35
+          influence: 30
+
+        choices:
+          - id: "choice_compound_attack"
+            text: "Plan an all-out assault on Sal's compound"
+            next_mission: "m_sal_downfall"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 1
+            operations:
+              - id: "op_compound_recon"
+                name: "Compound Reconnaissance"
+                description: "Conduct detailed reconnaissance of Sal's compound, identifying security measures and weaknesses."
+                operation_type: "intelligence_gathering"
+                duration: 8600
+                success_rate: 85
+                resources:
+                  crew: 5
+                  weapons: 0
+                  vehicles: 3
+                  money: 10000
+                rewards:
+                  influence: 20
+                risks:
+                  crew_loss: 1
+                  vehicles_loss: 1
+                  money_loss: 10000
+                  heat_increase: 15
+              - id: "op_weapons_preparation"
+                name: "Weapons and Equipment Preparation"
+                description: "Acquire the necessary weapons, explosives, and equipment for the compound assault."
+                operation_type: "carjacking"
+                duration: 7200
+                success_rate: 80
+                resources:
+                  crew: 10
+                  weapons: 5
+                  vehicles: 3
+                  money: 50000
+                rewards:
+                  weapons: 25
+                  respect: 20
+                risks:
+                  crew_loss: 2
+                  money_loss: 50000
+                  heat_increase: 25
+
+          - id: "choice_infiltration_plan"
+            text: "Plan a stealthy infiltration of Sal's penthouse"
+            next_mission: "m_sal_downfall"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 1
+            operations:
+              - id: "op_penthouse_recon"
+                name: "Penthouse Reconnaissance"
+                description: "Study the security systems, staff schedules, and access points of Sal's penthouse."
+                operation_type: "intelligence_gathering"
+                duration: 7200
+                success_rate: 90
+                resources:
+                  crew: 3
+                  weapons: 0
+                  vehicles: 2
+                  money: 8000
+                rewards:
+                  influence: 15
+                risks:
+                  crew_loss: 1
+                  money_loss: 8000
+                  heat_increase: 10
+              - id: "op_security_bypass"
+                name: "Security System Bypass Planning"
+                description: "Work with your tech specialist to develop methods for bypassing the penthouse security."
+                operation_type: "intelligence_gathering"
+                duration: 5400
+                success_rate: 75
+                resources:
+                  crew: 3
+                  weapons: 0
+                  vehicles: 1
+                  money: 15000
+                rewards:
+                  influence: 20
+                risks:
+                  crew_loss: 1
+                  money_loss: 15000
+                  heat_increase: 15
+
+      - id: "m_sal_downfall"
+        title: "Uncle Sal's Downfall"
+        description: "Execute your plan and finally confront Uncle Sal."
+        narrative: |
+          The day of reckoning has arrived. After months of planning, building, and preparing, you're finally ready to face Uncle Sal and avenge your family.
+
+          Your allies are in position, your crew is armed and ready, and every detail of the plan has been checked and double-checked. This is the moment everything has been building toward.
+
+          As you make your final preparations, you recall your father's last words to you before that fateful meeting: "Remember who you are. You're my child, and that means something in this world. Never forget it."
+        image_url: "/images/missions/sal_downfall.jpg"
+        type: "operation"
+        order: 4
+        requirements:
+          crew: 40
+          weapons: 30
+          vehicles: 15
+          respect: 150
+          influence: 100
+        rewards:
+          money: 100000
+          respect: 50
+          influence: 50
+
+        choices:
+          - id: "choice_kill_sal"
+            text: "Kill Uncle Sal and dismantle his organization"
+            next_mission: "m_aftermath"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 0
+            operations:
+              - id: "op_sal_takedown"
+                name: "Eliminate Uncle Sal"
+                description: "Execute the final assault on Uncle Sal and his organization."
+                operation_type: "carjacking"
+                duration: 7200
+                success_rate: 70
+                resources:
+                  crew: 40
+                  weapons: 30
+                  vehicles: 10
+                  money: 0
+                rewards:
+                  money: 100000
+                  respect: 60
+                  influence: 40
+                risks:
+                  crew_loss: 12
+                  weapons_loss: 10
+                  vehicles_loss: 4
+                  heat_increase: 50
+
+          - id: "choice_capture_sal"
+            text: "Capture Uncle Sal alive and force him to confess"
+            next_mission: "m_aftermath"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 1
+            operations:
+              - id: "op_sal_capture_plan"
+                name: "Capture Plan Finalization"
+                description: "Finalize the detailed plan to capture Uncle Sal alive."
+                operation_type: "intelligence_gathering"
+                duration: 5400
+                success_rate: 85
+                resources:
+                  crew: 5
+                  weapons: 0
+                  vehicles: 2
+                  money: 10000
+                rewards:
+                  influence: 15
+                risks:
+                  money_loss: 10000
+                  heat_increase: 10
+              - id: "op_sal_capture"
+                name: "Capture Uncle Sal"
+                description: "Execute the operation to capture Uncle Sal alive."
+                operation_type: "carjacking"
+                duration: 8600
+                success_rate: 65
+                resources:
+                  crew: 35
+                  weapons: 25
+                  vehicles: 15
+                  money: 0
+                rewards:
+                  money: 70000
+                  respect: 40
+                  influence: 60
+                risks:
+                  crew_loss: 15
+                  weapons_loss: 10
+                  vehicles_loss: 5
+                  heat_increase: 40
+
+      - id: "m_aftermath"
+        title: "The Aftermath"
+        description: "Deal with the consequences of your revenge and secure your empire."
+        narrative: |
+          Uncle Sal has fallen, and your family is avenged. But victory comes with complications. The power vacuum left by Sal's downfall has attracted attention from other criminal organizations, and the authorities are on high alert.
+
+          Your empire now spans two cities, but managing such an expansive territory presents new challenges. Allies who helped you against Sal may now see you as competition. The real test of leadership begins now.
+
+          Your father always said, "Gaining power is only half the battle. Keeping it is where most fail."
+        image_url: "/images/missions/aftermath.jpg"
+        type: "operation"
+        order: 5
+        requirements:
+          crew: 50
+          respect: 180
+          influence: 120
+        rewards:
+          money: 50000
+          respect: 50
+          influence: 60
+
+        choices:
+          - id: "choice_consolidate_power"
+            text: "Consolidate your power and secure your territories"
+            next_mission: "m_epilogue"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 0
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 1
+            operations:
+              - id: "op_peace_negotiations"
+                name: "Peace Negotiations"
+                description: "Meet with other criminal organizations to establish peaceful territorial boundaries."
+                operation_type: "official_bribing"
+                duration: 10800
+                success_rate: 80
+                resources:
+                  crew: 20
+                  weapons: 10
+                  vehicles: 5
+                  money: 100000
+                rewards:
+                  influence: 40
+                  heat_reduction: 20
+                risks:
+                  money_loss: 100000
+                  heat_increase: 10
+              - id: "op_security_enhancement"
+                name: "Security Enhancement"
+                description: "Strengthen the security of your organization against potential threats."
+                operation_type: "intelligence_gathering"
+                duration: 14400
+                success_rate: 90
+                resources:
+                  crew: 30
+                  weapons: 20
+                  vehicles: 10
+                  money: 50000
+                rewards:
+                  respect: 30
+                  influence: 20
+                risks:
+                  money_loss: 50000
+
+          - id: "choice_expand_empire"
+            text: "Aggressively expand your empire to new territories"
+            next_mission: "m_epilogue"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 0
+              - type: "territory"
+                required_value: "takeover_empire_bay_casino"
+                order_index: 1
+            operations:
+              - id: "op_rival_elimination"
+                name: "Eliminate Remaining Rivals"
+                description: "Systematically eliminate remaining rivals to secure your dominance."
+                operation_type: "carjacking"
+                duration: 12600
+                success_rate: 75
+                resources:
+                  crew: 40
+                  weapons: 30
+                  vehicles: 15
+                  money: 0
+                rewards:
+                  respect: 50
+                  influence: 30
+                risks:
+                  crew_loss: 10
+                  weapons_loss: 8
+                  vehicles_loss: 3
+                  heat_increase: 40
+            pois:
+              - id: "poi_empire_bay_casino"
+                name: "Empire Bay Casino"
+                description: "A prestigious casino that would solidify your control over Empire Bay."
+                location_type: "hotspot"
+                location_id: "empire_bay_casino"
+
+  - id: "ch_epilogue"
+    title: "Epilogue"
+    description: "Reflect on your journey and make decisions about your criminal empire's future."
+    image_url: "/images/chapters/epilogue.jpg"
+    order: 5
+
+    missions:
+      - id: "m_epilogue"
+        title: "A New Era"
+        description: "With your vengeance complete, decide the future direction of your criminal empire."
+        narrative: |
+          A year has passed since Uncle Sal's downfall. Your criminal empire now spans multiple cities, with diverse operations ranging from traditional rackets to sophisticated white-collar crime. Your name is spoken with respect and fear throughout the underworld.
+
+          But success brings its own challenges. Increased scrutiny from federal authorities, tensions with international crime syndicates, and the constant challenge of maintaining loyalty within your growing organization.
+
+          As you sit in your penthouse office, overlooking the city your father once ruled, you contemplate his legacy and your own. The choices you make now will define your empire for years to come.
+        image_url: "/images/missions/epilogue.jpg"
+        type: "operation"
+        order: 1
+        requirements:
+          respect: 200
+          influence: 150
+        rewards:
+          respect: 50
+          influence: 50
+
+        choices:
+          - id: "choice_legitimate_business"
+            text: "Begin transitioning toward more legitimate businesses"
+            next_mission: ""
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 0
+            operations:
+              - id: "op_legitimate_transition"
+                name: "Legitimate Business Transition"
+                description: "Begin acquiring legitimate businesses and gradually reduce illegal operations."
+                operation_type: "official_bribing"
+                duration: 21600
+                success_rate: 90
+                resources:
+                  crew: 20
+                  weapons: 0
+                  vehicles: 5
+                  money: 500000
+                rewards:
+                  influence: 60
+                  heat_reduction: 50
+                risks:
+                  respect: -20
+                  money_loss: 500000
+
+          - id: "choice_criminal_expansion"
+            text: "Expand your criminal empire internationally"
+            next_mission: ""
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "drug_trafficking"
+                order_index: 1
+            operations:
+              - id: "op_international_contacts"
+                name: "Establish International Contacts"
+                description: "Develop relationships with international crime syndicates to expand operations globally."
+                operation_type: "intelligence_gathering"
+                duration: 18000
+                success_rate: 80
+                resources:
+                  crew: 10
+                  weapons: 0
+                  vehicles: 2
+                  money: 200000
+                rewards:
+                  influence: 40
+                risks:
+                  money_loss: 200000
+                  heat_increase: 15
+              - id: "op_international_operations"
+                name: "Launch International Operations"
+                description: "Begin criminal operations in international territories."
+                operation_type: "drug_trafficking"
+                duration: 25200
+                success_rate: 75
+                resources:
+                  crew: 30
+                  weapons: 20
+                  vehicles: 10
+                  money: 300000
+                rewards:
+                  money: 500000
+                  respect: 60
+                  influence: 40
+                risks:
+                  crew_loss: 8
+                  weapons_loss: 5
+                  vehicles_loss: 2
+                  money_loss: 300000
+                  heat_increase: 30

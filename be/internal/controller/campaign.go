@@ -325,8 +325,6 @@ func (c *CampaignController) CompleteMission(w http.ResponseWriter, r *http.Requ
 	)
 }
 
-// POI Controllers
-
 // GetPlayerActivePOIs handles getting all active POIs for a player
 func (c *CampaignController) GetPlayerActivePOIs(w http.ResponseWriter, r *http.Request) {
 	// Get player ID from context
@@ -337,7 +335,7 @@ func (c *CampaignController) GetPlayerActivePOIs(w http.ResponseWriter, r *http.
 	}
 
 	// Get active POIs
-	pois, err := c.campaignService.GetActivePOIs(playerID)
+	pois, err := c.campaignService.GetActivePlayerPOIs(playerID)
 	if err != nil {
 		c.logger.Error().Err(err).Msg("Failed to get active POIs")
 		util.RespondWithError(w, http.StatusInternalServerError, "Failed to get active POIs")
@@ -365,7 +363,7 @@ func (c *CampaignController) CompletePOI(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Complete the POI
-	if err := c.campaignService.CompletePOI(poiID, playerID); err != nil {
+	if err := c.campaignService.CompletePlayerPOI(playerID, poiID); err != nil {
 		c.logger.Error().Err(err).Msg("Failed to complete POI")
 		util.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -391,7 +389,7 @@ func (c *CampaignController) GetPlayerActiveMissionOperations(w http.ResponseWri
 	}
 
 	// Get active mission operations
-	operations, err := c.campaignService.GetActiveMissionOperations(playerID)
+	operations, err := c.campaignService.GetActivePlayerMissionOperations(playerID)
 	if err != nil {
 		c.logger.Error().Err(err).Msg("Failed to get active mission operations")
 		util.RespondWithError(w, http.StatusInternalServerError, "Failed to get active mission operations")
@@ -418,8 +416,18 @@ func (c *CampaignController) StartMissionOperation(w http.ResponseWriter, r *htt
 		return
 	}
 
+	// Parse request body
+	var request struct {
+		TemplateID string `json:"templateId"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		// If body is empty, use operation ID as template ID
+		request.TemplateID = operationID
+	}
+
 	// Activate the operation for the player
-	if err := c.campaignService.ActivateMissionOperationForPlayer(operationID, playerID); err != nil {
+	operation, err := c.campaignService.ActivatePlayerMissionOperation(playerID, request.TemplateID)
+	if err != nil {
 		c.logger.Error().Err(err).Msg("Failed to start mission operation")
 		util.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -429,7 +437,7 @@ func (c *CampaignController) StartMissionOperation(w http.ResponseWriter, r *htt
 	util.RespondWithGameMessage(
 		w,
 		http.StatusOK,
-		map[string]interface{}{"success": true},
+		operation,
 		util.GameMessageTypeSuccess,
 		"Mission operation started successfully.",
 	)
@@ -452,7 +460,7 @@ func (c *CampaignController) CompleteMissionOperation(w http.ResponseWriter, r *
 	}
 
 	// Complete the operation
-	if err := c.campaignService.CompleteMissionOperation(operationID, playerID); err != nil {
+	if err := c.campaignService.CompletePlayerMissionOperation(playerID, operationID); err != nil {
 		c.logger.Error().Err(err).Msg("Failed to complete mission operation")
 		util.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return

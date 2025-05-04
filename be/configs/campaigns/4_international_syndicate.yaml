@@ -1,0 +1,1447 @@
+# File: be/configs/campaigns/international_syndicate.yaml
+
+id: "international_syndicate"
+title: "International Syndicate"
+description: "Expand your criminal empire beyond national borders to become a global criminal powerhouse."
+image_url: "/images/campaigns/international_syndicate.jpg"
+initial_chapter: "ch_global_perspective"
+required_level: 5
+
+chapters:
+  - id: "ch_global_perspective"
+    title: "Global Perspective"
+    description: "Having conquered your city, you set your sights on international opportunities."
+    image_url: "/images/chapters/global_perspective.jpg"
+    order: 1
+
+    missions:
+      - id: "m_international_contacts"
+        title: "International Contacts"
+        description: "Establish connections with criminal organizations around the world."
+        narrative: |
+          Your dominance of the entire city has provided unprecedented resources and power, but you've begun to see the limitations of a solely domestic operation. True power in the modern criminal world extends across international borders.
+
+          To move to this next level, you need connections with established criminal organizations in key regions: the European mafias, South American cartels, Asian triads, and Middle Eastern crime syndicates. These connections will be essential for expanding operations globally.
+
+          Your advisor has identified several potential avenues for establishing these initial contacts, each with their own risks and advantages.
+        image_url: "/images/missions/international_contacts.jpg"
+        type: "operation"
+        order: 1
+        requirements:
+          respect: 400
+          influence: 350
+        rewards:
+          respect: 50
+          influence: 60
+
+        choices:
+          - id: "choice_diplomatic_approach"
+            text: "Send diplomatic emissaries to establish formal connections"
+            next_mission: "m_smuggling_routes"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 1
+            operations:
+              - id: "op_international_research"
+                name: "International Organization Research"
+                description: "Conduct thorough research on potential international criminal partners."
+                operation_type: "intelligence_gathering"
+                duration: 36000
+                success_rate: 90
+                resources:
+                  crew: 20
+                  weapons: 0
+                  vehicles: 5
+                  money: 200000
+                rewards:
+                  influence: 35
+                risks:
+                  crew_loss: 2
+                  money_loss: 200000
+                  heat_increase: 10
+              - id: "op_diplomatic_missions"
+                name: "Criminal Diplomatic Missions"
+                description: "Send high-level representatives to meet with leadership of international criminal organizations."
+                operation_type: "official_bribing"
+                duration: 86400
+                success_rate: 75
+                resources:
+                  crew: 30
+                  weapons: 15
+                  vehicles: 10
+                  money: 1500000
+                rewards:
+                  respect: 60
+                  influence: 80
+                risks:
+                  crew_loss: 5
+                  money_loss: 1500000
+                  heat_increase: 30
+
+          - id: "choice_business_approach"
+            text: "Use legitimate international business as cover for criminal networking"
+            next_mission: "m_smuggling_routes"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "goods_smuggling"
+                order_index: 1
+            operations:
+              - id: "op_business_identification"
+                name: "Identify Cover Businesses"
+                description: "Research legitimate international businesses suitable as fronts for criminal networking."
+                operation_type: "intelligence_gathering"
+                duration: 25200
+                success_rate: 95
+                resources:
+                  crew: 10
+                  weapons: 0
+                  vehicles: 3
+                  money: 100000
+                rewards:
+                  influence: 25
+                risks:
+                  money_loss: 100000
+                  heat_increase: 5
+              - id: "op_business_networking"
+                name: "International Business Networking"
+                description: "Establish legitimate business relationships that provide cover for criminal connections."
+                operation_type: "goods_smuggling"
+                duration: 129600
+                success_rate: 85
+                resources:
+                  crew: 15
+                  weapons: 0
+                  vehicles: 8
+                  money: 3000000
+                rewards:
+                  respect: 40
+                  influence: 100
+                risks:
+                  crew_loss: 2
+                  vehicles_loss: 1
+                  money_loss: 3000000
+                  heat_increase: 15
+
+      - id: "m_smuggling_routes"
+        title: "International Smuggling Routes"
+        description: "Establish secure transportation networks for moving goods across borders."
+        narrative: |
+          With international connections established, your next step is developing reliable smuggling routes. These routes will be the lifelines of your international operations, allowing the movement of goods, people, and money across borders while evading detection.
+
+          Different regions present different challenges: European borders with their sophisticated scanning technologies, the vast expanses of the Pacific for Asian routes, the heavily militarized US-Mexico border, and the complex political landscape of the Middle East. Each requires specialized strategies and resources.
+
+          Your success in establishing these smuggling routes will determine the scale and efficiency of your future international operations.
+        image_url: "/images/missions/smuggling_routes.jpg"
+        type: "operation"
+        order: 2
+        requirements:
+          money: 5000000
+          crew: 100
+          vehicles: 50
+          respect: 450
+        rewards:
+          money: 2000000
+          respect: 70
+          influence: 80
+
+        choices:
+          - id: "choice_maritime_focus"
+            text: "Focus on establishing maritime smuggling networks"
+            next_mission: "m_international_money"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "goods_smuggling"
+                order_index: 1
+              - type: "territory"
+                required_value: "takeover_port_facility"
+                order_index: 2
+            operations:
+              - id: "op_maritime_research"
+                name: "Maritime Route Research"
+                description: "Research optimal maritime smuggling routes, port security vulnerabilities, and shipping company infiltration points."
+                operation_type: "intelligence_gathering"
+                duration: 43200
+                success_rate: 85
+                resources:
+                  crew: 15
+                  weapons: 0
+                  vehicles: 5
+                  money: 300000
+                rewards:
+                  influence: 40
+                risks:
+                  crew_loss: 2
+                  money_loss: 300000
+                  heat_increase: 15
+              - id: "op_maritime_network_establishment"
+                name: "Establish Maritime Smuggling Network"
+                description: "Set up a sophisticated network of ships, crews, and port contacts for international maritime smuggling."
+                operation_type: "goods_smuggling"
+                duration: 172800
+                success_rate: 75
+                resources:
+                  crew: 50
+                  weapons: 30
+                  vehicles: 15
+                  money: 4000000
+                rewards:
+                  money: 3000000
+                  respect: 60
+                  influence: 70
+                risks:
+                  crew_loss: 10
+                  weapons_loss: 5
+                  money_loss: 4000000
+                  heat_increase: 40
+            pois:
+              - id: "poi_port_facility"
+                name: "Deep Water Port Facility"
+                description: "A strategic port facility essential for controlling maritime smuggling operations."
+                location_type: "hotspot"
+                location_id: "port_facility"
+
+          - id: "choice_diverse_routes"
+            text: "Develop diverse smuggling methods across air, land, and sea"
+            next_mission: "m_international_money"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "goods_smuggling"
+                order_index: 1
+              - type: "territory"
+                required_value: "takeover_border_crossing"
+                order_index: 2
+            operations:
+              - id: "op_transportation_analysis"
+                name: "Transportation Method Analysis"
+                description: "Analyze the risks, costs, and benefits of various smuggling methods across different regions."
+                operation_type: "intelligence_gathering"
+                duration: 54000
+                success_rate: 90
+                resources:
+                  crew: 25
+                  weapons: 0
+                  vehicles: 10
+                  money: 500000
+                rewards:
+                  influence: 50
+                risks:
+                  crew_loss: 3
+                  vehicles_loss: 1
+                  money_loss: 500000
+                  heat_increase: 20
+              - id: "op_diverse_network_establishment"
+                name: "Establish Diverse Smuggling Networks"
+                description: "Implement multiple smuggling methods and routes across air, land, and sea transportation."
+                operation_type: "goods_smuggling"
+                duration: 259200
+                success_rate: 70
+                resources:
+                  crew: 80
+                  weapons: 40
+                  vehicles: 50
+                  money: 6000000
+                rewards:
+                  money: 4500000
+                  respect: 80
+                  influence: 60
+                risks:
+                  crew_loss: 15
+                  weapons_loss: 8
+                  vehicles_loss: 10
+                  money_loss: 6000000
+                  heat_increase: 50
+            pois:
+              - id: "poi_border_crossing"
+                name: "Remote Border Crossing"
+                description: "A strategic border crossing location ideal for land-based smuggling operations."
+                location_type: "hotspot"
+                location_id: "border_crossing"
+
+      - id: "m_international_money"
+        title: "International Money Movement"
+        description: "Develop sophisticated systems for moving and laundering money across global financial systems."
+        narrative: |
+          As your international operations grow, you face the challenge of moving enormous sums of money across borders while evading increasingly sophisticated financial monitoring systems. Traditional money laundering techniques that worked domestically are insufficient for the scale and scrutiny of international finance.
+
+          You need to develop complex systems utilizing offshore banking, cryptocurrency, shell companies, and legitimate international businesses to move money cleanly through the global financial system. This requires specialized expertise in international finance, banking, and digital currency.
+
+          Establishing these financial systems will not only protect your profits but enable the funding of operations worldwide without triggering financial intelligence investigations.
+        image_url: "/images/missions/international_money.jpg"
+        type: "operation"
+        order: 3
+        requirements:
+          money: 10000000
+          respect: 500
+          influence: 450
+        rewards:
+          money: 5000000
+          influence: 100
+
+        choices:
+          - id: "choice_offshore_system"
+            text: "Establish a sophisticated offshore banking and shell company network"
+            next_mission: "m_international_recruitment"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 1
+            operations:
+              - id: "op_offshore_research"
+                name: "Offshore Banking Research"
+                description: "Research optimal offshore jurisdictions, banking regulations, and corporate structures for money laundering."
+                operation_type: "intelligence_gathering"
+                duration: 86400
+                success_rate: 90
+                resources:
+                  crew: 15
+                  weapons: 0
+                  vehicles: 5
+                  money: 1000000
+                rewards:
+                  influence: 45
+                risks:
+                  crew_loss: 1
+                  money_loss: 1000000
+                  heat_increase: 15
+              - id: "op_offshore_establishment"
+                name: "Establish Offshore Financial Network"
+                description: "Create a sophisticated network of offshore banks, shell companies, and financial proxies."
+                operation_type: "official_bribing"
+                duration: 345600
+                success_rate: 80
+                resources:
+                  crew: 20
+                  weapons: 0
+                  vehicles: 10
+                  money: 20000000
+                rewards:
+                  money: 10000000
+                  influence: 120
+                risks:
+                  crew_loss: 3
+                  money_loss: 20000000
+                  heat_increase: 30
+
+          - id: "choice_crypto_technology"
+            text: "Develop cutting-edge cryptocurrency and financial technology systems"
+            next_mission: "m_international_recruitment"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "crew_recruitment"
+                order_index: 1
+            operations:
+              - id: "op_fintech_research"
+                name: "Financial Technology Research"
+                description: "Research cutting-edge cryptocurrency, blockchain, and financial technology for money movement."
+                operation_type: "intelligence_gathering"
+                duration: 72000
+                success_rate: 85
+                resources:
+                  crew: 10
+                  weapons: 0
+                  vehicles: 3
+                  money: 1500000
+                rewards:
+                  influence: 40
+                risks:
+                  money_loss: 1500000
+                  heat_increase: 10
+              - id: "op_crypto_team_recruitment"
+                name: "Recruit Financial Technology Experts"
+                description: "Recruit top talent in cryptocurrency, blockchain development, and financial technology."
+                operation_type: "crew_recruitment"
+                duration: 129600
+                success_rate: 70
+                resources:
+                  crew: 5
+                  weapons: 0
+                  vehicles: 5
+                  money: 15000000
+                rewards:
+                  crew: 20
+                  money: 7500000
+                  influence: 90
+                risks:
+                  crew_loss: 2
+                  vehicles_loss: 1
+                  money_loss: 15000000
+                  heat_increase: 25
+
+      - id: "m_international_recruitment"
+        title: "International Talent Acquisition"
+        description: "Recruit specialized personnel from around the world for your global criminal enterprise."
+        narrative: |
+          Operating on a global scale requires specialized talent that may not be available locally. From former intelligence operatives and military specialists to financial experts and technology prodigies, your international operations need a diverse team of highly skilled individuals.
+
+          These aren't typical criminal recruits but professionals with unique skills who can be enticed to join your organization through various means - astronomical compensation, blackmail, ideology, or the thrill of operating outside legal constraints.
+
+          The quality of talent you recruit will significantly impact your capability to execute sophisticated international criminal operations while evading the best law enforcement agencies in the world.
+        image_url: "/images/missions/international_recruitment.jpg"
+        type: "operation"
+        order: 4
+        requirements:
+          money: 25000000
+          respect: 550
+          influence: 500
+        rewards:
+          crew: 50
+          respect: 80
+          influence: 90
+
+        choices:
+          - id: "choice_elite_recruitment"
+            text: "Focus on recruiting elite specialists regardless of cost"
+            next_mission: "m_intelligence_agency"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "crew_recruitment"
+                order_index: 1
+            operations:
+              - id: "op_specialist_identification"
+                name: "Identify Global Specialists"
+                description: "Identify top specialists worldwide in areas critical to international criminal operations."
+                operation_type: "intelligence_gathering"
+                duration: 129600
+                success_rate: 85
+                resources:
+                  crew: 20
+                  weapons: 0
+                  vehicles: 10
+                  money: 3000000
+                rewards:
+                  influence: 50
+                risks:
+                  crew_loss: 2
+                  vehicles_loss: 1
+                  money_loss: 3000000
+                  heat_increase: 20
+              - id: "op_elite_specialist_recruitment"
+                name: "Recruit Elite Global Specialists"
+                description: "Recruit the absolute best specialists worldwide regardless of cost."
+                operation_type: "crew_recruitment"
+                duration: 259200
+                success_rate: 75
+                resources:
+                  crew: 30
+                  weapons: 0
+                  vehicles: 15
+                  money: 50000000
+                rewards:
+                  crew: 100
+                  respect: 70
+                  influence: 120
+                risks:
+                  crew_loss: 5
+                  vehicles_loss: 3
+                  money_loss: 50000000
+                  heat_increase: 40
+
+          - id: "choice_compromised_recruitment"
+            text: "Target compromised individuals within key organizations"
+            next_mission: "m_intelligence_agency"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 1
+            operations:
+              - id: "op_vulnerability_mapping"
+                name: "Map Influential Vulnerabilities"
+                description: "Identify individuals in key positions with compromising vulnerabilities that can be exploited."
+                operation_type: "intelligence_gathering"
+                duration: 172800
+                success_rate: 80
+                resources:
+                  crew: 25
+                  weapons: 0
+                  vehicles: 12
+                  money: 5000000
+                rewards:
+                  influence: 70
+                risks:
+                  crew_loss: 4
+                  vehicles_loss: 2
+                  money_loss: 5000000
+                  heat_increase: 30
+              - id: "op_leverage_recruitment"
+                name: "Leverage-Based Recruitment"
+                description: "Use compromising information to recruit key individuals from law enforcement, intelligence, and finance."
+                operation_type: "official_bribing"
+                duration: 172800
+                success_rate: 70
+                resources:
+                  crew: 15
+                  weapons: 10
+                  vehicles: 8
+                  money: 20000000
+                rewards:
+                  crew: 70
+                  respect: 100
+                  influence: 80
+                risks:
+                  crew_loss: 3
+                  weapons_loss: 2
+                  vehicles_loss: 1
+                  money_loss: 20000000
+                  heat_increase: 60
+
+      - id: "m_intelligence_agency"
+        title: "Criminal Intelligence Agency"
+        description: "Establish your own global intelligence gathering and counterintelligence operation."
+        narrative: |
+          In the world of international crime, information is as valuable as any physical commodity. To operate effectively on a global scale, you need your own intelligence apparatus capable of gathering information, predicting law enforcement actions, and protecting your operations from infiltration.
+
+          You envision creating a sophisticated criminal intelligence agency modeled after government intelligence services but serving your organization's interests. This would include surveillance networks, informants in key positions, digital intelligence capabilities, and a dedicated counterintelligence division.
+
+          Such an operation would require significant resources and specialized personnel, but would provide unprecedented advantages in navigating the complex landscape of international criminal enterprise.
+        image_url: "/images/missions/intelligence_agency.jpg"
+        type: "operation"
+        order: 5
+        requirements:
+          money: 40000000
+          crew: 150
+          respect: 600
+          influence: 550
+        rewards:
+          respect: 100
+          influence: 150
+
+        choices:
+          - id: "choice_digital_intelligence"
+            text: "Focus on building sophisticated digital intelligence capabilities"
+            next_mission: "m_international_expansion"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "crew_recruitment"
+                order_index: 1
+            operations:
+              - id: "op_digital_infrastructure"
+                name: "Digital Intelligence Infrastructure"
+                description: "Develop sophisticated digital surveillance, hacking, and data analysis capabilities."
+                operation_type: "intelligence_gathering"
+                duration: 259200
+                success_rate: 75
+                resources:
+                  crew: 30
+                  weapons: 0
+                  vehicles: 10
+                  money: 25000000
+                rewards:
+                  influence: 80
+                risks:
+                  crew_loss: 3
+                  money_loss: 25000000
+                  heat_increase: 30
+              - id: "op_cyber_specialist_recruitment"
+                name: "Recruit Cyber Intelligence Specialists"
+                description: "Recruit top hackers, data analysts, and digital surveillance specialists worldwide."
+                operation_type: "crew_recruitment"
+                duration: 172800
+                success_rate: 70
+                resources:
+                  crew: 15
+                  weapons: 0
+                  vehicles: 8
+                  money: 30000000
+                rewards:
+                  crew: 50
+                  respect: 60
+                  influence: 100
+                risks:
+                  crew_loss: 2
+                  vehicles_loss: 1
+                  money_loss: 30000000
+                  heat_increase: 35
+
+          - id: "choice_human_intelligence"
+            text: "Prioritize human intelligence networks and deep infiltration"
+            next_mission: "m_international_expansion"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 1
+            operations:
+              - id: "op_infiltration_strategy"
+                name: "Global Infiltration Strategy"
+                description: "Develop strategies for placing informants and agents in key organizations worldwide."
+                operation_type: "intelligence_gathering"
+                duration: 172800
+                success_rate: 85
+                resources:
+                  crew: 25
+                  weapons: 0
+                  vehicles: 15
+                  money: 15000000
+                rewards:
+                  influence: 70
+                risks:
+                  crew_loss: 3
+                  vehicles_loss: 2
+                  money_loss: 15000000
+                  heat_increase: 25
+              - id: "op_infiltration_execution"
+                name: "Execute Global Infiltration"
+                description: "Place informants and agents in law enforcement, intelligence agencies, and rival organizations worldwide."
+                operation_type: "official_bribing"
+                duration: 432000
+                success_rate: 65
+                resources:
+                  crew: 50
+                  weapons: 20
+                  vehicles: 25
+                  money: 50000000
+                rewards:
+                  crew: 30
+                  respect: 120
+                  influence: 90
+                risks:
+                  crew_loss: 15
+                  weapons_loss: 5
+                  vehicles_loss: 5
+                  money_loss: 50000000
+                  heat_increase: 70
+
+  - id: "ch_global_operations"
+    title: "Global Operations"
+    description: "Launch sophisticated criminal operations across multiple continents."
+    image_url: "/images/chapters/global_operations.jpg"
+    order: 2
+
+    missions:
+      - id: "m_international_expansion"
+        title: "Strategic International Expansion"
+        description: "Identify key regions for expansion and begin establishing permanent operations."
+        narrative: |
+          With your international infrastructure in place, it's time to execute your vision of global expansion. Your advisors have analyzed potential regions worldwide, considering factors like local criminal landscape, law enforcement effectiveness, economic opportunities, and political stability.
+
+          Based on this analysis, you need to select priority regions for establishing permanent operations and begin the process of building your international presence. These initial expansions will form the backbone of your global criminal empire.
+
+          The regions you choose and how you approach expansion will shape the character and capabilities of your international organization for years to come.
+        image_url: "/images/missions/international_expansion.jpg"
+        type: "operation"
+        order: 1
+        requirements:
+          money: 75000000
+          crew: 200
+          respect: 650
+          influence: 600
+        rewards:
+          money: 25000000
+          respect: 120
+          influence: 100
+
+        choices:
+          - id: "choice_strategic_regions"
+            text: "Expand to strategic regions with complementary criminal economies"
+            next_mission: "m_product_diversification"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "goods_smuggling"
+                order_index: 1
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 2
+            operations:
+              - id: "op_regional_analysis"
+                name: "Strategic Region Analysis"
+                description: "Analyze global regions to identify optimal locations for complementary criminal operations."
+                operation_type: "intelligence_gathering"
+                duration: 172800
+                success_rate: 90
+                resources:
+                  crew: 25
+                  weapons: 0
+                  vehicles: 10
+                  money: 5000000
+                rewards:
+                  influence: 60
+                risks:
+                  crew_loss: 2
+                  vehicles_loss: 1
+                  money_loss: 5000000
+                  heat_increase: 15
+              - id: "op_european_expansion"
+                name: "European Criminal Market Entry"
+                description: "Establish sophisticated criminal operations in key European markets."
+                operation_type: "goods_smuggling"
+                duration: 432000
+                success_rate: 75
+                resources:
+                  crew: 60
+                  weapons: 30
+                  vehicles: 25
+                  money: 40000000
+                rewards:
+                  money: 15000000
+                  respect: 70
+                  influence: 80
+                risks:
+                  crew_loss: 8
+                  weapons_loss: 4
+                  vehicles_loss: 3
+                  money_loss: 40000000
+                  heat_increase: 40
+              - id: "op_asian_expansion"
+                name: "Asian Criminal Market Entry"
+                description: "Establish sophisticated criminal operations in key Asian markets."
+                operation_type: "official_bribing"
+                duration: 432000
+                success_rate: 70
+                resources:
+                  crew: 70
+                  weapons: 40
+                  vehicles: 30
+                  money: 50000000
+                rewards:
+                  money: 20000000
+                  respect: 80
+                  influence: 70
+                risks:
+                  crew_loss: 10
+                  weapons_loss: 6
+                  vehicles_loss: 4
+                  money_loss: 50000000
+                  heat_increase: 50
+
+          - id: "choice_weak_states"
+            text: "Target regions with weak governance for maximum freedom of operation"
+            next_mission: "m_product_diversification"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 1
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 2
+            operations:
+              - id: "op_governance_analysis"
+                name: "Governance Weakness Analysis"
+                description: "Analyze global regions to identify areas with weak governance and law enforcement."
+                operation_type: "intelligence_gathering"
+                duration: 129600
+                success_rate: 95
+                resources:
+                  crew: 20
+                  weapons: 0
+                  vehicles: 8
+                  money: 3000000
+                rewards:
+                  influence: 50
+                risks:
+                  crew_loss: 1
+                  money_loss: 3000000
+                  heat_increase: 10
+              - id: "op_warlord_alliance"
+                name: "Establish Warlord Alliance"
+                description: "Form strategic alliances with powerful warlords in conflict-affected regions."
+                operation_type: "carjacking"
+                duration: 259200
+                success_rate: 65
+                resources:
+                  crew: 100
+                  weapons: 150
+                  vehicles: 50
+                  money: 20000000
+                rewards:
+                  weapons: 300
+                  respect: 150
+                  influence: 60
+                risks:
+                  crew_loss: 25
+                  weapons_loss: 40
+                  vehicles_loss: 15
+                  money_loss: 20000000
+                  heat_increase: 70
+              - id: "op_corrupt_state_infiltration"
+                name: "Corrupt State Infiltration"
+                description: "Systematically corrupt and infiltrate the government of a weak state to establish a criminal haven."
+                operation_type: "official_bribing"
+                duration: 604800
+                success_rate: 60
+                resources:
+                  crew: 50
+                  weapons: 30
+                  vehicles: 20
+                  money: 100000000
+                rewards:
+                  money: 35000000
+                  respect: 100
+                  influence: 120
+                risks:
+                  crew_loss: 15
+                  weapons_loss: 8
+                  vehicles_loss: 5
+                  money_loss: 100000000
+                  heat_increase: 80
+
+      - id: "m_product_diversification"
+        title: "Criminal Product Diversification"
+        description: "Expand your portfolio of criminal enterprises to maximize global profits."
+        narrative: |
+          International expansion offers opportunities to diversify your criminal portfolio beyond traditional rackets. Different regions have different criminal markets, expertise, and resources that can be leveraged to create a diversified portfolio of high-profit illicit enterprises.
+
+          Your advisors have identified several potential areas for diversification: high-end art theft and forgery in Europe, sophisticated financial fraud schemes in Asia, rare wildlife trafficking from Africa, and intellectual property theft targeting major corporations.
+
+          Each of these enterprises requires specialized expertise and infrastructure but offers exceptional profit potential and prestigious standing in the criminal world.
+        image_url: "/images/missions/product_diversification.jpg"
+        type: "operation"
+        order: 2
+        requirements:
+          money: 100000000
+          crew: 250
+          respect: 700
+          influence: 650
+        rewards:
+          money: 75000000
+          respect: 150
+          influence: 120
+
+        choices:
+          - id: "choice_high_value_theft"
+            text: "Specialize in high-value art, jewelry, and cultural artifact theft"
+            next_mission: "m_rival_syndicate"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "crew_recruitment"
+                order_index: 1
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 2
+            operations:
+              - id: "op_high_value_market_analysis"
+                name: "High-Value Theft Market Analysis"
+                description: "Research global markets for stolen art, jewelry, and cultural artifacts."
+                operation_type: "intelligence_gathering"
+                duration: 172800
+                success_rate: 90
+                resources:
+                  crew: 15
+                  weapons: 0
+                  vehicles: 5
+                  money: 5000000
+                rewards:
+                  influence: 50
+                risks:
+                  money_loss: 5000000
+                  heat_increase: 10
+              - id: "op_specialist_thief_recruitment"
+                name: "Recruit Art Theft Specialists"
+                description: "Recruit the world's most skilled art thieves, forgers, and black market dealers."
+                operation_type: "crew_recruitment"
+                duration: 259200
+                success_rate: 75
+                resources:
+                  crew: 10
+                  weapons: 0
+                  vehicles: 8
+                  money: 25000000
+                rewards:
+                  crew: 30
+                  influence: 70
+                risks:
+                  money_loss: 25000000
+                  heat_increase: 25
+              - id: "op_museum_heist"
+                name: "Major Museum Heist"
+                description: "Execute a sophisticated heist targeting priceless artworks from a major museum."
+                operation_type: "carjacking"
+                duration: 86400
+                success_rate: 65
+                resources:
+                  crew: 30
+                  weapons: 20
+                  vehicles: 15
+                  money: 15000000
+                rewards:
+                  money: 100000000
+                  respect: 200
+                  influence: 80
+                risks:
+                  crew_loss: 8
+                  weapons_loss: 5
+                  vehicles_loss: 3
+                  money_loss: 15000000
+                  heat_increase: 60
+
+          - id: "choice_cybercrime_focus"
+            text: "Develop cutting-edge cybercrime and digital fraud operations"
+            next_mission: "m_rival_syndicate"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "crew_recruitment"
+                order_index: 1
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 2
+            operations:
+              - id: "op_cybercrime_landscape"
+                name: "Global Cybercrime Landscape Analysis"
+                description: "Research cutting-edge cybercrime techniques, targets, and markets."
+                operation_type: "intelligence_gathering"
+                duration: 129600
+                success_rate: 95
+                resources:
+                  crew: 10
+                  weapons: 0
+                  vehicles: 3
+                  money: 8000000
+                rewards:
+                  influence: 60
+                risks:
+                  money_loss: 8000000
+                  heat_increase: 15
+              - id: "op_elite_hacker_recruitment"
+                name: "Recruit Elite Hackers"
+                description: "Recruit the world's most talented hackers and cyber criminals."
+                operation_type: "crew_recruitment"
+                duration: 172800
+                success_rate: 70
+                resources:
+                  crew: 5
+                  weapons: 0
+                  vehicles: 5
+                  money: 40000000
+                rewards:
+                  crew: 40
+                  influence: 80
+                risks:
+                  money_loss: 40000000
+                  heat_increase: 20
+              - id: "op_global_banking_hack"
+                name: "Global Banking System Hack"
+                description: "Execute a sophisticated hack targeting the international banking system."
+                operation_type: "official_bribing"
+                duration: 172800
+                success_rate: 60
+                resources:
+                  crew: 25
+                  weapons: 0
+                  vehicles: 5
+                  money: 50000000
+                rewards:
+                  money: 200000000
+                  respect: 150
+                  influence: 100
+                risks:
+                  crew_loss: 5
+                  money_loss: 50000000
+                  heat_increase: 80
+
+      - id: "m_rival_syndicate"
+        title: "Rival International Syndicate"
+        description: "Confront a powerful rival syndicate challenging your global expansion."
+        narrative: |
+          Your rapid international expansion has not gone unnoticed. The Obsidian Collective, a long-established international criminal organization with operations on every continent, sees your growth as a direct threat to their interests and global standing.
+
+          Led by the enigmatic figure known only as "The Director," the Collective has begun actively undermining your operations - poaching your contacts, disrupting your supply chains, and even launching direct attacks on your personnel and assets in certain regions.
+
+          This confrontation was perhaps inevitable, but it comes sooner than you anticipated. How you respond will determine whether your organization can truly establish itself as a dominant force in international crime.
+        image_url: "/images/missions/rival_syndicate.jpg"
+        type: "operation"
+        order: 3
+        requirements:
+          crew: 300
+          weapons: 200
+          vehicles: 100
+          respect: 750
+          influence: 700
+        rewards:
+          respect: 200
+          influence: 180
+
+        choices:
+          - id: "choice_direct_confrontation"
+            text: "Directly confront the Obsidian Collective in a global power struggle"
+            next_mission: "m_international_law_enforcement"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 1
+            operations:
+              - id: "op_obsidian_intelligence"
+                name: "Obsidian Collective Intelligence Operation"
+                description: "Gather comprehensive intelligence on the Obsidian Collective's leadership, operations, and vulnerabilities."
+                operation_type: "intelligence_gathering"
+                duration: 259200
+                success_rate: 75
+                resources:
+                  crew: 40
+                  weapons: 0
+                  vehicles: 20
+                  money: 30000000
+                rewards:
+                  influence: 90
+                risks:
+                  crew_loss: 10
+                  vehicles_loss: 5
+                  money_loss: 30000000
+                  heat_increase: 40
+              - id: "op_global_syndicate_war"
+                name: "Global Syndicate War"
+                description: "Launch coordinated strikes against Obsidian Collective operations worldwide."
+                operation_type: "carjacking"
+                duration: 604800
+                success_rate: 60
+                resources:
+                  crew: 300
+                  weapons: 250
+                  vehicles: 100
+                  money: 100000000
+                rewards:
+                  respect: 300
+                  influence: 150
+                risks:
+                  crew_loss: 75
+                  weapons_loss: 60
+                  vehicles_loss: 25
+                  money_loss: 100000000
+                  heat_increase: 150
+
+          - id: "choice_strategic_alliance"
+            text: "Negotiate a strategic alliance with the Obsidian Collective"
+            next_mission: "m_international_law_enforcement"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 1
+            operations:
+              - id: "op_obsidian_leadership_analysis"
+                name: "Analyze Obsidian Leadership"
+                description: "Research the Obsidian Collective's leadership structure, motivations, and negotiation style."
+                operation_type: "intelligence_gathering"
+                duration: 172800
+                success_rate: 85
+                resources:
+                  crew: 25
+                  weapons: 0
+                  vehicles: 10
+                  money: 15000000
+                rewards:
+                  influence: 70
+                risks:
+                  crew_loss: 3
+                  vehicles_loss: 1
+                  money_loss: 15000000
+                  heat_increase: 20
+              - id: "op_syndicate_summit"
+                name: "International Syndicate Summit"
+                description: "Arrange and conduct a high-level summit with the Obsidian Collective's leadership."
+                operation_type: "official_bribing"
+                duration: 172800
+                success_rate: 70
+                resources:
+                  crew: 75
+                  weapons: 50
+                  vehicles: 40
+                  money: 200000000
+                rewards:
+                  crew: 150
+                  weapons: 100
+                  vehicles: 50
+                  respect: 150
+                  influence: 250
+                risks:
+                  crew_loss: 20
+                  weapons_loss: 10
+                  vehicles_loss: 8
+                  money_loss: 200000000
+                  heat_increase: 60
+
+      - id: "m_international_law_enforcement"
+        title: "International Law Enforcement Response"
+        description: "Counter the coordinated international law enforcement effort targeting your organization."
+        narrative: |
+          Your global criminal empire has finally triggered an unprecedented international law enforcement response. Interpol has formed a dedicated task force, with cooperation from agencies like the FBI, MI6, Europol, and others, all focused on dismantling your organization.
+
+          This coalition is sharing intelligence, coordinating raids, freezing assets, and applying diplomatic pressure on countries that have served as havens for your operations. Several of your lieutenants have already been arrested, and significant resources have been seized.
+
+          This represents the most serious threat to your global operations and requires a sophisticated, multi-faceted response to ensure your criminal empire's survival.
+        image_url: "/images/missions/international_law_enforcement.jpg"
+        type: "operation"
+        order: 4
+        requirements:
+          money: 250000000
+          crew: 350
+          respect: 800
+          influence: 750
+        rewards:
+          heat_reduction: 200
+          respect: 150
+          influence: 150
+
+        choices:
+          - id: "choice_legal_counteroffensive"
+            text: "Launch a sophisticated legal and political counteroffensive"
+            next_mission: "m_global_consolidation"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 1
+            operations:
+              - id: "op_task_force_intelligence"
+                name: "Law Enforcement Task Force Intelligence"
+                description: "Gather detailed intelligence on the international task force's methods, personnel, and planned operations."
+                operation_type: "intelligence_gathering"
+                duration: 345600
+                success_rate: 70
+                resources:
+                  crew: 40
+                  weapons: 0
+                  vehicles: 20
+                  money: 50000000
+                rewards:
+                  influence: 100
+                risks:
+                  crew_loss: 10
+                  vehicles_loss: 5
+                  money_loss: 50000000
+                  heat_increase: 60
+              - id: "op_legal_political_campaign"
+                name: "Global Legal and Political Campaign"
+                description: "Deploy lawyers, lobbyists, and corrupt officials worldwide to undermine the international investigation."
+                operation_type: "official_bribing"
+                duration: 1209600
+                success_rate: 65
+                resources:
+                  crew: 100
+                  weapons: 0
+                  vehicles: 50
+                  money: 500000000
+                rewards:
+                  heat_reduction: 300
+                  influence: 200
+                risks:
+                  crew_loss: 15
+                  vehicles_loss: 8
+                  money_loss: 500000000
+                  heat_increase: 100
+
+          - id: "choice_counterintelligence_operation"
+            text: "Execute a massive counterintelligence operation against law enforcement"
+            next_mission: "m_global_consolidation"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 1
+            operations:
+              - id: "op_investigation_infiltration"
+                name: "Task Force Infiltration"
+                description: "Place informants and double agents within the international investigation."
+                operation_type: "intelligence_gathering"
+                duration: 432000
+                success_rate: 60
+                resources:
+                  crew: 50
+                  weapons: 0
+                  vehicles: 25
+                  money: 75000000
+                rewards:
+                  influence: 120
+                risks:
+                  crew_loss: 20
+                  vehicles_loss: 8
+                  money_loss: 75000000
+                  heat_increase: 80
+              - id: "op_evidence_destruction"
+                name: "Global Evidence Destruction"
+                description: "Execute coordinated operations to destroy evidence, eliminate witnesses, and disrupt investigations worldwide."
+                operation_type: "carjacking"
+                duration: 604800
+                success_rate: 55
+                resources:
+                  crew: 250
+                  weapons: 200
+                  vehicles: 100
+                  money: 150000000
+                rewards:
+                  heat_reduction: 400
+                  respect: 250
+                risks:
+                  crew_loss: 60
+                  weapons_loss: 50
+                  vehicles_loss: 25
+                  money_loss: 150000000
+                  heat_increase: 200
+
+      - id: "m_global_consolidation"
+        title: "Global Empire Consolidation"
+        description: "Solidify control over your worldwide criminal empire and establish enduring structures."
+        narrative: |
+          After weathering international challenges from both rival organizations and law enforcement, it's time to consolidate your global criminal empire. You need to establish governance structures that can efficiently manage operations across continents while maintaining your central authority.
+
+          This involves creating regional leadership positions, standardizing operations across diverse cultural contexts, implementing sophisticated communication and resource allocation systems, and ensuring mechanisms for dispute resolution and succession planning.
+
+          The structures you create now will determine whether your international criminal empire remains unified under your leadership or fractures into competing regional powers.
+        image_url: "/images/missions/global_consolidation.jpg"
+        type: "operation"
+        order: 5
+        requirements:
+          money: 500000000
+          respect: 900
+          influence: 850
+        rewards:
+          money: 1000000000
+          respect: 250
+          influence: 250
+
+        choices:
+          - id: "choice_centralized_empire"
+            text: "Create a tightly centralized global criminal empire"
+            next_mission: "m_global_empire"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "crew_recruitment"
+                order_index: 1
+            operations:
+              - id: "op_centralization_planning"
+                name: "Global Centralization Planning"
+                description: "Develop comprehensive plans for centralizing control of all international operations."
+                operation_type: "intelligence_gathering"
+                duration: 432000
+                success_rate: 85
+                resources:
+                  crew: 50
+                  weapons: 0
+                  vehicles: 20
+                  money: 100000000
+                rewards:
+                  influence: 150
+                risks:
+                  crew_loss: 5
+                  vehicles_loss: 2
+                  money_loss: 100000000
+                  heat_increase: 30
+              - id: "op_loyal_leadership"
+                name: "Install Absolutely Loyal Leadership"
+                description: "Carefully select and install unquestionably loyal leadership in all regions worldwide."
+                operation_type: "crew_recruitment"
+                duration: 1209600
+                success_rate: 75
+                resources:
+                  crew: 150
+                  weapons: 100
+                  vehicles: 75
+                  money: 750000000
+                rewards:
+                  respect: 300
+                  influence: 200
+                risks:
+                  crew_loss: 30
+                  weapons_loss: 20
+                  vehicles_loss: 15
+                  money_loss: 750000000
+                  heat_increase: 100
+
+          - id: "choice_federation_model"
+            text: "Establish a criminal federation with regional autonomy"
+            next_mission: "m_global_empire"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 1
+            operations:
+              - id: "op_federation_planning"
+                name: "Criminal Federation Planning"
+                description: "Design a sophisticated federation model for your global criminal empire."
+                operation_type: "intelligence_gathering"
+                duration: 345600
+                success_rate: 90
+                resources:
+                  crew: 40
+                  weapons: 0
+                  vehicles: 15
+                  money: 75000000
+                rewards:
+                  influence: 130
+                risks:
+                  crew_loss: 4
+                  vehicles_loss: 1
+                  money_loss: 75000000
+                  heat_increase: 25
+              - id: "op_regional_negotiations"
+                name: "Regional Leadership Negotiations"
+                description: "Negotiate with regional criminal leaders to establish federation terms and power-sharing arrangements."
+                operation_type: "official_bribing"
+                duration: 864000
+                success_rate: 80
+                resources:
+                  crew: 100
+                  weapons: 50
+                  vehicles: 40
+                  money: 1000000000
+                rewards:
+                  money: 500000000
+                  respect: 200
+                  influence: 300
+                risks:
+                  crew_loss: 20
+                  weapons_loss: 10
+                  vehicles_loss: 8
+                  money_loss: 1000000000
+                  heat_increase: 50
+
+  - id: "ch_global_domination"
+    title: "Global Domination"
+    description: "Cement your status as the world's most powerful criminal mastermind."
+    image_url: "/images/chapters/global_domination.jpg"
+    order: 3
+
+    missions:
+      - id: "m_global_empire"
+        title: "Ruler of the Underworld"
+        description: "Reflect on your achievement as ruler of a truly global criminal empire."
+        narrative: |
+          You've achieved what no criminal leader in history has accomplished before: a truly global criminal empire operating across continents with unprecedented scope, sophistication, and profit. From humble beginnings in a single city, you now command an organization that influences world events and generates wealth rivaling that of small nations.
+
+          Your name is whispered with fear and respect in criminal circles worldwide. Intelligence agencies dedicate entire divisions to monitoring your activities. Political leaders are aware of your influence, even as they publicly deny your existence.
+
+          As you look out from your private island compound, surrounded by the trappings of your success, you contemplate what comes next for someone who has already conquered the global underworld.
+        image_url: "/images/missions/global_empire.jpg"
+        type: "operation"
+        order: 1
+        requirements:
+          respect: 1000
+          influence: 1000
+        rewards:
+          money: 5000000000
+          respect: 500
+          influence: 500
+
+        choices:
+          - id: "choice_criminal_legend"
+            text: "Focus on building your legend in criminal history"
+            next_mission: ""
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 0
+            operations:
+              - id: "op_historical_legacy"
+                name: "Establish Criminal Historical Legacy"
+                description: "Execute a series of spectacular, signature criminal operations that will cement your place in criminal history."
+                operation_type: "carjacking"
+                duration: 2592000
+                success_rate: 80
+                resources:
+                  crew: 500
+                  weapons: 300
+                  vehicles: 150
+                  money: 2000000000
+                rewards:
+                  respect: 1000
+                  influence: 500
+                risks:
+                  crew_loss: 100
+                  weapons_loss: 60
+                  vehicles_loss: 30
+                  money_loss: 2000000000
+                  heat_increase: 300
+
+          - id: "choice_shadow_influence"
+            text: "Transition to shadow global influence beyond mere crime"
+            next_mission: ""
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 0
+            operations:
+              - id: "op_shadow_power"
+                name: "Shadow Global Influence Operation"
+                description: "Transform your criminal empire into a shadow global power influencing world events, economics, and politics."
+                operation_type: "official_bribing"
+                duration: 5184000
+                success_rate: 75
+                resources:
+                  crew: 300
+                  weapons: 100
+                  vehicles: 75
+                  money: 10000000000
+                rewards:
+                  influence: 1000
+                  heat_reduction: 500
+                risks:
+                  respect: -200
+                  money_loss: 10000000000
+                  heat_increase: 100

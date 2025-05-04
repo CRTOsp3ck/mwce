@@ -1,0 +1,1799 @@
+# File: be/configs/campaigns/city_takeover.yaml
+
+id: "city_takeover"
+title: "City Takeover"
+description: "A power vacuum has emerged in the city's criminal underworld. Seize this opportunity to methodically expand your influence and dominate the entire city."
+image_url: "/images/campaigns/city_takeover.jpg"
+initial_chapter: "ch_power_vacuum"
+required_level: 4
+
+chapters:
+  - id: "ch_power_vacuum"
+    title: "Power Vacuum"
+    description: "A rare opportunity emerges as major players in the city's criminal underworld are weakened."
+    image_url: "/images/chapters/power_vacuum.jpg"
+    order: 1
+
+    missions:
+      - id: "m_sudden_opportunity"
+        title: "Sudden Opportunity"
+        description: "A federal raid has decimated the Marconi crime family, creating a power vacuum."
+        narrative: |
+          The news has spread like wildfire through the criminal underworld: a massive federal operation has decimated the Marconi crime family. The patriarch, Don Marconi, and most of his lieutenants were arrested in coordinated dawn raids across the city.
+
+          For decades, the Marconi family has dominated the North and Northwest districts, controlling everything from protection rackets to high-end gambling operations. Now, their empire lies vulnerable, with only scattered loyalists attempting to maintain control.
+
+          This sudden power vacuum represents a once-in-a-generation opportunity. But you won't be the only one looking to capitalize on the Marconis' downfall.
+        image_url: "/images/missions/sudden_opportunity.jpg"
+        type: "operation"
+        order: 1
+        requirements:
+          respect: 150
+          influence: 120
+        rewards:
+          respect: 25
+          influence: 20
+
+        choices:
+          - id: "choice_gather_intelligence"
+            text: "Gather intelligence on the Marconi family's assets and operations"
+            next_mission: "m_initial_move"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 1
+            operations:
+              - id: "op_asset_mapping"
+                name: "Map Marconi Assets"
+                description: "Identify and document all businesses, territories, and operations formerly controlled by the Marconi family."
+                operation_type: "intelligence_gathering"
+                duration: 14400
+                success_rate: 85
+                resources:
+                  crew: 5
+                  weapons: 0
+                  vehicles: 3
+                  money: 25000
+                rewards:
+                  influence: 15
+                risks:
+                  crew_loss: 1
+                  money_loss: 25000
+                  heat_increase: 10
+              - id: "op_loyalty_assessment"
+                name: "Assess Remaining Loyalties"
+                description: "Identify which Marconi associates remain loyal and which might be recruited or neutralized."
+                operation_type: "intelligence_gathering"
+                duration: 18000
+                success_rate: 80
+                resources:
+                  crew: 8
+                  weapons: 0
+                  vehicles: 4
+                  money: 30000
+                rewards:
+                  influence: 20
+                risks:
+                  crew_loss: 2
+                  money_loss: 30000
+                  heat_increase: 15
+
+          - id: "choice_immediate_action"
+            text: "Move quickly to secure key Marconi assets before others do"
+            next_mission: "m_initial_move"
+            sequential_order: true
+            conditions:
+              - type: "territory"
+                required_value: "takeover_marconi_restaurant"
+                order_index: 0
+              - type: "territory"
+                required_value: "takeover_marconi_club"
+                order_index: 1
+            pois:
+              - id: "poi_marconi_restaurant"
+                name: "Marconi's Restaurant"
+                description: "The Marconi family's flagship restaurant, a symbol of their power and a hub for their operations."
+                location_type: "hotspot"
+                location_id: "marconi_restaurant"
+              - id: "poi_marconi_club"
+                name: "The Royal Flush Club"
+                description: "An exclusive gambling club formerly run by the Marconi family, generating substantial revenue."
+                location_type: "hotspot"
+                location_id: "marconi_club"
+
+      - id: "m_initial_move"
+        title: "Initial Move"
+        description: "Make your first strategic move into former Marconi territory."
+        narrative: |
+          With intelligence gathered and plans made, it's time for your initial move into former Marconi territory. You've identified the Northwest District as the optimal starting point - it's furthest from your current territories but contains valuable assets with minimal remaining Marconi presence.
+
+          The centerpiece of this district is the Golden Mile, a strip of high-end establishments including restaurants, clubs, and legitimate businesses perfect for money laundering. Controlling this area would not only be profitable but would establish your presence in a prestigious part of the city.
+
+          However, you won't be moving into uncontested territory. Various criminal groups, from organized street gangs to former Marconi soldiers trying to establish independence, have already begun jockeying for position.
+        image_url: "/images/missions/initial_move.jpg"
+        type: "territory"
+        order: 2
+        requirements:
+          crew: 40
+          weapons: 30
+          vehicles: 15
+          respect: 160
+        rewards:
+          money: 100000
+          respect: 35
+          influence: 30
+
+        choices:
+          - id: "choice_diplomatic_expansion"
+            text: "Use diplomacy and strategic alliances to secure territory"
+            next_mission: "m_resistance"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 0
+              - type: "territory"
+                required_value: "takeover_golden_mile_restaurant"
+                order_index: 1
+              - type: "territory"
+                required_value: "takeover_golden_mile_club"
+                order_index: 2
+            operations:
+              - id: "op_local_negotiations"
+                name: "Negotiate with Local Groups"
+                description: "Meet with local criminal groups to negotiate peaceful territorial integration."
+                operation_type: "official_bribing"
+                duration: 10800
+                success_rate: 75
+                resources:
+                  crew: 15
+                  weapons: 10
+                  vehicles: 5
+                  money: 150000
+                rewards:
+                  influence: 35
+                risks:
+                  crew_loss: 2
+                  money_loss: 150000
+                  heat_increase: 15
+            pois:
+              - id: "poi_golden_mile_restaurant"
+                name: "La Stella Restaurant"
+                description: "A prestigious restaurant on the Golden Mile, perfect for money laundering and hosting important meetings."
+                location_type: "hotspot"
+                location_id: "golden_mile_restaurant"
+              - id: "poi_golden_mile_club"
+                name: "Sapphire Lounge"
+                description: "An exclusive nightclub on the Golden Mile with high cash flow and wealthy clientele."
+                location_type: "hotspot"
+                location_id: "golden_mile_club"
+
+          - id: "choice_forceful_takeover"
+            text: "Use overwhelming force to seize territory"
+            next_mission: "m_resistance"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 0
+              - type: "territory"
+                required_value: "takeover_golden_mile_restaurant"
+                order_index: 1
+              - type: "territory"
+                required_value: "takeover_golden_mile_club"
+                order_index: 2
+            operations:
+              - id: "op_show_of_force"
+                name: "Northwest District Show of Force"
+                description: "Demonstrate overwhelming force to intimidate rivals and establish dominance in the Northwest District."
+                operation_type: "carjacking"
+                duration: 7200
+                success_rate: 80
+                resources:
+                  crew: 40
+                  weapons: 30
+                  vehicles: 15
+                  money: 0
+                rewards:
+                  respect: 50
+                  influence: 20
+                risks:
+                  crew_loss: 8
+                  weapons_loss: 6
+                  vehicles_loss: 3
+                  heat_increase: 40
+            pois:
+              - id: "poi_golden_mile_restaurant_2"
+                name: "La Stella Restaurant"
+                description: "A prestigious restaurant on the Golden Mile, perfect for money laundering and hosting important meetings."
+                location_type: "hotspot"
+                location_id: "golden_mile_restaurant"
+              - id: "poi_golden_mile_club_2"
+                name: "Sapphire Lounge"
+                description: "An exclusive nightclub on the Golden Mile with high cash flow and wealthy clientele."
+                location_type: "hotspot"
+                location_id: "golden_mile_club"
+
+      - id: "m_resistance"
+        title: "Unexpected Resistance"
+        description: "Deal with surprising resistance from remaining Marconi loyalists."
+        narrative: |
+          Your move into the Northwest District has been successful, but it's triggered an unexpected response. The remaining Marconi lieutenants, previously thought to be in disarray, have rallied under the leadership of Carlo Marconi, the don's nephew who escaped the federal raids.
+
+          Carlo has united the scattered Marconi soldiers and has begun organizing resistance to your expansion. He's established a headquarters at the Marconi Shipping Company warehouse and is actively working to reclaim lost territory.
+
+          This resistance presents both a challenge and an opportunity. Carlo is inexperienced but determined to preserve his family's legacy. How you handle this situation will significantly impact your future expansion plans.
+        image_url: "/images/missions/resistance.jpg"
+        type: "operation"
+        order: 3
+        requirements:
+          crew: 50
+          weapons: 35
+          respect: 180
+        rewards:
+          respect: 45
+          influence: 40
+
+        choices:
+          - id: "choice_eliminate_carlo"
+            text: "Eliminate Carlo Marconi to crush the resistance"
+            next_mission: "m_territory_consolidation"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 1
+            operations:
+              - id: "op_carlo_intelligence"
+                name: "Gather Intelligence on Carlo"
+                description: "Collect detailed information on Carlo's movements, security, and routines."
+                operation_type: "intelligence_gathering"
+                duration: 14400
+                success_rate: 85
+                resources:
+                  crew: 6
+                  weapons: 0
+                  vehicles: 3
+                  money: 25000
+                rewards:
+                  influence: 15
+                risks:
+                  crew_loss: 1
+                  money_loss: 25000
+                  heat_increase: 15
+              - id: "op_carlo_elimination"
+                name: "Eliminate Carlo Marconi"
+                description: "Execute a precision strike to eliminate Carlo Marconi and his top lieutenants."
+                operation_type: "carjacking"
+                duration: 10800
+                success_rate: 70
+                resources:
+                  crew: 25
+                  weapons: 20
+                  vehicles: 8
+                  money: 0
+                rewards:
+                  respect: 60
+                  influence: 25
+                risks:
+                  crew_loss: 6
+                  weapons_loss: 4
+                  vehicles_loss: 2
+                  heat_increase: 45
+
+          - id: "choice_absorb_marconis"
+            text: "Offer Carlo a place in your organization to absorb Marconi loyalists"
+            next_mission: "m_territory_consolidation"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 1
+            operations:
+              - id: "op_carlo_assessment"
+                name: "Assess Carlo's Character"
+                description: "Gather intelligence on Carlo's personality, motivations, and potential loyalty."
+                operation_type: "intelligence_gathering"
+                duration: 10800
+                success_rate: 90
+                resources:
+                  crew: 4
+                  weapons: 0
+                  vehicles: 2
+                  money: 15000
+                rewards:
+                  influence: 10
+                risks:
+                  money_loss: 15000
+                  heat_increase: 5
+              - id: "op_carlo_negotiation"
+                name: "Negotiate with Carlo Marconi"
+                description: "Meet with Carlo to offer him a respected position within your organization."
+                operation_type: "official_bribing"
+                duration: 7200
+                success_rate: 75
+                resources:
+                  crew: 20
+                  weapons: 15
+                  vehicles: 5
+                  money: 200000
+                rewards:
+                  crew: 30
+                  weapons: 20
+                  respect: 30
+                  influence: 50
+                risks:
+                  crew_loss: 3
+                  money_loss: 200000
+                  heat_increase: 20
+
+      - id: "m_territory_consolidation"
+        title: "Territory Consolidation"
+        description: "Secure and organize your newly acquired territory in the Northwest District."
+        narrative: |
+          With the Marconi resistance addressed, it's time to consolidate your control over the Northwest District. Establishing stable operations, integrating new members, and setting up proper management structures are essential before you can continue your expansion.
+
+          The district contains diverse criminal operations - from protection rackets and gambling to drug distribution and money laundering through legitimate businesses. Each requires specialized management and security protocols.
+
+          Your consolidation efforts will determine how profitable these operations become and how securely you can hold this territory against future challenges.
+        image_url: "/images/missions/territory_consolidation.jpg"
+        type: "territory"
+        order: 4
+        requirements:
+          money: 300000
+          crew: 80
+          respect: 200
+        rewards:
+          money: 200000
+          respect: 40
+          influence: 50
+
+        choices:
+          - id: "choice_modernize_operations"
+            text: "Modernize and streamline operations for maximum efficiency"
+            next_mission: "m_expansion_planning"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "territory"
+                required_value: "takeover_gambling_operation"
+                order_index: 1
+              - type: "territory"
+                required_value: "takeover_money_laundering_front"
+                order_index: 2
+            operations:
+              - id: "op_operation_assessment"
+                name: "Operations Assessment"
+                description: "Conduct a thorough assessment of all criminal operations in the Northwest District."
+                operation_type: "intelligence_gathering"
+                duration: 21600
+                success_rate: 95
+                resources:
+                  crew: 15
+                  weapons: 0
+                  vehicles: 5
+                  money: 50000
+                rewards:
+                  influence: 25
+                risks:
+                  money_loss: 50000
+            pois:
+              - id: "poi_gambling_operation"
+                name: "High Stakes Poker Room"
+                description: "An underground gambling operation catering to wealthy clients."
+                location_type: "hotspot"
+                location_id: "gambling_operation"
+              - id: "poi_money_laundering_front"
+                name: "Northwest Import-Export"
+                description: "A business front ideal for money laundering operations."
+                location_type: "hotspot"
+                location_id: "money_laundering_front"
+
+          - id: "choice_traditional_structure"
+            text: "Implement traditional hierarchical management for stability"
+            next_mission: "m_expansion_planning"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "crew_recruitment"
+                order_index: 0
+              - type: "territory"
+                required_value: "takeover_protection_racket"
+                order_index: 1
+              - type: "territory"
+                required_value: "takeover_loan_sharking"
+                order_index: 2
+            operations:
+              - id: "op_hierarchy_establishment"
+                name: "Establish District Hierarchy"
+                description: "Create a traditional hierarchical command structure for the Northwest District."
+                operation_type: "crew_recruitment"
+                duration: 18000
+                success_rate: 90
+                resources:
+                  crew: 30
+                  weapons: 0
+                  vehicles: 0
+                  money: 200000
+                rewards:
+                  respect: 50
+                  influence: 30
+                risks:
+                  money_loss: 200000
+            pois:
+              - id: "poi_protection_racket"
+                name: "Commercial District Protection"
+                description: "A lucrative protection racket covering commercial businesses in the area."
+                location_type: "hotspot"
+                location_id: "protection_racket"
+              - id: "poi_loan_sharking"
+                name: "Northwest Lending"
+                description: "A loan sharking operation targeting businesses and individuals in financial distress."
+                location_type: "hotspot"
+                location_id: "loan_sharking"
+
+      - id: "m_expansion_planning"
+        title: "Strategic Expansion Planning"
+        description: "Develop a comprehensive plan for your continued expansion across the city."
+        narrative: |
+          With the Northwest District securely under your control, it's time to plan the next phase of your city takeover. This requires careful strategic planning to identify which districts to target next, what resources will be needed, and how to overcome the unique challenges each area presents.
+
+          The city's criminal landscape is diverse: the North District is dominated by the Jackson Street Gang, the Northeast is controlled by the Russian Bratva, the East has several independent operators, and the South is divided between various ethnic crime groups.
+
+          Your approach to expansion will determine not just your success, but the amount of resistance you'll face and the resources you'll expend along the way.
+        image_url: "/images/missions/expansion_planning.jpg"
+        type: "operation"
+        order: 5
+        requirements:
+          money: 400000
+          respect: 220
+          influence: 180
+        rewards:
+          respect: 50
+          influence: 60
+
+        choices:
+          - id: "choice_methodical_expansion"
+            text: "Plan a methodical district-by-district expansion"
+            next_mission: "m_north_district"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 1
+            operations:
+              - id: "op_city_analysis"
+                name: "Comprehensive City Analysis"
+                description: "Analyze each district's criminal landscape, strengths, weaknesses, and potential resistance."
+                operation_type: "intelligence_gathering"
+                duration: 25200
+                success_rate: 90
+                resources:
+                  crew: 20
+                  weapons: 0
+                  vehicles: 8
+                  money: 75000
+                rewards:
+                  influence: 40
+                risks:
+                  crew_loss: 2
+                  vehicles_loss: 1
+                  money_loss: 75000
+                  heat_increase: 15
+              - id: "op_expansion_strategy"
+                name: "Develop Expansion Strategy"
+                description: "Create a detailed, methodical plan for district-by-district expansion across the city."
+                operation_type: "intelligence_gathering"
+                duration: 18000
+                success_rate: 95
+                resources:
+                  crew: 10
+                  weapons: 0
+                  vehicles: 0
+                  money: 100000
+                rewards:
+                  respect: 25
+                  influence: 35
+                risks:
+                  money_loss: 100000
+
+          - id: "choice_opportunistic_expansion"
+            text: "Prepare for opportunistic expansion based on emerging weaknesses"
+            next_mission: "m_north_district"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "crew_recruitment"
+                order_index: 1
+            operations:
+              - id: "op_rival_weaknesses"
+                name: "Identify Rival Weaknesses"
+                description: "Establish surveillance and intelligence networks to identify opportunities and weaknesses in rival organizations."
+                operation_type: "intelligence_gathering"
+                duration: 21600
+                success_rate: 85
+                resources:
+                  crew: 15
+                  weapons: 0
+                  vehicles: 10
+                  money: 100000
+                rewards:
+                  influence: 30
+                risks:
+                  crew_loss: 3
+                  vehicles_loss: 2
+                  money_loss: 100000
+                  heat_increase: 20
+              - id: "op_rapid_response_teams"
+                name: "Form Rapid Response Teams"
+                description: "Create specialized teams capable of quickly capitalizing on emerging opportunities."
+                operation_type: "crew_recruitment"
+                duration: 14400
+                success_rate: 80
+                resources:
+                  crew: 20
+                  weapons: 30
+                  vehicles: 15
+                  money: 150000
+                rewards:
+                  crew: 40
+                  weapons: 30
+                  vehicles: 10
+                  respect: 40
+                  influence: 20
+                risks:
+                  money_loss: 150000
+                  heat_increase: 30
+
+  - id: "ch_strategic_conquest"
+    title: "Strategic Conquest"
+    description: "Execute your plan for methodical expansion across the city's districts."
+    image_url: "/images/chapters/strategic_conquest.jpg"
+    order: 2
+
+    missions:
+      - id: "m_north_district"
+        title: "North District Takeover"
+        description: "Challenge the Jackson Street Gang for control of the North District."
+        narrative: |
+          The North District is your next target for expansion. For years, this area has been controlled by the Jackson Street Gang, a well-organized criminal group with deep roots in the community. They control protection rackets, drug distribution, and illegal gambling throughout the district.
+
+          Taking this territory won't be easy. The Jackson Street Gang has a substantial membership of around 200 soldiers spread across several neighborhoods. Their leader, Marcus Jackson, is known for his strategic thinking and community connections that provide both intelligence and protection.
+
+          However, recent intelligence suggests growing dissatisfaction among some of the gang's lieutenants with Marcus's leadership. This could provide an opportunity to exploit internal divisions.
+        image_url: "/images/missions/north_district.jpg"
+        type: "territory"
+        order: 1
+        requirements:
+          crew: 100
+          weapons: 60
+          vehicles: 30
+          respect: 240
+        rewards:
+          money: 300000
+          respect: 60
+          influence: 50
+
+        choices:
+          - id: "choice_internal_division"
+            text: "Exploit internal divisions to fracture the Jackson Street Gang"
+            next_mission: "m_northeast_district"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 1
+              - type: "territory"
+                required_value: "takeover_jackson_headquarters"
+                order_index: 2
+            operations:
+              - id: "op_jackson_intelligence"
+                name: "Internal Gang Intelligence"
+                description: "Gather detailed intelligence on internal conflicts within the Jackson Street Gang."
+                operation_type: "intelligence_gathering"
+                duration: 18000
+                success_rate: 85
+                resources:
+                  crew: 10
+                  weapons: 0
+                  vehicles: 5
+                  money: 50000
+                rewards:
+                  influence: 25
+                risks:
+                  crew_loss: 2
+                  vehicles_loss: 1
+                  money_loss: 50000
+                  heat_increase: 15
+              - id: "op_lieutenant_bribes"
+                name: "Turn Jackson Lieutenants"
+                description: "Bribe or otherwise turn key Jackson Street Gang lieutenants against Marcus."
+                operation_type: "official_bribing"
+                duration: 14400
+                success_rate: 70
+                resources:
+                  crew: 15
+                  weapons: 10
+                  vehicles: 5
+                  money: 300000
+                rewards:
+                  crew: 25
+                  weapons: 15
+                  respect: 35
+                  influence: 40
+                risks:
+                  crew_loss: 3
+                  money_loss: 300000
+                  heat_increase: 25
+            pois:
+              - id: "poi_jackson_headquarters"
+                name: "Jackson Street Club"
+                description: "The headquarters and central meeting place of the Jackson Street Gang."
+                location_type: "hotspot"
+                location_id: "jackson_headquarters"
+
+          - id: "choice_direct_confrontation"
+            text: "Launch a direct, overwhelming assault on Jackson Street Gang territory"
+            next_mission: "m_northeast_district"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 0
+              - type: "territory"
+                required_value: "takeover_drug_distribution"
+                order_index: 1
+              - type: "territory"
+                required_value: "takeover_jackson_headquarters"
+                order_index: 2
+            operations:
+              - id: "op_north_district_war"
+                name: "North District Gang War"
+                description: "Launch a full-scale assault on Jackson Street Gang territories and operations."
+                operation_type: "carjacking"
+                duration: 21600
+                success_rate: 65
+                resources:
+                  crew: 100
+                  weapons: 60
+                  vehicles: 30
+                  money: 0
+                rewards:
+                  respect: 80
+                  influence: 30
+                risks:
+                  crew_loss: 25
+                  weapons_loss: 15
+                  vehicles_loss: 8
+                  heat_increase: 60
+            pois:
+              - id: "poi_drug_distribution"
+                name: "North Side Distribution Center"
+                description: "The central hub for drug distribution in the North District."
+                location_type: "hotspot"
+                location_id: "drug_distribution"
+              - id: "poi_jackson_headquarters_2"
+                name: "Jackson Street Club"
+                description: "The headquarters and central meeting place of the Jackson Street Gang."
+                location_type: "hotspot"
+                location_id: "jackson_headquarters"
+
+      - id: "m_northeast_district"
+        title: "Northeast District Challenge"
+        description: "Deal with the Russian Bratva who control the Northeast District."
+        narrative: |
+          With the North District now under your control, your expansion continues to the Northeast District, controlled by the Russian Bratva. Unlike the Jackson Street Gang, the Bratva is part of a larger international criminal organization with connections to Eastern Europe.
+
+          The Northeast District is crucial for your city takeover as it contains the waterfront area, providing access to smuggling routes and import/export operations. The Bratva specializes in human trafficking, arms dealing, and high-end theft rings.
+
+          Their leader, Viktor Sokolov, is known for his ruthlessness and intelligence. He maintains strong connections with corrupt officials and has a well-armed security force comprised of former military personnel.
+        image_url: "/images/missions/northeast_district.jpg"
+        type: "operation"
+        order: 2
+        requirements:
+          crew: 120
+          weapons: 80
+          vehicles: 40
+          respect: 270
+        rewards:
+          money: 400000
+          respect: 70
+          influence: 60
+
+        choices:
+          - id: "choice_corrupt_officials"
+            text: "Turn Bratva's corrupt officials to undermine their protection"
+            next_mission: "m_east_district"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 1
+              - type: "territory"
+                required_value: "takeover_bratva_warehouse"
+                order_index: 2
+            operations:
+              - id: "op_corrupt_network_mapping"
+                name: "Map Corruption Network"
+                description: "Identify all corrupt officials working with the Bratva and their vulnerabilities."
+                operation_type: "intelligence_gathering"
+                duration: 21600
+                success_rate: 80
+                resources:
+                  crew: 15
+                  weapons: 0
+                  vehicles: 8
+                  money: 100000
+                rewards:
+                  influence: 35
+                risks:
+                  crew_loss: 2
+                  vehicles_loss: 1
+                  money_loss: 100000
+                  heat_increase: 25
+              - id: "op_officials_flipping"
+                name: "Flip Corrupt Officials"
+                description: "Use bribes, blackmail, and other leverage to turn officials against the Bratva."
+                operation_type: "official_bribing"
+                duration: 18000
+                success_rate: 65
+                resources:
+                  crew: 10
+                  weapons: 5
+                  vehicles: 3
+                  money: 500000
+                rewards:
+                  respect: 40
+                  influence: 70
+                risks:
+                  crew_loss: 3
+                  money_loss: 500000
+                  heat_increase: 45
+            pois:
+              - id: "poi_bratva_warehouse"
+                name: "Waterfront Warehouse"
+                description: "The Bratva's main warehouse by the waterfront, used for smuggling operations."
+                location_type: "hotspot"
+                location_id: "bratva_warehouse"
+
+          - id: "choice_rival_alliance"
+            text: "Form an alliance with Bratva's international rivals"
+            next_mission: "m_east_district"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "goods_smuggling"
+                order_index: 1
+              - type: "territory"
+                required_value: "takeover_bratva_club"
+                order_index: 2
+            operations:
+              - id: "op_international_contacts"
+                name: "International Criminal Contacts"
+                description: "Establish connections with international criminal groups rivaling the Bratva."
+                operation_type: "intelligence_gathering"
+                duration: 25200
+                success_rate: 75
+                resources:
+                  crew: 10
+                  weapons: 0
+                  vehicles: 5
+                  money: 150000
+                rewards:
+                  influence: 45
+                risks:
+                  crew_loss: 2
+                  vehicles_loss: 1
+                  money_loss: 150000
+                  heat_increase: 20
+              - id: "op_rival_collaboration"
+                name: "International Rival Collaboration"
+                description: "Coordinate a joint operation with Bratva's international rivals to weaken their position."
+                operation_type: "goods_smuggling"
+                duration: 28800
+                success_rate: 70
+                resources:
+                  crew: 30
+                  weapons: 25
+                  vehicles: 15
+                  money: 200000
+                rewards:
+                  crew: 20
+                  weapons: 30
+                  respect: 55
+                  influence: 40
+                risks:
+                  crew_loss: 8
+                  weapons_loss: 5
+                  vehicles_loss: 3
+                  money_loss: 200000
+                  heat_increase: 35
+            pois:
+              - id: "poi_bratva_club"
+                name: "The Ice Palace"
+                description: "An exclusive club owned by the Bratva, used for meetings and entertainment."
+                location_type: "hotspot"
+                location_id: "bratva_club"
+
+      - id: "m_east_district"
+        title: "East District Acquisition"
+        description: "Negotiate or intimidate the independent operators controlling the East District."
+        narrative: |
+          The East District presents a different challenge from previous territories. Rather than a single dominant organization, the area is controlled by multiple independent operators, each managing their own specialized criminal operations. These include chop shops, high-end heists, cybercrime, and luxury goods trafficking.
+
+          While these independent operators lack the manpower and resources of larger organizations, their specialized expertise makes them valuable potential assets. Additionally, the fragmented nature of control means you'll need to deal with multiple parties rather than a single leadership structure.
+
+          The East District is also home to several neutral establishments frequented by criminals from all organizations - places governed by the unwritten rules of the underworld where peace is maintained.
+        image_url: "/images/missions/east_district.jpg"
+        type: "operation"
+        order: 3
+        requirements:
+          money: 600000
+          respect: 300
+          influence: 250
+        rewards:
+          money: 300000
+          respect: 65
+          influence: 70
+
+        choices:
+          - id: "choice_individual_deals"
+            text: "Negotiate individual deals with each independent operator"
+            next_mission: "m_south_district"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 1
+              - type: "territory"
+                required_value: "takeover_neutral_ground"
+                order_index: 2
+            operations:
+              - id: "op_operator_profiling"
+                name: "Profile Independent Operators"
+                description: "Create detailed profiles of each independent operator, their operations, and potential leverage points."
+                operation_type: "intelligence_gathering"
+                duration: 21600
+                success_rate: 90
+                resources:
+                  crew: 20
+                  weapons: 0
+                  vehicles: 10
+                  money: 75000
+                rewards:
+                  influence: 35
+                risks:
+                  crew_loss: 1
+                  vehicles_loss: 1
+                  money_loss: 75000
+                  heat_increase: 15
+              - id: "op_negotiation_series"
+                name: "Series of Negotiations"
+                description: "Conduct separate negotiations with each independent operator to establish terms of integration."
+                operation_type: "official_bribing"
+                duration: 36000
+                success_rate: 85
+                resources:
+                  crew: 25
+                  weapons: 15
+                  vehicles: 10
+                  money: 400000
+                rewards:
+                  respect: 30
+                  influence: 80
+                risks:
+                  crew_loss: 3
+                  money_loss: 400000
+                  heat_increase: 20
+            pois:
+              - id: "poi_neutral_ground"
+                name: "The Continental Hotel"
+                description: "A neutral establishment where criminals meet safely, controlling it would symbolize your growing influence."
+                location_type: "hotspot"
+                location_id: "neutral_ground"
+
+          - id: "choice_ultimatum"
+            text: "Issue a district-wide ultimatum: join or be eliminated"
+            next_mission: "m_south_district"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 0
+              - type: "territory"
+                required_value: "takeover_major_chop_shop"
+                order_index: 1
+              - type: "territory"
+                required_value: "takeover_heist_headquarters"
+                order_index: 2
+            operations:
+              - id: "op_show_of_dominance"
+                name: "East District Show of Dominance"
+                description: "Stage a dramatic demonstration of force to intimidate all independent operators simultaneously."
+                operation_type: "carjacking"
+                duration: 14400
+                success_rate: 75
+                resources:
+                  crew: 100
+                  weapons: 70
+                  vehicles: 40
+                  money: 0
+                rewards:
+                  respect: 90
+                  influence: 40
+                risks:
+                  crew_loss: 15
+                  weapons_loss: 10
+                  vehicles_loss: 5
+                  heat_increase: 55
+            pois:
+              - id: "poi_major_chop_shop"
+                name: "East Side Automotive"
+                description: "The largest chop shop in the East District, processing stolen luxury vehicles."
+                location_type: "hotspot"
+                location_id: "major_chop_shop"
+              - id: "poi_heist_headquarters"
+                name: "Sullivan's Pawn Shop"
+                description: "Front business for a sophisticated heist crew operating in the East District."
+                location_type: "hotspot"
+                location_id: "heist_headquarters"
+
+      - id: "m_south_district"
+        title: "South District Struggle"
+        description: "Navigate the complex ethnic and cultural dynamics of the divided South District."
+        narrative: |
+          The South District is the most diverse and politically complex area of the city. Multiple ethnic crime groups - including the Chinese Triads, Jamaican posses, Dominican gangs, and Irish mob remnants - each control portions of the district along cultural and neighborhood lines.
+
+          These groups maintain an uneasy peace through established boundaries and traditions, but tensions regularly flare into violence. Each group has deep connections to their community, providing both protection and legitimacy that law enforcement struggles to overcome.
+
+          Taking control of the South District will require not just criminal muscle, but cultural understanding and diplomatic finesse to navigate the complex web of alliances, feuds, and traditions.
+        image_url: "/images/missions/south_district.jpg"
+        type: "operation"
+        order: 4
+        requirements:
+          crew: 150
+          weapons: 100
+          vehicles: 50
+          respect: 350
+        rewards:
+          money: 500000
+          respect: 80
+          influence: 70
+
+        choices:
+          - id: "choice_cultural_approach"
+            text: "Respect cultural boundaries while creating a unified council structure"
+            next_mission: "m_downtown_final"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 1
+              - type: "territory"
+                required_value: "takeover_council_headquarters"
+                order_index: 2
+            operations:
+              - id: "op_cultural_study"
+                name: "Criminal Cultural Analysis"
+                description: "Study the traditions, hierarchies, and values of each ethnic crime group in detail."
+                operation_type: "intelligence_gathering"
+                duration: 25200
+                success_rate: 90
+                resources:
+                  crew: 20
+                  weapons: 0
+                  vehicles: 10
+                  money: 100000
+                rewards:
+                  influence: 45
+                risks:
+                  crew_loss: 1
+                  vehicles_loss: 1
+                  money_loss: 100000
+                  heat_increase: 10
+              - id: "op_council_formation"
+                name: "Form Criminal Council"
+                description: "Negotiate the formation of a unified criminal council with representation from each ethnic group."
+                operation_type: "official_bribing"
+                duration: 43200
+                success_rate: 70
+                resources:
+                  crew: 40
+                  weapons: 25
+                  vehicles: 15
+                  money: 750000
+                rewards:
+                  respect: 60
+                  influence: 90
+                risks:
+                  crew_loss: 5
+                  money_loss: 750000
+                  heat_increase: 30
+            pois:
+              - id: "poi_council_headquarters"
+                name: "Harbor View Restaurant"
+                description: "A neutral location selected as headquarters for the new criminal council."
+                location_type: "hotspot"
+                location_id: "council_headquarters"
+
+          - id: "choice_divisive_conquest"
+            text: "Exploit inter-ethnic tensions to divide and conquer"
+            next_mission: "m_downtown_final"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 1
+              - type: "territory"
+                required_value: "takeover_south_headquarters"
+                order_index: 2
+            operations:
+              - id: "op_ethnic_tension_mapping"
+                name: "Map Ethnic Tensions"
+                description: "Identify and document all existing tensions and historical conflicts between ethnic crime groups."
+                operation_type: "intelligence_gathering"
+                duration: 18000
+                success_rate: 85
+                resources:
+                  crew: 15
+                  weapons: 0
+                  vehicles: 8
+                  money: 75000
+                rewards:
+                  influence: 30
+                risks:
+                  crew_loss: 2
+                  vehicles_loss: 1
+                  money_loss: 75000
+                  heat_increase: 15
+              - id: "op_ethnic_conflict"
+                name: "Instigate Ethnic Conflict"
+                description: "Strategically provoke conflicts between ethnic groups while positioning as a neutral party."
+                operation_type: "carjacking"
+                duration: 36000
+                success_rate: 65
+                resources:
+                  crew: 80
+                  weapons: 60
+                  vehicles: 30
+                  money: 350000
+                rewards:
+                  respect: 100
+                  influence: 60
+                risks:
+                  crew_loss: 20
+                  weapons_loss: 15
+                  vehicles_loss: 8
+                  money_loss: 350000
+                  heat_increase: 60
+            pois:
+              - id: "poi_south_headquarters"
+                name: "Maritime Social Club"
+                description: "A strategic location from which to control the fractured South District."
+                location_type: "hotspot"
+                location_id: "south_headquarters"
+
+      - id: "m_downtown_final"
+        title: "Downtown: The Final Prize"
+        description: "Complete your takeover by capturing the prestigious Downtown district."
+        narrative: |
+          Downtown represents the final piece in your city takeover plan. This prestigious district is the economic and political heart of the city, containing financial institutions, government buildings, luxury hotels, and high-end establishments. For decades, it has been neutral territory, with no single criminal organization claiming control.
+
+          This neutrality has been maintained by a gentleman's agreement among all major criminal groups, enforced by the mysterious figure known only as "The Broker," who mediates disputes and maintains order through their extensive connections in both legitimate and criminal circles.
+
+          Taking Downtown would not only complete your dominance of the city but would send a powerful message to criminal organizations nationwide about your unprecedented power and ambition.
+        image_url: "/images/missions/downtown_final.jpg"
+        type: "operation"
+        order: 5
+        requirements:
+          money: 1000000
+          crew: 200
+          weapons: 150
+          vehicles: 80
+          respect: 400
+          influence: 300
+        rewards:
+          money: 1000000
+          respect: 100
+          influence: 100
+
+        choices:
+          - id: "choice_broker_alliance"
+            text: "Form an alliance with The Broker to legitimize your control"
+            next_mission: "m_consolidation"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 1
+              - type: "territory"
+                required_value: "takeover_downtown_hotel"
+                order_index: 2
+            operations:
+              - id: "op_broker_investigation"
+                name: "Investigate The Broker"
+                description: "Gather intelligence on The Broker's true identity, operations, and motivations."
+                operation_type: "intelligence_gathering"
+                duration: 36000
+                success_rate: 70
+                resources:
+                  crew: 25
+                  weapons: 0
+                  vehicles: 15
+                  money: 200000
+                rewards:
+                  influence: 50
+                risks:
+                  crew_loss: 5
+                  vehicles_loss: 3
+                  money_loss: 200000
+                  heat_increase: 25
+              - id: "op_broker_meeting"
+                name: "Meeting with The Broker"
+                description: "Arrange and conduct a high-stakes meeting with The Broker to negotiate Downtown control."
+                operation_type: "official_bribing"
+                duration: 14400
+                success_rate: 75
+                resources:
+                  crew: 50
+                  weapons: 30
+                  vehicles: 20
+                  money: 1000000
+                rewards:
+                  respect: 70
+                  influence: 120
+                risks:
+                  crew_loss: 10
+                  money_loss: 1000000
+                  heat_increase: 40
+            pois:
+              - id: "poi_downtown_hotel"
+                name: "Grand Metropolitan Hotel"
+                description: "The most prestigious hotel in the city, a symbol of Downtown's luxury and influence."
+                location_type: "hotspot"
+                location_id: "downtown_hotel"
+
+          - id: "choice_broker_elimination"
+            text: "Eliminate The Broker and forcefully take Downtown"
+            next_mission: "m_consolidation"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 1
+              - type: "territory"
+                required_value: "takeover_financial_district"
+                order_index: 2
+            operations:
+              - id: "op_broker_weakness"
+                name: "The Broker's Weaknesses"
+                description: "Identify The Broker's security weaknesses, routines, and vulnerabilities."
+                operation_type: "intelligence_gathering"
+                duration: 28800
+                success_rate: 75
+                resources:
+                  crew: 20
+                  weapons: 0
+                  vehicles: 10
+                  money: 150000
+                rewards:
+                  influence: 40
+                risks:
+                  crew_loss: 4
+                  vehicles_loss: 2
+                  money_loss: 150000
+                  heat_increase: 20
+              - id: "op_broker_elimination"
+                name: "Eliminate The Broker"
+                description: "Execute a precision operation to eliminate The Broker and their support network."
+                operation_type: "carjacking"
+                duration: 21600
+                success_rate: 60
+                resources:
+                  crew: 100
+                  weapons: 80
+                  vehicles: 40
+                  money: 0
+                rewards:
+                  respect: 150
+                  influence: 80
+                risks:
+                  crew_loss: 30
+                  weapons_loss: 20
+                  vehicles_loss: 10
+                  heat_increase: 80
+            pois:
+              - id: "poi_financial_district"
+                name: "Financial District Plaza"
+                description: "The symbolic heart of Downtown's economic power."
+                location_type: "hotspot"
+                location_id: "financial_district"
+
+  - id: "ch_the_final_showdown"
+    title: "The Final Showdown"
+    description: "Face the last remaining challenges to your complete dominance of the city."
+    image_url: "/images/chapters/the_final_showdown.jpg"
+    order: 3
+
+    missions:
+      - id: "m_consolidation"
+        title: "Empire Consolidation"
+        description: "Solidify your control over the entire city and establish a unified criminal structure."
+        narrative: |
+          With all districts now under your control, you face the monumental task of consolidating your criminal empire. The rapid expansion has left a patchwork of different management styles, loyalties, and operational procedures across the city.
+
+          You need to create a unified structure that can efficiently manage this vast criminal enterprise while maintaining control and loyalty. This involves establishing clear chains of command, standardizing operations, and creating systems to ensure profits flow smoothly to the top.
+
+          Your decisions now will determine whether your empire functions as a cohesive whole or fractures under its own weight.
+        image_url: "/images/missions/consolidation.jpg"
+        type: "operation"
+        order: 1
+        requirements:
+          respect: 450
+          influence: 350
+        rewards:
+          money: 1000000
+          respect: 75
+          influence: 75
+
+        choices:
+          - id: "choice_corporate_structure"
+            text: "Implement a modern corporate-style management structure"
+            next_mission: "m_law_enforcement_response"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "crew_recruitment"
+                order_index: 1
+            operations:
+              - id: "op_business_analysis"
+                name: "Criminal Enterprise Analysis"
+                description: "Conduct a comprehensive analysis of all criminal operations across the city."
+                operation_type: "intelligence_gathering"
+                duration: 43200
+                success_rate: 95
+                resources:
+                  crew: 30
+                  weapons: 0
+                  vehicles: 15
+                  money: 250000
+                rewards:
+                  influence: 50
+                risks:
+                  crew_loss: 2
+                  vehicles_loss: 1
+                  money_loss: 250000
+                  heat_increase: 15
+              - id: "op_management_implementation"
+                name: "Modern Management Implementation"
+                description: "Establish and staff a sophisticated corporate-style management structure across all territories."
+                operation_type: "crew_recruitment"
+                duration: 64800
+                success_rate: 85
+                resources:
+                  crew: 50
+                  weapons: 0
+                  vehicles: 0
+                  money: 1000000
+                rewards:
+                  respect: 40
+                  influence: 100
+                risks:
+                  money_loss: 1000000
+                  heat_increase: 25
+
+          - id: "choice_traditional_hierarchy"
+            text: "Establish a traditional hierarchical family structure"
+            next_mission: "m_law_enforcement_response"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "crew_recruitment"
+                order_index: 0
+              - type: "territory"
+                required_value: "takeover_city_headquarters"
+                order_index: 1
+            operations:
+              - id: "op_hierarchy_establishment"
+                name: "Establish City-wide Hierarchy"
+                description: "Create a traditional criminal hierarchy with capos, lieutenants, and soldiers across all territories."
+                operation_type: "crew_recruitment"
+                duration: 50400
+                success_rate: 90
+                resources:
+                  crew: 100
+                  weapons: 50
+                  vehicles: 25
+                  money: 750000
+                rewards:
+                  respect: 120
+                  influence: 60
+                risks:
+                  crew_loss: 10
+                  money_loss: 750000
+                  heat_increase: 30
+            pois:
+              - id: "poi_city_headquarters"
+                name: "City View Estate"
+                description: "A luxurious private estate that will serve as the headquarters for your criminal empire."
+                location_type: "hotspot"
+                location_id: "city_headquarters"
+
+      - id: "m_law_enforcement_response"
+        title: "Major Law Enforcement Response"
+        description: "Deal with an unprecedented federal response to your criminal takeover."
+        narrative: |
+          Your complete takeover of the city has finally triggered a massive law enforcement response. The FBI has established a dedicated task force, and the Department of Justice has assigned their top prosecutors to build a case against your organization.
+
+          Federal agents are investigating your operations, surveillance has intensified, and pressure is being applied to potential witnesses. This represents the most serious threat to your empire since you began your expansion.
+
+          You need a comprehensive strategy to counter this law enforcement pressure before it dismantles everything you've built.
+        image_url: "/images/missions/law_enforcement_response.jpg"
+        type: "operation"
+        order: 2
+        requirements:
+          money: 2000000
+          respect: 500
+          influence: 400
+        rewards:
+          heat_reduction: 100
+          influence: 100
+
+        choices:
+          - id: "choice_corruption_network"
+            text: "Establish a high-level corruption network to neutralize the investigation"
+            next_mission: "m_outside_challenger"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 1
+            operations:
+              - id: "op_investigation_intel"
+                name: "Federal Investigation Intelligence"
+                description: "Gather detailed intelligence on the federal task force, their methods, and key personnel."
+                operation_type: "intelligence_gathering"
+                duration: 36000
+                success_rate: 75
+                resources:
+                  crew: 20
+                  weapons: 0
+                  vehicles: 10
+                  money: 300000
+                rewards:
+                  influence: 45
+                risks:
+                  crew_loss: 5
+                  vehicles_loss: 2
+                  money_loss: 300000
+                  heat_increase: 30
+              - id: "op_high_level_corruption"
+                name: "High-Level Corruption Operation"
+                description: "Systematically corrupt or compromise key officials in law enforcement, prosecution, and judiciary."
+                operation_type: "official_bribing"
+                duration: 72000
+                success_rate: 65
+                resources:
+                  crew: 30
+                  weapons: 0
+                  vehicles: 15
+                  money: 3000000
+                rewards:
+                  heat_reduction: 120
+                  influence: 80
+                risks:
+                  crew_loss: 8
+                  money_loss: 3000000
+                  heat_increase: 60
+
+          - id: "choice_legitimate_facade"
+            text: "Accelerate transition to legitimate businesses to undermine the investigation"
+            next_mission: "m_outside_challenger"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "territory"
+                required_value: "takeover_legitimate_business_1"
+                order_index: 1
+              - type: "territory"
+                required_value: "takeover_legitimate_business_2"
+                order_index: 2
+            operations:
+              - id: "op_legitimate_transition_planning"
+                name: "Legitimate Business Transition Plan"
+                description: "Develop a comprehensive plan to rapidly transition criminal operations into legitimate businesses."
+                operation_type: "intelligence_gathering"
+                duration: 54000
+                success_rate: 80
+                resources:
+                  crew: 25
+                  weapons: 0
+                  vehicles: 10
+                  money: 500000
+                rewards:
+                  influence: 60
+                risks:
+                  money_loss: 500000
+                  heat_increase: 20
+            pois:
+              - id: "poi_legitimate_business_1"
+                name: "City Development Corporation"
+                description: "A legitimate real estate development company perfect for laundering money and providing legal cover."
+                location_type: "hotspot"
+                location_id: "legitimate_business_1"
+              - id: "poi_legitimate_business_2"
+                name: "Metropolitan Investment Group"
+                description: "A financial services firm that can provide legitimate business credentials and banking connections."
+                location_type: "hotspot"
+                location_id: "legitimate_business_2"
+
+      - id: "m_outside_challenger"
+        title: "Outside Challenger"
+        description: "Face a challenge from a powerful external criminal organization."
+        narrative: |
+          Your unprecedented takeover of an entire city has attracted attention far beyond local law enforcement. The Octavian Syndicate, a powerful international criminal organization with operations across multiple countries, sees your city as a desirable addition to their portfolio.
+
+          Emilio Vega, the Syndicate's ruthless expansion director, has arrived in the city with significant resources and a mandate to either absorb your organization or eliminate it. The Syndicate has begun approaching your lieutenants with offers, threatening businesses under your protection, and establishing their own operations in your territory.
+
+          This represents the first major external challenge to your complete control of the city. How you respond will determine whether your empire remains independent or becomes merely a branch of a larger criminal network.
+        image_url: "/images/missions/outside_challenger.jpg"
+        type: "operation"
+        order: 3
+        requirements:
+          crew: 250
+          weapons: 180
+          vehicles: 100
+          respect: 550
+          influence: 450
+        rewards:
+          respect: 100
+          influence: 100
+
+        choices:
+          - id: "choice_war_declaration"
+            text: "Declare open war against the Octavian Syndicate"
+            next_mission: "m_power_consolidation"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 1
+            operations:
+              - id: "op_syndicate_intelligence"
+                name: "Syndicate Vulnerability Analysis"
+                description: "Identify the Octavian Syndicate's local operations, personnel, and vulnerabilities."
+                operation_type: "intelligence_gathering"
+                duration: 36000
+                success_rate: 80
+                resources:
+                  crew: 30
+                  weapons: 0
+                  vehicles: 15
+                  money: 250000
+                rewards:
+                  influence: 40
+                risks:
+                  crew_loss: 5
+                  vehicles_loss: 3
+                  money_loss: 250000
+                  heat_increase: 25
+              - id: "op_syndicate_war"
+                name: "War Against the Syndicate"
+                description: "Launch coordinated attacks against all Syndicate operations and personnel in your city."
+                operation_type: "carjacking"
+                duration: 86400
+                success_rate: 65
+                resources:
+                  crew: 200
+                  weapons: 150
+                  vehicles: 75
+                  money: 0
+                rewards:
+                  respect: 200
+                  influence: 100
+                risks:
+                  crew_loss: 50
+                  weapons_loss: 40
+                  vehicles_loss: 20
+                  heat_increase: 100
+
+          - id: "choice_strategic_alliance"
+            text: "Negotiate a mutually beneficial alliance with the Syndicate"
+            next_mission: "m_power_consolidation"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 1
+            operations:
+              - id: "op_syndicate_research"
+                name: "Syndicate Background Research"
+                description: "Research the Octavian Syndicate's history, operations, and leadership to prepare for negotiations."
+                operation_type: "intelligence_gathering"
+                duration: 28800
+                success_rate: 90
+                resources:
+                  crew: 15
+                  weapons: 0
+                  vehicles: 8
+                  money: 150000
+                rewards:
+                  influence: 35
+                risks:
+                  crew_loss: 2
+                  vehicles_loss: 1
+                  money_loss: 150000
+                  heat_increase: 10
+              - id: "op_syndicate_negotiation"
+                name: "High-Level Syndicate Negotiation"
+                description: "Meet with Emilio Vega to negotiate terms of a mutually beneficial alliance."
+                operation_type: "official_bribing"
+                duration: 21600
+                success_rate: 75
+                resources:
+                  crew: 50
+                  weapons: 30
+                  vehicles: 20
+                  money: 1000000
+                rewards:
+                  crew: 100
+                  weapons: 75
+                  vehicles: 30
+                  influence: 150
+                risks:
+                  crew_loss: 10
+                  money_loss: 1000000
+                  heat_increase: 40
+
+      - id: "m_power_consolidation"
+        title: "Ultimate Power Consolidation"
+        description: "Implement the final measures to secure your absolute control over the city."
+        narrative: |
+          With both internal and external challenges handled, your control over the city is nearly absolute. However, to truly secure your position as the undisputed ruler of the criminal underworld, you need to implement measures that will make your empire virtually unassailable.
+
+          This means establishing systems that can maintain control even in your absence, creating redundancies that protect against future challenges, and building a legacy that will endure beyond any single individual.
+
+          The decisions you make now will determine not just the immediate security of your criminal empire, but its long-term sustainability and your place in criminal history.
+        image_url: "/images/missions/power_consolidation.jpg"
+        type: "operation"
+        order: 4
+        requirements:
+          money: 3000000
+          respect: 600
+          influence: 500
+        rewards:
+          money: 2000000
+          respect: 150
+          influence: 150
+
+        choices:
+          - id: "choice_institutional_power"
+            text: "Build institutional power through deep corruption and legitimate business"
+            next_mission: "m_city_master"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 0
+              - type: "territory"
+                required_value: "takeover_city_hall"
+                order_index: 1
+              - type: "territory"
+                required_value: "takeover_media_outlet"
+                order_index: 2
+            operations:
+              - id: "op_institutional_corruption"
+                name: "Institutional Corruption Campaign"
+                description: "Systematically corrupt every significant institution in the city - from government to media to education."
+                operation_type: "official_bribing"
+                duration: 172800
+                success_rate: 75
+                resources:
+                  crew: 50
+                  weapons: 0
+                  vehicles: 25
+                  money: 5000000
+                rewards:
+                  influence: 200
+                  heat_reduction: 80
+                risks:
+                  crew_loss: 10
+                  money_loss: 5000000
+                  heat_increase: 70
+            pois:
+              - id: "poi_city_hall"
+                name: "City Hall"
+                description: "The center of municipal government, controlling it ensures political protection."
+                location_type: "hotspot"
+                location_id: "city_hall"
+              - id: "poi_media_outlet"
+                name: "Metropolitan Media Network"
+                description: "The city's largest media company, controlling the narrative about crime and politics."
+                location_type: "hotspot"
+                location_id: "media_outlet"
+
+          - id: "choice_fear_dominance"
+            text: "Cement control through overwhelming force and legendary reputation"
+            next_mission: "m_city_master"
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "carjacking"
+                order_index: 0
+              - type: "operation"
+                required_value: "crew_recruitment"
+                order_index: 1
+            operations:
+              - id: "op_fearsome_demonstration"
+                name: "Demonstration of Absolute Power"
+                description: "Stage a city-wide demonstration of your overwhelming force and reach that will become criminal legend."
+                operation_type: "carjacking"
+                duration: 43200
+                success_rate: 85
+                resources:
+                  crew: 300
+                  weapons: 200
+                  vehicles: 100
+                  money: 1000000
+                rewards:
+                  respect: 250
+                  influence: 100
+                risks:
+                  crew_loss: 30
+                  weapons_loss: 20
+                  vehicles_loss: 10
+                  money_loss: 1000000
+                  heat_increase: 120
+              - id: "op_elite_force"
+                name: "Establish Elite Enforcement Force"
+                description: "Create and train an elite force of absolutely loyal enforcers to maintain your rule through fear."
+                operation_type: "crew_recruitment"
+                duration: 129600
+                success_rate: 80
+                resources:
+                  crew: 50
+                  weapons: 100
+                  vehicles: 25
+                  money: 2000000
+                rewards:
+                  crew: 200
+                  weapons: 150
+                  vehicles: 50
+                  respect: 150
+                risks:
+                  money_loss: 2000000
+                  heat_increase: 50
+
+      - id: "m_city_master"
+        title: "Master of the City"
+        description: "Reflect on your complete domination of the city and make plans for the future."
+        narrative: |
+          Your vision has become reality. From modest beginnings, you've achieved what many thought impossible: complete control over an entire city's criminal underworld. Every district, every racket, every significant criminal operation now answers to you directly or through your carefully established hierarchy.
+
+          Your name is spoken with fear and respect in every corner of the criminal world. Law enforcement has been neutralized through a combination of corruption, intimidation, and strategic legitimization of certain operations. Rival organizations have been eliminated or absorbed into your empire.
+
+          As you look out over the city skyline from your penthouse, you contemplate what comes next. With unlimited resources at your disposal and an organization that spans every aspect of criminal enterprise, the possibilities are boundless.
+        image_url: "/images/missions/city_master.jpg"
+        type: "operation"
+        order: 5
+        requirements:
+          respect: 700
+          influence: 600
+        rewards:
+          money: 5000000
+          respect: 200
+          influence: 200
+
+        choices:
+          - id: "choice_expansion_beyond"
+            text: "Begin planning expansion to neighboring cities"
+            next_mission: ""
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "intelligence_gathering"
+                order_index: 0
+            operations:
+              - id: "op_regional_expansion"
+                name: "Regional Expansion Strategy"
+                description: "Develop a comprehensive strategy to expand your criminal empire to neighboring cities."
+                operation_type: "intelligence_gathering"
+                duration: 259200
+                success_rate: 90
+                resources:
+                  crew: 100
+                  weapons: 0
+                  vehicles: 50
+                  money: 3000000
+                rewards:
+                  respect: 150
+                  influence: 250
+                risks:
+                  crew_loss: 10
+                  vehicles_loss: 5
+                  money_loss: 3000000
+                  heat_increase: 60
+
+          - id: "choice_legitimate_power"
+            text: "Transition toward legitimate power and political influence"
+            next_mission: ""
+            sequential_order: true
+            conditions:
+              - type: "operation"
+                required_value: "official_bribing"
+                order_index: 0
+            operations:
+              - id: "op_legitimate_transition"
+                name: "Transition to Legitimate Power"
+                description: "Begin systematically transforming your criminal empire into legitimate business and political influence."
+                operation_type: "official_bribing"
+                duration: 345600
+                success_rate: 85
+                resources:
+                  crew: 50
+                  weapons: 0
+                  vehicles: 25
+                  money: 10000000
+                rewards:
+                  influence: 300
+                  heat_reduction: 200
+                risks:
+                  respect: -100
+                  money_loss: 10000000
+                  heat_increase: 30

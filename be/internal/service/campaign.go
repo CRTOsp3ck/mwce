@@ -12,38 +12,44 @@ import (
 	"mwce-be/internal/util"
 
 	"github.com/rs/zerolog"
-	"gorm.io/gorm"
 )
 
 // CampaignService handles campaign-related business logic
 type CampaignService interface {
+	// Campaign and mission management
 	GetAllCampaigns() ([]model.Campaign, error)
 	GetCampaignByID(campaignID string) (*model.Campaign, error)
 	GetChapterByID(chapterID string) (*model.Chapter, error)
 	GetMissionByID(missionID string) (*model.Mission, error)
+
+	// Player progress tracking
 	GetPlayerCampaignProgress(playerID string, campaignID string) (*model.PlayerCampaignProgress, error)
 	GetPlayerCampaignProgresses(playerID string) ([]model.PlayerCampaignProgress, error)
 	GetPlayerMissionProgress(playerID string, missionID string) (*model.PlayerMissionProgress, error)
+
+	// Campaign interactions
 	StartCampaign(playerID string, campaignID string) (*model.PlayerCampaignProgress, error)
 	StartMission(playerID string, missionID string) (*model.PlayerMissionProgress, error)
-	CompleteMission(playerID string, missionID string, choiceID string) (*MissionCompleteResult, error)
+	CompleteMission(playerID string, missionID string, choiceID string) (*model.MissionCompleteResult, error)
 	CheckMissionRequirements(playerID string, missionID string) (bool, []string, error)
-	LoadCampaigns(dirPath string) error
 
-	// POI methods
-	GetActivePOIs(playerID string) ([]model.POI, error)
-	ActivatePOIForPlayer(poiID string, playerID string) error
-	CompletePOI(poiID string, playerID string) error
+	// POI management
+	GetActivePlayerPOIs(playerID string) ([]model.PlayerPOI, error)
+	ActivatePlayerPOI(playerID string, templateID string) (*model.PlayerPOI, error)
+	CompletePlayerPOI(playerID string, playerPOIID string) error
 
-	// Mission Operation methods
-	GetActiveMissionOperations(playerID string) ([]model.MissionOperation, error)
-	ActivateMissionOperationForPlayer(operationID string, playerID string) error
-	CompleteMissionOperation(operationID string, playerID string) error
+	// Mission Operation management
+	GetActivePlayerMissionOperations(playerID string) ([]model.PlayerMissionOperation, error)
+	ActivatePlayerMissionOperation(playerID string, templateID string) (*model.PlayerMissionOperation, error)
+	CompletePlayerMissionOperation(playerID string, playerOpID string) error
 
 	// Player action tracking
 	TrackPlayerAction(playerID string, actionType string, actionValue string) error
 	CheckChoiceCompletion(playerID string, missionID string, choiceID string) (bool, error)
 	ActivateChoice(playerID string, missionID string, choiceID string) error
+
+	// Initialization
+	LoadCampaigns(dirPath string) error
 }
 
 // MissionCompleteResult contains the results of completing a mission
@@ -218,6 +224,25 @@ func (s *campaignService) StartCampaign(playerID string, campaignID string) (*mo
 		s.logger.Error().Err(err).Msg("Failed to add campaign start notification")
 	}
 
+	// Get the campaign for notification and SSE
+	campaign, err = s.campaignRepo.GetCampaignByID(campaignID)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("Failed to get campaign for notification")
+	}
+
+	// Send SSE update for campaign start
+	if campaign != nil {
+		data := map[string]interface{}{
+			"campaign": map[string]interface{}{
+				"id":        campaignID,
+				"title":     campaign.Title,
+				"progress":  progress,
+				"startedAt": progress.CreatedAt.Format(time.RFC3339),
+			},
+		}
+		s.SendCampaignUpdate(playerID, "campaign_started", data)
+	}
+
 	return progress, nil
 }
 
@@ -283,14 +308,17 @@ func (s *campaignService) StartMission(playerID string, missionID string) (*mode
 	}
 
 	// Update campaign progress with current mission
-	campaignProgress, err := s.campaignRepo.GetPlayerCampaignProgress(playerID, mission.ChapterID)
-	if err == nil && campaignProgress != nil {
-		campaignProgress.CurrentMissionID = missionID
-		campaignProgress.LastUpdated = now
-		campaignProgress.UpdatedAt = now
+	campaign, err := s.getCampaignForMission(missionID)
+	if err == nil && campaign != nil {
+		campaignProgress, err := s.campaignRepo.GetPlayerCampaignProgress(playerID, campaign.ID)
+		if err == nil && campaignProgress != nil {
+			campaignProgress.CurrentMissionID = missionID
+			campaignProgress.LastUpdated = now
+			campaignProgress.UpdatedAt = now
 
-		if err := s.campaignRepo.SavePlayerCampaignProgress(campaignProgress); err != nil {
-			s.logger.Error().Err(err).Msg("Failed to update campaign progress with current mission")
+			if err := s.campaignRepo.SavePlayerCampaignProgress(campaignProgress); err != nil {
+				s.logger.Error().Err(err).Msg("Failed to update campaign progress with current mission")
+			}
 		}
 	}
 
@@ -306,11 +334,22 @@ func (s *campaignService) StartMission(playerID string, missionID string) (*mode
 		s.logger.Error().Err(err).Msg("Failed to add mission start notification")
 	}
 
+	// Get the mission for notification and SSE
+	mission, err = s.campaignRepo.GetMissionByID(missionID)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("Failed to get mission for notification")
+	}
+
+	// Send SSE update for mission start
+	if mission != nil {
+		s.SendMissionUpdate(playerID, mission, progress)
+	}
+
 	return progress, nil
 }
 
 // CompleteMission completes a mission for a player
-func (s *campaignService) CompleteMission(playerID string, missionID string, choiceID string) (*MissionCompleteResult, error) {
+func (s *campaignService) CompleteMission(playerID string, missionID string, choiceID string) (*model.MissionCompleteResult, error) {
 	// Check if player exists
 	player, err := s.playerRepo.GetPlayerByID(playerID)
 	if err != nil {
@@ -458,6 +497,13 @@ func (s *campaignService) CompleteMission(playerID string, missionID string, cho
 		return nil, errors.New("error saving mission progress")
 	}
 
+	// Get the mission for SSE updates
+	mission, err = s.campaignRepo.GetMissionByID(missionID)
+	if err == nil {
+		// Send mission completed SSE update
+		s.SendMissionUpdate(playerID, mission, progress)
+	}
+
 	// If there's a next mission, unlock it and update campaign progress
 	var nextMission *model.Mission
 	if nextMissionID != "" {
@@ -483,21 +529,31 @@ func (s *campaignService) CompleteMission(playerID string, missionID string, cho
 			}
 
 			// Update campaign progress
-			campaignProgress, err := s.campaignRepo.GetPlayerCampaignProgress(playerID, mission.ChapterID)
-			if err == nil && campaignProgress != nil {
-				// Check if we need to change chapter
-				if nextMission.ChapterID != mission.ChapterID {
-					campaignProgress.CurrentChapterID = nextMission.ChapterID
-				}
+			campaign, err := s.getCampaignForMission(missionID)
+			if err == nil && campaign != nil {
+				campaignProgress, err := s.campaignRepo.GetPlayerCampaignProgress(playerID, campaign.ID)
+				if err == nil && campaignProgress != nil {
+					// Check if we need to change chapter
+					if nextMission.ChapterID != mission.ChapterID {
+						campaignProgress.CurrentChapterID = nextMission.ChapterID
+					}
 
-				campaignProgress.CurrentMissionID = nextMissionID
-				campaignProgress.LastUpdated = now
-				campaignProgress.UpdatedAt = now
+					campaignProgress.CurrentMissionID = nextMissionID
+					campaignProgress.LastUpdated = now
+					campaignProgress.UpdatedAt = now
 
-				if err := s.campaignRepo.SavePlayerCampaignProgress(campaignProgress); err != nil {
-					s.logger.Error().Err(err).Msg("Failed to update campaign progress")
+					if err := s.campaignRepo.SavePlayerCampaignProgress(campaignProgress); err != nil {
+						s.logger.Error().Err(err).Msg("Failed to update campaign progress")
+					}
 				}
 			}
+
+			// If there's a next mission, also send SSE for that
+			nextProgress, err = s.campaignRepo.GetPlayerMissionProgress(playerID, nextMission.ID)
+			if err == nil && nextProgress != nil {
+				s.SendMissionUpdate(playerID, nextMission, nextProgress)
+			}
+
 		}
 	} else {
 		// No next mission - check if we've completed the chapter
@@ -519,11 +575,11 @@ func (s *campaignService) CompleteMission(playerID string, missionID string, cho
 
 			if allCompleted {
 				// Chapter completed
-				campaignProgress, err := s.campaignRepo.GetPlayerCampaignProgress(playerID, mission.ChapterID)
-				if err == nil && campaignProgress != nil {
-					// Check if there are more chapters
-					campaign, err := s.campaignRepo.GetCampaignByID(campaignProgress.CampaignID)
-					if err == nil {
+				campaign, err := s.getCampaignForMission(missionID)
+				if err == nil && campaign != nil {
+					campaignProgress, err := s.campaignRepo.GetPlayerCampaignProgress(playerID, campaign.ID)
+					if err == nil && campaignProgress != nil {
+						// Check if there are more chapters
 						// Find next chapter
 						var nextChapter *model.Chapter
 						for i, ch := range campaign.Chapters {
@@ -589,6 +645,15 @@ func (s *campaignService) CompleteMission(playerID string, missionID string, cho
 							if err := s.playerRepo.AddNotification(notification); err != nil {
 								s.logger.Error().Err(err).Msg("Failed to add campaign completion notification")
 							}
+
+							// This is where we need to add the SSE campaign completion notification
+							campaignData := map[string]interface{}{
+								"campaignID":  campaign.ID,
+								"title":       campaign.Title,
+								"isCompleted": true,
+								"completedAt": now.Format(time.RFC3339),
+							}
+							s.SendCampaignUpdate(playerID, "campaign_completed", campaignData)
 						}
 					}
 				}
@@ -619,7 +684,7 @@ func (s *campaignService) CompleteMission(playerID string, missionID string, cho
 	}
 
 	// Return the result
-	return &MissionCompleteResult{
+	return &model.MissionCompleteResult{
 		Success:     true,
 		Rewards:     rewards,
 		NextMission: nextMission,
@@ -646,178 +711,131 @@ func (s *campaignService) CheckMissionRequirements(playerID string, missionID st
 	return s.checkPlayerRequirements(player, mission.Requirements)
 }
 
-// POI Service Methods
-
-func (s *campaignService) GetActivePOIs(playerID string) ([]model.POI, error) {
+// GetActivePlayerPOIs retrieves all active POIs for a player
+func (s *campaignService) GetActivePlayerPOIs(playerID string) ([]model.PlayerPOI, error) {
 	return s.campaignRepo.GetActivePlayerPOIs(playerID)
 }
 
-func (s *campaignService) ActivatePOIForPlayer(poiID string, playerID string) error {
-	// First check if the POI exists
-	poi, err := s.campaignRepo.GetPOIByID(poiID)
-	if err != nil {
-		return err
-	}
-
-	// Make sure it's not already activated
-	if poi.IsActive && poi.PlayerID == playerID {
-		return errors.New("POI is already activated for this player")
-	}
-
-	// Activate the POI
-	if err = s.campaignRepo.ActivatePOI(poiID, playerID); err != nil {
-		return err
-	}
-
-	// Add SSE event
-	if s.sseService != nil {
-		// Get the activated POI
-		poi, err := s.campaignRepo.GetPOIByID(poiID)
-		if err == nil {
-			s.sseService.SendEventToPlayer(playerID, "campaign_poi_updated", map[string]interface{}{
-				"poi":         poi,
-				"isActivated": true,
-				"timestamp":   time.Now().Format(time.RFC3339),
-			})
-		}
-	}
-
-	return nil
+// ActivatePlayerPOI activates a POI for a player
+func (s *campaignService) ActivatePlayerPOI(playerID string, templateID string) (*model.PlayerPOI, error) {
+	return s.campaignRepo.ActivatePlayerPOI(playerID, templateID)
 }
 
-func (s *campaignService) CompletePOI(poiID string, playerID string) error {
-	// First check if the POI exists and is active for this player
-	poi, err := s.campaignRepo.GetPOIByID(poiID)
+// CompletePlayerPOI marks a POI as completed
+func (s *campaignService) CompletePlayerPOI(playerID string, playerPOIID string) error {
+	// Get the POI
+	playerPOI, err := s.campaignRepo.GetPlayerPOI(playerPOIID)
 	if err != nil {
 		return err
 	}
 
-	if !poi.IsActive || poi.PlayerID != playerID {
-		return errors.New("POI is not active for this player")
+	// Check if the POI belongs to the player
+	if playerPOI.PlayerID != playerID {
+		return errors.New("POI not owned by player")
 	}
 
-	if poi.IsCompleted {
+	// Check if POI is active
+	if !playerPOI.IsActive {
+		return errors.New("POI is not active")
+	}
+
+	// Check if POI is already completed
+	if playerPOI.IsCompleted {
 		return errors.New("POI is already completed")
 	}
 
-	// Mark the POI as completed
-	if err := s.campaignRepo.CompletePOI(poiID, playerID); err != nil {
+	// Mark as completed
+	if err := s.campaignRepo.CompletePlayerPOI(playerID, playerPOIID); err != nil {
 		return err
 	}
 
-	// Get the mission and choice this POI is related to
-	mission, err := s.campaignRepo.GetMissionByID(poi.MissionID)
+	// Get the updated POI after completing
+	updatedPOI, err := s.campaignRepo.GetPlayerPOI(playerPOIID)
 	if err != nil {
 		return err
 	}
 
-	// Check if this POI completion contributes to a choice completion
-	if poi.ChoiceID != "" {
-		s.CheckChoiceCompletion(playerID, mission.ID, poi.ChoiceID)
-	}
+	// Send SSE update for POI completion
+	s.SendPOICompletedUpdate(playerID, updatedPOI)
 
-	// Add SSE event
-	if s.sseService != nil {
-		// Get the updated POI
-		poi, err := s.campaignRepo.GetPOIByID(poiID)
-		if err == nil {
-			s.sseService.SendEventToPlayer(playerID, "campaign_poi_updated", map[string]interface{}{
-				"poi":         poi,
-				"isCompleted": true,
-				"timestamp":   time.Now().Format(time.RFC3339),
-			})
+	// Check if this POI completion contributes to a choice completion
+	if playerPOI.ChoiceID != "" {
+		completed, err := s.CheckChoiceCompletion(playerID, playerPOI.MissionID, playerPOI.ChoiceID)
+		if err != nil {
+			s.logger.Error().Err(err).Msg("Failed to check choice completion")
+		} else if completed {
+			// If choice completed, mission has been auto-completed via the choice
+			// This will already have sent appropriate SSE notifications
+			s.logger.Info().Str("choiceID", playerPOI.ChoiceID).Msg("Choice completed through POI completion")
 		}
 	}
 
 	return nil
 }
 
-// Mission Operation Service Methods
-func (s *campaignService) GetActiveMissionOperations(playerID string) ([]model.MissionOperation, error) {
+// GetActivePlayerMissionOperations retrieves all active mission operations for a player
+func (s *campaignService) GetActivePlayerMissionOperations(playerID string) ([]model.PlayerMissionOperation, error) {
 	return s.campaignRepo.GetActivePlayerMissionOperations(playerID)
 }
 
-func (s *campaignService) ActivateMissionOperationForPlayer(operationID string, playerID string) error {
-	// First check if the operation exists
-	operation, err := s.campaignRepo.GetMissionOperationByID(operationID)
-	if err != nil {
-		return err
-	}
-
-	// Make sure it's not already activated
-	if operation.IsActive && operation.PlayerID == playerID {
-		return errors.New("operation is already activated for this player")
-	}
-
-	// Activate the operation
-	if err = s.campaignRepo.ActivateMissionOperation(operationID, playerID); err != nil {
-		return nil
-	}
-
-	// Add SSE event
-	if s.sseService != nil {
-		// Get the activated operation
-		operation, err := s.campaignRepo.GetMissionOperationByID(operationID)
-		if err == nil {
-			s.sseService.SendEventToPlayer(playerID, "campaign_operation_updated", map[string]interface{}{
-				"operation":   operation,
-				"isActivated": true,
-				"timestamp":   time.Now().Format(time.RFC3339),
-			})
-		}
-	}
-
-	return nil
+// ActivatePlayerMissionOperation activates a mission operation for a player
+func (s *campaignService) ActivatePlayerMissionOperation(playerID string, templateID string) (*model.PlayerMissionOperation, error) {
+	return s.campaignRepo.ActivatePlayerMissionOperation(playerID, templateID)
 }
 
-func (s *campaignService) CompleteMissionOperation(operationID string, playerID string) error {
-	// First check if the operation exists and is active for this player
-	operation, err := s.campaignRepo.GetMissionOperationByID(operationID)
+// CompletePlayerMissionOperation marks a mission operation as completed
+func (s *campaignService) CompletePlayerMissionOperation(playerID string, playerOpID string) error {
+	// Get the mission operation
+	playerOp, err := s.campaignRepo.GetPlayerMissionOperation(playerOpID)
 	if err != nil {
 		return err
 	}
 
-	if !operation.IsActive || operation.PlayerID != playerID {
-		return errors.New("operation is not active for this player")
+	// Check if the operation belongs to the player
+	if playerOp.PlayerID != playerID {
+		return errors.New("operation not owned by player")
 	}
 
-	if operation.IsCompleted {
+	// Check if operation is active
+	if !playerOp.IsActive {
+		return errors.New("operation is not active")
+	}
+
+	// Check if operation is already completed
+	if playerOp.IsCompleted {
 		return errors.New("operation is already completed")
 	}
 
-	// Mark the operation as completed
-	if err := s.campaignRepo.CompleteMissionOperation(operationID, playerID); err != nil {
+	// Mark as completed
+	if err := s.campaignRepo.CompletePlayerMissionOperation(playerID, playerOpID); err != nil {
 		return err
 	}
 
-	// Get the mission and choice this operation is related to
-	mission, err := s.campaignRepo.GetMissionByID(operation.MissionID)
+	// Get the updated operation after completing
+	updatedOp, err := s.campaignRepo.GetPlayerMissionOperation(playerOpID)
 	if err != nil {
 		return err
 	}
 
-	// Check if this operation completion contributes to a choice completion
-	if operation.ChoiceID != "" {
-		s.CheckChoiceCompletion(playerID, mission.ID, operation.ChoiceID)
-	}
+	// Send SSE update for operation completion
+	s.SendOperationCompletedUpdate(playerID, updatedOp)
 
-	// Add SSE event
-	if s.sseService != nil {
-		// Get the updated operation
-		operation, err := s.campaignRepo.GetMissionOperationByID(operationID)
-		if err == nil {
-			s.sseService.SendEventToPlayer(playerID, "campaign_operation_updated", map[string]interface{}{
-				"operation":   operation,
-				"isCompleted": true,
-				"timestamp":   time.Now().Format(time.RFC3339),
-			})
+	// Check if this operation completion contributes to a choice completion
+	if playerOp.ChoiceID != "" {
+		completed, err := s.CheckChoiceCompletion(playerID, playerOp.MissionID, playerOp.ChoiceID)
+		if err != nil {
+			s.logger.Error().Err(err).Msg("Failed to check choice completion")
+		} else if completed {
+			// If choice completed, mission has been auto-completed via the choice
+			// This will already have sent appropriate SSE notifications
+			s.logger.Info().Str("choiceID", playerOp.ChoiceID).Msg("Choice completed through operation completion")
 		}
 	}
 
 	return nil
 }
 
-// Player Action Tracking Service Methods
+// TrackPlayerAction processes player actions for mission progress
 func (s *campaignService) TrackPlayerAction(playerID string, actionType string, actionValue string) error {
 	// Get active mission progress for the player
 	var activeProgress []model.PlayerMissionProgress
@@ -831,17 +849,10 @@ func (s *campaignService) TrackPlayerAction(playerID string, actionType string, 
 	for _, progress := range activeProgress {
 		// If there's a current active choice, check if this action contributes to it
 		if progress.CurrentActiveChoice != "" {
-			// Get the choice
-			choice, err := s.GetMissionChoiceByID(progress.CurrentActiveChoice)
+			// Get player conditions for this choice
+			conditions, err := s.campaignRepo.GetPlayerCompletionConditions(playerID, progress.CurrentActiveChoice)
 			if err != nil {
-				s.logger.Error().Err(err).Msg("Failed to get active choice")
-				continue
-			}
-
-			// Get the conditions for this choice
-			conditions, err := s.campaignRepo.GetPlayerCompletionConditions(playerID, choice.ID)
-			if err != nil {
-				s.logger.Error().Err(err).Msg("Failed to get choice conditions")
+				s.logger.Error().Err(err).Msg("Failed to get player choice conditions")
 				continue
 			}
 
@@ -851,60 +862,72 @@ func (s *campaignService) TrackPlayerAction(playerID string, actionType string, 
 					condition.Type == actionType &&
 					condition.RequiredValue == actionValue {
 
+					// Check if we need sequential order
+					mission, err := s.campaignRepo.GetMissionByID(progress.MissionID)
+					if err != nil {
+						s.logger.Error().Err(err).Msg("Failed to get mission")
+						continue
+					}
+
+					// Find the choice
+					var choice *model.MissionChoice
+					for _, c := range mission.Choices {
+						if c.ID == progress.CurrentActiveChoice {
+							choice = &c
+							break
+						}
+					}
+
+					if choice == nil {
+						s.logger.Error().Msg("Failed to find choice")
+						continue
+					}
+
 					// If sequential order is required, check if this is the next condition
 					if choice.SequentialOrder {
 						// Get all conditions ordered by index
-						allConditions, err := s.campaignRepo.GetPlayerCompletionConditions(playerID, choice.ID)
-						if err != nil {
-							s.logger.Error().Err(err).Msg("Failed to get all choice conditions")
-							continue
-						}
-
+						allConditions := conditions
 						// Check if any earlier condition is not completed
+						canComplete := true
 						for _, c := range allConditions {
 							if c.OrderIndex < condition.OrderIndex && !c.IsCompleted {
 								// Earlier condition not completed, can't complete this one yet
-								continue
+								canComplete = false
+								break
 							}
+						}
+
+						if !canComplete {
+							continue
 						}
 					}
 
 					// Mark the condition as completed
-					if err := s.campaignRepo.CompleteCondition(condition.ID, playerID); err != nil {
+					if err := s.campaignRepo.CompletePlayerCompletionCondition(playerID, condition.ID); err != nil {
 						s.logger.Error().Err(err).Msg("Failed to complete condition")
 						continue
 					}
 
-					// Send SSE event for condition completion
-					if s.sseService != nil {
-						eventData := map[string]interface{}{
-							"actionType":         actionType,
-							"actionValue":        actionValue,
-							"choiceId":           choice.ID,
-							"conditionCompleted": true,
-							"missionId":          progress.MissionID,
-							"timestamp":          time.Now().Format(time.RFC3339),
-						}
-						s.sseService.SendEventToPlayer(playerID, "campaign_action_tracked", eventData)
+					// Get updated condition
+					updatedCondition, err := s.campaignRepo.GetPlayerCompletionCondition(condition.ID)
+					if err != nil {
+						s.logger.Error().Err(err).Msg("Failed to get updated condition")
+					} else {
+						// Send SSE update for condition completion
+						s.SendConditionCompletedUpdate(playerID, updatedCondition.ID)
 					}
 
 					// Check if all conditions are now completed for this choice
 					allCompleted, _ := s.CheckChoiceCompletion(playerID, progress.MissionID, choice.ID)
-					if allCompleted && s.sseService != nil {
-						// Send choice completion event
-						eventData := map[string]interface{}{
-							"missionId":   progress.MissionID,
-							"choiceId":    choice.ID,
-							"isCompleted": true,
-							"timestamp":   time.Now().Format(time.RFC3339),
-						}
-						s.sseService.SendEventToPlayer(playerID, "campaign_choice_updated", eventData)
+					if allCompleted {
+						// This might have completed the mission via the choice
+						s.logger.Info().Str("missionID", progress.MissionID).Str("choiceID", choice.ID).Msg("Choice conditions completed")
 					}
 				}
 			}
 		} else {
 			// No active choice, see if this action could activate any choice
-			mission, err := s.GetMissionByID(progress.MissionID)
+			mission, err := s.campaignRepo.GetMissionByID(progress.MissionID)
 			if err != nil {
 				s.logger.Error().Err(err).Msg("Failed to get mission")
 				continue
@@ -912,31 +935,22 @@ func (s *campaignService) TrackPlayerAction(playerID string, actionType string, 
 
 			// Check each choice in the mission
 			for _, choice := range mission.Choices {
-				// Get conditions for this choice
-				conditions, err := s.campaignRepo.GetCompletionConditions(choice.ID)
+				// Get conditions templates for this choice
+				conditionTemplates, err := s.campaignRepo.GetConditionTemplatesByChoice(choice.ID)
 				if err != nil {
-					s.logger.Error().Err(err).Msg("Failed to get choice conditions")
+					s.logger.Error().Err(err).Msg("Failed to get choice condition templates")
 					continue
 				}
 
 				// If the first condition matches this action, activate the choice
-				for _, condition := range conditions {
+				for _, condition := range conditionTemplates {
 					if condition.OrderIndex == 0 &&
 						condition.Type == actionType &&
 						condition.RequiredValue == actionValue {
 
 						// Activate this choice for the player
-						s.ActivateChoice(playerID, mission.ID, choice.ID)
-
-						// Send SSE event for choice activation
-						if s.sseService != nil {
-							eventData := map[string]interface{}{
-								"missionId":   mission.ID,
-								"choiceId":    choice.ID,
-								"isActivated": true,
-								"timestamp":   time.Now().Format(time.RFC3339),
-							}
-							s.sseService.SendEventToPlayer(playerID, "campaign_choice_updated", eventData)
+						if err := s.ActivateChoice(playerID, mission.ID, choice.ID); err != nil {
+							s.logger.Error().Err(err).Msg("Failed to activate choice")
 						}
 						break
 					}
@@ -948,6 +962,7 @@ func (s *campaignService) TrackPlayerAction(playerID string, actionType string, 
 	return nil
 }
 
+// CheckChoiceCompletion checks if all conditions for a choice are completed
 func (s *campaignService) CheckChoiceCompletion(playerID string, missionID string, choiceID string) (bool, error) {
 	// Get the player's conditions for this choice
 	conditions, err := s.campaignRepo.GetPlayerCompletionConditions(playerID, choiceID)
@@ -965,45 +980,98 @@ func (s *campaignService) CheckChoiceCompletion(playerID string, missionID strin
 	}
 
 	// If all conditions are completed, complete the choice
-	if allCompleted {
+	if allCompleted && len(conditions) > 0 {
 		// Get mission progress
-		progress, err := s.GetPlayerMissionProgress(playerID, missionID)
+		progress, err := s.campaignRepo.GetPlayerMissionProgress(playerID, missionID)
 		if err != nil {
 			return false, err
+		}
+
+		if progress == nil {
+			return false, errors.New("mission progress not found")
 		}
 
 		// Update mission progress to use this choice
-		progress.ChoiceID = choiceID
-		progress.Status = "completed"
 		now := time.Now()
-		progress.CompletedAt = &now
 
-		if err := s.campaignRepo.SavePlayerMissionProgress(progress); err != nil {
-			return false, err
-		}
+		// Only complete the mission if it hasn't been completed already
+		if progress.Status != "completed" {
+			progress.ChoiceID = choiceID
+			progress.Status = "completed"
+			progress.CompletedAt = &now
+			progress.UpdatedAt = now
 
-		// Get the choice to find the next mission
-		choice, err := s.GetMissionChoiceByID(choiceID)
-		if err != nil {
-			return false, err
-		}
+			if err := s.campaignRepo.SavePlayerMissionProgress(progress); err != nil {
+				return false, err
+			}
 
-		// If there's a next mission, start it
-		if choice.NextMissionID != "" {
-			s.StartMission(playerID, choice.NextMissionID)
+			// Get the choice and mission to find the next mission
+			mission, err := s.campaignRepo.GetMissionByID(missionID)
+			if err != nil {
+				return false, err
+			}
+
+			// Send mission completion SSE update
+			s.SendMissionUpdate(playerID, mission, progress)
+
+			var choice *model.MissionChoice
+			for _, c := range mission.Choices {
+				if c.ID == choiceID {
+					choice = &c
+					break
+				}
+			}
+
+			if choice == nil {
+				return false, errors.New("choice not found")
+			}
+
+			// If there's a next mission, start it
+			if choice.NextMissionID != "" {
+				nextMissionProgress, err := s.StartMission(playerID, choice.NextMissionID)
+				if err != nil {
+					s.logger.Error().Err(err).Msg("Failed to start next mission")
+				} else {
+					// Get the next mission
+					nextMission, err := s.campaignRepo.GetMissionByID(choice.NextMissionID)
+					if err != nil {
+						s.logger.Error().Err(err).Msg("Failed to get next mission")
+					} else {
+						// Send SSE update for next mission
+						s.SendMissionUpdate(playerID, nextMission, nextMissionProgress)
+					}
+				}
+			}
+
+			// Add notification
+			notification := &model.Notification{
+				PlayerID:  playerID,
+				Message:   fmt.Sprintf("You've successfully completed the objectives for mission '%s'.", mission.Title),
+				Type:      util.NotificationTypeCampaign,
+				Timestamp: now,
+				Read:      false,
+			}
+			if err := s.playerRepo.AddNotification(notification); err != nil {
+				s.logger.Error().Err(err).Msg("Failed to add choice completion notification")
+			}
 		}
 
 		return true, nil
 	}
 
-	return false, nil
+	return allCompleted, nil
 }
 
+// ActivateChoice activates a choice for a player
 func (s *campaignService) ActivateChoice(playerID string, missionID string, choiceID string) error {
 	// Get the player's mission progress
-	progress, err := s.GetPlayerMissionProgress(playerID, missionID)
+	progress, err := s.campaignRepo.GetPlayerMissionProgress(playerID, missionID)
 	if err != nil {
 		return err
+	}
+
+	if progress == nil {
+		return errors.New("mission progress not found")
 	}
 
 	// Make sure the mission is in progress
@@ -1023,66 +1091,82 @@ func (s *campaignService) ActivateChoice(playerID string, missionID string, choi
 	}
 
 	// Create player-specific conditions from the choice conditions
-	conditions, err := s.campaignRepo.GetCompletionConditions(choiceID)
+	conditionTemplates, err := s.campaignRepo.GetConditionTemplatesByChoice(choiceID)
 	if err != nil {
 		return err
 	}
 
-	for _, condition := range conditions {
-		playerCondition := model.CompletionCondition{
-			ChoiceID:        choiceID,
-			Type:            condition.Type,
-			RequiredValue:   condition.RequiredValue,
-			AdditionalValue: condition.AdditionalValue,
-			OrderIndex:      condition.OrderIndex,
-			IsCompleted:     false,
+	for _, template := range conditionTemplates {
+		playerCondition := &model.PlayerCompletionCondition{
+			TemplateID:      template.ID,
 			PlayerID:        playerID,
+			ChoiceID:        choiceID,
+			Type:            template.Type,
+			RequiredValue:   template.RequiredValue,
+			AdditionalValue: template.AdditionalValue,
+			OrderIndex:      template.OrderIndex,
+			IsCompleted:     false,
 			CreatedAt:       time.Now(),
 			UpdatedAt:       time.Now(),
 		}
 
-		if err := s.campaignRepo.SaveCompletionCondition(&playerCondition); err != nil {
+		if err := s.campaignRepo.CreatePlayerCompletionCondition(playerCondition); err != nil {
 			return err
 		}
 	}
 
 	// Activate any POIs related to this choice
-	pois, err := s.campaignRepo.GetPOIsByChoice(choiceID)
+	poiTemplates, err := s.campaignRepo.GetPOITemplatesByChoice(choiceID)
 	if err != nil {
 		return err
 	}
 
-	for _, poi := range pois {
-		if err := s.campaignRepo.ActivatePOI(poi.ID, playerID); err != nil {
-			return err
+	for _, template := range poiTemplates {
+		playerPOI, err := s.campaignRepo.ActivatePlayerPOI(playerID, template.ID)
+		if err != nil {
+			s.logger.Error().Err(err).Msg("Failed to activate POI")
+			// Continue with other POIs even if one fails
+			continue
 		}
+
+		// Send SSE update for activated POI
+		s.SendPOIActivatedUpdate(playerID, playerPOI)
 	}
 
 	// Activate any mission operations related to this choice
-	operations, err := s.campaignRepo.GetMissionOperationsByChoice(choiceID)
+	operationTemplates, err := s.campaignRepo.GetOperationTemplatesByChoice(choiceID)
 	if err != nil {
 		return err
 	}
 
-	for _, operation := range operations {
-		if err := s.campaignRepo.ActivateMissionOperation(operation.ID, playerID); err != nil {
-			return err
+	for _, template := range operationTemplates {
+		playerOp, err := s.campaignRepo.ActivatePlayerMissionOperation(playerID, template.ID)
+		if err != nil {
+			s.logger.Error().Err(err).Msg("Failed to activate mission operation")
+			// Continue with other operations even if one fails
+			continue
 		}
+
+		// Send SSE update for activated operation
+		s.SendOperationActivatedUpdate(playerID, playerOp)
 	}
+
+	// Add notification for choice activation
+	notification := &model.Notification{
+		PlayerID:  playerID,
+		Message:   fmt.Sprintf("New objectives available for your current mission."),
+		Type:      util.NotificationTypeCampaign,
+		Timestamp: time.Now(),
+		Read:      false,
+	}
+	if err := s.playerRepo.AddNotification(notification); err != nil {
+		s.logger.Error().Err(err).Msg("Failed to add choice activation notification")
+	}
+
+	// Send SSE update for choice activation
+	s.SendChoiceActivatedUpdate(playerID, missionID, choiceID)
 
 	return nil
-}
-
-// Helper function to get a choice by ID
-func (s *campaignService) GetMissionChoiceByID(id string) (*model.MissionChoice, error) {
-	var choice model.MissionChoice
-	if err := s.campaignRepo.GetDB().Where("id = ?", id).First(&choice).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("choice not found")
-		}
-		return nil, err
-	}
-	return &choice, nil
 }
 
 // Helper function to check if a player meets requirements
@@ -1147,7 +1231,7 @@ func (s *campaignService) checkPlayerRequirements(player *model.Player, requirem
 	return len(failedRequirements) == 0, failedRequirements, nil
 }
 
-// Helper function to check if player meets mission requirements
+// Helper function to check if player meets requirements
 func (s *campaignService) playerMeetsRequirements(player *model.Player, requirements model.MissionRequirements) bool {
 	meets, _, _ := s.checkPlayerRequirements(player, requirements)
 	return meets
@@ -1221,6 +1305,29 @@ func (s *campaignService) unlockHotspot(playerID string, hotspotID string) error
 	return nil
 }
 
+// Helper function to get campaign for a mission
+func (s *campaignService) getCampaignForMission(missionID string) (*model.Campaign, error) {
+	// Get the mission to find its chapter
+	mission, err := s.campaignRepo.GetMissionByID(missionID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the chapter to find the campaign
+	chapter, err := s.campaignRepo.GetChapterByID(mission.ChapterID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the campaign
+	return s.campaignRepo.GetCampaignByID(chapter.CampaignID)
+}
+
+// LoadCampaigns loads campaigns from YAML files
+func (s *campaignService) LoadCampaigns(dirPath string) error {
+	return s.campaignRepo.LoadCampaignsFromYAML(dirPath)
+}
+
 // Helper function to get title rank
 func getTitleRank(title string) int {
 	titleRanks := map[string]int{
@@ -1247,8 +1354,3 @@ func getTitleRank(title string) int {
 
 // 	return playerRank >= requiredRank
 // }
-
-// LoadCampaigns loads campaigns from YAML files
-func (s *campaignService) LoadCampaigns(dirPath string) error {
-	return s.campaignRepo.LoadCampaignsFromYAML(dirPath)
-}

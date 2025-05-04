@@ -52,15 +52,22 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 		&model.MarketTransaction{},
 		&model.MarketPriceHistory{},
 		&model.TravelAttempt{},
+
+		// Campaign definition models
 		&model.Campaign{},
 		&model.Chapter{},
 		&model.Mission{},
 		&model.MissionChoice{},
+		&model.ConditionTemplate{},
+		&model.POITemplate{},
+		&model.OperationTemplate{},
+
+		// Player progress models
 		&model.PlayerCampaignProgress{},
 		&model.PlayerMissionProgress{},
-		&model.POI{},
-		&model.MissionOperation{},
-		&model.CompletionCondition{},
+		&model.PlayerPOI{},
+		&model.PlayerMissionOperation{},
+		&model.PlayerCompletionCondition{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)
@@ -91,7 +98,7 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 	territoryRepo := repository.NewTerritoryRepository(db)
 	operationsRepo := repository.NewOperationsRepository(db)
 	marketRepo := repository.NewMarketRepository(db)
-	campaignRepo := repository.NewCampaignRepository(db)
+	campaignRepo := repository.NewCampaignRepository(db, logger)
 
 	// Initialize services
 	playerService := service.NewPlayerService(playerRepo, *cfg.Game, logger)
