@@ -5,12 +5,13 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import BaseButton from '@/components/ui/BaseButton.vue';
 import { usePlayerStore } from '@/stores/modules/player';
+import { useTerritoryStore } from '@/stores/modules/territory';
 import { useTravelStore } from '@/stores/modules/travel';
 
 const router = useRouter();
 const route = useRoute();
 const playerStore = usePlayerStore();
-const territoryStore = useTravelStore();
+const territoryStore = useTerritoryStore();
 
 // Access the travel store
 const travelStore = useTravelStore();
@@ -75,6 +76,7 @@ function formatNumber(value: number): string {
 // Navigation menu items with region requirements
 const menuItems = computed(() => [
   { path: '/', name: 'Dashboard', icon: '📊', requiresRegion: false },
+  { path: '/campaigns', name: 'Campaign', icon: '📜', requiresRegion: true },
   { path: '/travel', name: 'Travel Agency', icon: '✈️', requiresRegion: false },
   { path: '/territory', name: 'Territory', icon: '🏙️', requiresRegion: true },
   { path: '/operations', name: 'Operations', icon: '🎯', requiresRegion: true },
@@ -214,9 +216,13 @@ function navigateTo(item: { path: string, requiresRegion: boolean }): void {
     <div class="sidebar-actions">
       <button class="action-btn collect-all" @click="collectAllPending"
         :disabled="pendingCollections <= 0 || isLoading">
-        <span class="icon">💼</span>
-        <span>Collect All</span>
-        <span class="amount">${{ formatNumber(pendingCollections) }}</span>
+        <div style="display: flex; flex-direction: column; gap: 8px; align-items: center;">
+          <div class="icon">💼</div>
+          <div>Collect All</div>
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <div>${{ formatNumber(pendingCollections) }}</div>
+          </div>
+        </div>
       </button>
     </div>
   </aside>

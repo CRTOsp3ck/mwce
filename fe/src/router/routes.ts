@@ -128,6 +128,33 @@ const routes: Array<RouteRecordRaw> = [
       requiresAuth: true
     },
   },
+  {
+    path: '/campaigns',
+    name: 'Campaigns',
+    component: () => import('@/views/CampaignsView.vue'),
+    meta: {
+      title: 'Campaigns - Criminal Empire',
+      requiresAuth: true
+    },
+  },
+  {
+    path: '/campaigns/:id',
+    name: 'CampaignDetail',
+    component: () => import('@/views/CampaignDetailView.vue'),
+    meta: {
+      title: 'Campaign - Criminal Empire',
+      requiresAuth: true
+    },
+  },
+  {
+    path: '/campaigns/missions/:id',
+    name: 'MissionDetail',
+    component: () => import('@/views/MissionDetailView.vue'),
+    meta: {
+      title: 'Mission - Criminal Empire',
+      requiresAuth: true
+    },
+  },
   // Catch-all route for 404
   {
     path: '/:pathMatch(.*)*',

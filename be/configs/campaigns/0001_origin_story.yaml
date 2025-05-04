@@ -1,0 +1,80 @@
+# configs/campaigns/origin_story.yaml
+
+id: "origin_story"
+title: "Rise to Power"
+description: "After betrayal leads to the downfall of your family, you must rebuild your criminal empire from scratch."
+image_url: "/images/campaigns/rise_to_power.jpg"
+initial_chapter: "ch_betrayal"
+required_level: 1
+
+chapters:
+  - id: "ch_betrayal"
+    title: "Betrayal"
+    description: "You barely escaped with your life after a rival family's attack. Now you must find allies and begin rebuilding."
+    image_url: "/images/chapters/betrayal.jpg"
+    order: 1
+
+    missions:
+      - id: "m_escape"
+        title: "Narrow Escape"
+        description: "Find a safe place to recover from the attack and plan your next move."
+        narrative: |
+          The night air is thick with gunpowder and blood as you stumble out of what was once your family's headquarters.
+          The Don Caruso family's betrayal was swift and merciless. Everyone you knew is gone - your father, brothers, even loyal capos who've been with the family for decades.
+          You need to find somewhere to hide and recover before Caruso's men track you down to finish the job.
+        image_url: "/images/missions/escape.jpg"
+        type: "operation"
+        order: 1
+        requirements:
+          money: 100
+        rewards:
+          money: 500
+          respect: 5
+          crew: 1
+
+        choices:
+          - id: "choice_old_friend"      # Added choice ID
+            text: "Seek shelter with an old family friend"
+            next_mission: "m_old_friend"
+            requirements: {}
+            rewards:
+              influence: 2
+
+          - id: "choice_warehouse"       # Added choice ID
+            text: "Hide in an abandoned warehouse on the docks"
+            next_mission: "m_warehouse"
+            requirements: {}
+            rewards:
+              weapons: 1
+
+      - id: "m_old_friend"
+        title: "Old Debts"
+        description: "Your father's old friend Mario owes your family a favor. Time to collect."
+        narrative: |
+          Mario Rossi owns a small restaurant in the North End. He's been a friend of your family for decades, and your father helped him start his business.
+          He might be reluctant to get involved, but he's honorable enough to repay his debts. You need manpower, and Mario knows everyone in the neighborhood.
+        image_url: "/images/missions/old_friend.jpg"
+        type: "territory"
+        order: 2
+        requirements:
+          money: 200
+        rewards:
+          crew: 3
+          money: 1000
+          respect: 10
+
+        choices:
+          - id: "choice_gun_shop"        # Added choice ID
+            text: "Ask Mario to introduce you to his nephew who runs a gun shop"
+            next_mission: "m_guns"
+            requirements: {}
+            rewards:
+              weapons: 2
+
+          - id: "choice_restaurant"      # Added choice ID
+            text: "Convince Mario to let you use his restaurant as a front"
+            next_mission: "m_restaurant"
+            requirements:
+              respect: 15
+            rewards:
+              unlock_hotspot_id: "hs_marios_restaurant"

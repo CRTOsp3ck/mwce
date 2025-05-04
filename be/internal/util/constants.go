@@ -70,7 +70,8 @@ const (
 	NotificationTypeCollection = "collection"
 	NotificationTypeHeat       = "heat"
 	NotificationTypeSystem     = "system"
-	NotificationTypeTravel     = "travel" // New notification type for travel
+	NotificationTypeTravel     = "travel"
+	NotificationTypeCampaign   = "campaign"
 )
 
 // Game message types

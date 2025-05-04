@@ -20,7 +20,8 @@ basic_operations:
       crew_loss: 1
       weapons_loss: 1
       heat_increase: 10
-    duration: 1800  # 30 minutes
+    # duration: 1800  # 30 minutes
+    duration: 5
     success_rate: 70
 
   - name: "Highway Interception"
@@ -39,7 +40,8 @@ basic_operations:
       crew_loss: 2
       weapons_loss: 2
       heat_increase: 15
-    duration: 2700  # 45 minutes
+    # duration: 2700  # 45 minutes
+    duration: 5
     success_rate: 65
 
   - name: "Local Smuggling"
@@ -58,7 +60,8 @@ basic_operations:
       weapons_loss: 1
       vehicles_loss: 1
       heat_increase: 12
-    duration: 2400  # 40 minutes
+    # duration: 2400  # 40 minutes
+    duration: 5
     success_rate: 75
 
   - name: "Cross-Border Run"
@@ -77,7 +80,8 @@ basic_operations:
       weapons_loss: 2
       vehicles_loss: 1
       heat_increase: 20
-    duration: 3600  # 60 minutes
+    # duration: 3600  # 60 minutes
+    duration: 5
     success_rate: 65
 
   - name: "Street Corner Takeover"
@@ -96,7 +100,8 @@ basic_operations:
       crew_loss: 2
       weapons_loss: 2
       heat_increase: 15
-    duration: 2700  # 45 minutes
+    # duration: 2700  # 45 minutes
+    duration: 5
     success_rate: 70
 
   - name: "Corrupt the Beat Cop"
@@ -113,7 +118,8 @@ basic_operations:
     risks:
       money_loss: 2000
       heat_increase: 25
-    duration: 1800  # 30 minutes
+    # duration: 1800  # 30 minutes
+    duration: 5
     success_rate: 85
 
   - name: "Traffic Court Fix"
@@ -130,7 +136,8 @@ basic_operations:
     risks:
       money_loss: 3000
       heat_increase: 30
-    duration: 2400  # 40 minutes
+    # duration: 2400  # 40 minutes
+    duration: 5
     success_rate: 80
 
   - name: "Rival Surveillance"
@@ -148,7 +155,8 @@ basic_operations:
       crew_loss: 1
       weapons_loss: 1
       heat_increase: 10
-    duration: 3600  # 60 minutes
+    # duration: 3600  # 60 minutes
+    duration: 5
     success_rate: 80
 
   - name: "Police Scanner Network"
@@ -166,7 +174,8 @@ basic_operations:
       money_loss: 2000
       vehicles_loss: 1
       heat_increase: 5
-    duration: 4800  # 80 minutes
+    # duration: 4800  # 80 minutes
+    duration: 5
     success_rate: 85
 
   - name: "Street Recruitment"
@@ -183,7 +192,8 @@ basic_operations:
     risks:
       weapons_loss: 1
       heat_increase: 8
-    duration: 2400  # 40 minutes
+    # duration: 2400  # 40 minutes
+    duration: 5
     success_rate: 90
 
   - name: "Prison Break"
@@ -203,7 +213,8 @@ basic_operations:
       weapons_loss: 2
       vehicles_loss: 1
       heat_increase: 30
-    duration: 5400  # 90 minutes
+    # duration: 5400  # 90 minutes
+    duration: 5
     success_rate: 60
 
   - name: "Warehouse Heist"
@@ -221,7 +232,8 @@ basic_operations:
       crew_loss: 2
       weapons_loss: 3
       heat_increase: 25
-    duration: 3600  # 60 minutes
+    # duration: 3600  # 60 minutes
+    duration: 5
     success_rate: 65
 
   - name: "Protection Racket"
@@ -238,7 +250,8 @@ basic_operations:
     risks:
       crew_loss: 1
       heat_increase: 15
-    duration: 2700  # 45 minutes
+    # duration: 2700  # 45 minutes
+    duration: 5
     success_rate: 75
 
   - name: "Street Racing Circuit"
@@ -256,7 +269,8 @@ basic_operations:
     risks:
       vehicles_loss: 2
       heat_increase: 18
-    duration: 3600  # 60 minutes
+    # duration: 3600  # 60 minutes
+    duration: 5
     success_rate: 70
 
 # Pool of special operations
@@ -283,7 +297,8 @@ special_operations:
       weapons_loss: 4
       vehicles_loss: 2
       heat_increase: 40
-    duration: 7200  # 120 minutes
+    # duration: 7200  # 120 minutes
+    duration: 5
     success_rate: 55
 
   - name: "Casino Vault Heist"
@@ -308,7 +323,8 @@ special_operations:
       weapons_loss: 5
       vehicles_loss: 2
       heat_increase: 50
-    duration: 10800  # 180 minutes
+    # duration: 10800  # 180 minutes
+    duration: 5
     success_rate: 45
 
   - name: "International Smuggling Ring"
@@ -333,7 +349,8 @@ special_operations:
       weapons_loss: 2
       vehicles_loss: 2
       heat_increase: 35
-    duration: 14400  # 240 minutes
+    # duration: 14400  # 240 minutes
+    duration: 5
     success_rate: 60
 
   - name: "Drug Lab Takeover"
@@ -358,7 +375,8 @@ special_operations:
       weapons_loss: 5
       vehicles_loss: 1
       heat_increase: 45
-    duration: 9000  # 150 minutes
+    # duration: 9000  # 150 minutes
+    duration: 5
     success_rate: 55
 
   - name: "Corrupt the Police Captain"
@@ -382,7 +400,8 @@ special_operations:
       money_loss: 15000
       crew_loss: 2
       heat_increase: 60
-    duration: 7200  # 120 minutes
+    # duration: 7200  # 120 minutes
+    duration: 5
     success_rate: 70
 
   - name: "Judge Blackmail Operation"
@@ -406,7 +425,8 @@ special_operations:
       crew_loss: 3
       money_loss: 10000
       heat_increase: 55
-    duration: 12600  # 210 minutes
+    # duration: 12600  # 210 minutes
+    duration: 5
     success_rate: 65
 
   - name: "Rival Family Infiltration"
@@ -428,7 +448,8 @@ special_operations:
     risks:
       crew_loss: 5
       heat_increase: 30
-    duration: 18000  # 300 minutes
+    # duration: 18000  # 300 minutes
+    duration: 5
     success_rate: 60
 
   - name: "Prison Gang Alliance"
@@ -451,5 +472,6 @@ special_operations:
     risks:
       money_loss: 12000
       heat_increase: 25
-    duration: 8600  # 143 minutes
+    # duration: 8600  # 143 minutes
+    duration: 5
     success_rate: 75

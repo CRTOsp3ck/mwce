@@ -51,7 +51,13 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 		&model.MarketListing{},
 		&model.MarketTransaction{},
 		&model.MarketPriceHistory{},
-		&model.TravelAttempt{}, // Add travel attempt to migrations
+		&model.TravelAttempt{},
+		&model.Campaign{},
+		&model.Chapter{},
+		&model.Mission{},
+		&model.MissionChoice{},
+		&model.PlayerCampaignProgress{},
+		&model.PlayerMissionProgress{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)
@@ -82,6 +88,7 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 	territoryRepo := repository.NewTerritoryRepository(db)
 	operationsRepo := repository.NewOperationsRepository(db)
 	marketRepo := repository.NewMarketRepository(db)
+	campaignRepo := repository.NewCampaignRepository(db)
 
 	// Initialize services
 	playerService := service.NewPlayerService(playerRepo, *cfg.Game, logger)
@@ -90,7 +97,11 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 	territoryService := service.NewTerritoryService(territoryRepo, playerRepo, sseService, *cfg.Game, logger)
 	operationsService := service.NewOperationsService(operationsRepo, playerRepo, playerService, *cfg.Game, logger)
 	marketService := service.NewMarketService(marketRepo, playerRepo, playerService, cfg.Game, logger)
-	travelService := service.NewTravelService(playerRepo, territoryRepo, *cfg.Game, logger) // New travel service
+	travelService := service.NewTravelService(playerRepo, territoryRepo, *cfg.Game, logger)
+	campaignService := service.NewCampaignService(campaignRepo, playerRepo, playerService, operationsService, territoryService, logger)
+	if err := campaignService.LoadCampaigns("../../configs/campaigns"); err != nil {
+		logger.Warn().Err(err).Msg("Failed to load campaigns data")
+	}
 
 	// Start scheduled jobs
 	operationsService.StartPeriodicOperationsRefresh()
@@ -104,7 +115,8 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 	territoryController := controller.NewTerritoryController(territoryService, logger)
 	operationsController := controller.NewOperationsController(operationsService, logger)
 	marketController := controller.NewMarketController(marketService, logger)
-	travelController := controller.NewTravelController(travelService, logger) // New travel controller
+	travelController := controller.NewTravelController(travelService, logger)
+	campaignController := controller.NewCampaignController(campaignService, logger)
 
 	// Auth middleware
 	authMiddleware := appMiddleware.NewAuthMiddleware(authService)
@@ -180,6 +192,17 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 				r.Get("/history/{type}", marketController.GetResourcePriceHistory)
 				r.Post("/buy", marketController.BuyResource)
 				r.Post("/sell", marketController.SellResource)
+			})
+
+			// Campaign routes
+			r.Route("/campaigns", func(r chi.Router) {
+				r.Get("/", campaignController.GetCampaigns)
+				r.Get("/{id}", campaignController.GetCampaignDetail)
+				r.Post("/{id}/start", campaignController.StartCampaign)
+				r.Get("/chapters/{id}", campaignController.GetChapter)
+				r.Get("/missions/{id}", campaignController.GetMission)
+				r.Post("/missions/{id}/start", campaignController.StartMission)
+				r.Post("/missions/{id}/complete", campaignController.CompleteMission)
 			})
 		})
 	})
