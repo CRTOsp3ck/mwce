@@ -11,7 +11,7 @@ import (
 
 // Campaign represents a storyline with multiple chapters
 type Campaign struct {
-	ID               string    `json:"id" gorm:"primary_key"` // Changed from type:uuid to allow string IDs
+	ID               string    `json:"id" gorm:"primary_key"`
 	Title            string    `json:"title" gorm:"not null"`
 	Description      string    `json:"description" gorm:"not null"`
 	ImageURL         string    `json:"imageUrl,omitempty"`
@@ -33,8 +33,8 @@ func (c *Campaign) BeforeCreate(tx *gorm.DB) error {
 
 // Chapter represents a section of a campaign containing multiple missions
 type Chapter struct {
-	ID          string    `json:"id" gorm:"primary_key"`                              // Changed from type:uuid
-	CampaignID  string    `json:"campaignId" gorm:"not null;references:campaigns.id"` // Changed from type:uuid
+	ID          string    `json:"id" gorm:"primary_key"`
+	CampaignID  string    `json:"campaignId" gorm:"not null;references:campaigns.id"`
 	Title       string    `json:"title" gorm:"not null"`
 	Description string    `json:"description" gorm:"not null"`
 	ImageURL    string    `json:"imageUrl,omitempty"`
@@ -55,8 +55,8 @@ func (c *Chapter) BeforeCreate(tx *gorm.DB) error {
 
 // Mission represents an individual task within a chapter
 type Mission struct {
-	ID           string              `json:"id" gorm:"primary_key"`                            // Changed from type:uuid
-	ChapterID    string              `json:"chapterId" gorm:"not null;references:chapters.id"` // Changed from type:uuid
+	ID           string              `json:"id" gorm:"primary_key"`
+	ChapterID    string              `json:"chapterId" gorm:"not null;references:chapters.id"`
 	Title        string              `json:"title" gorm:"not null"`
 	Description  string              `json:"description" gorm:"not null"`
 	Narrative    string              `json:"narrative" gorm:"type:text"` // Story text for the mission
@@ -112,14 +112,18 @@ type MissionRewards struct {
 
 // MissionChoice represents a decision point in a mission
 type MissionChoice struct {
-	ID            string              `json:"id" gorm:"primary_key"`                            // Changed from type:uuid
-	MissionID     string              `json:"missionId" gorm:"not null;references:missions.id"` // Changed from type:uuid
-	Text          string              `json:"text" gorm:"not null"`                             // Choice text shown to player
-	NextMissionID string              `json:"nextMissionId"`                                    // Changed from type:uuid
-	Requirements  MissionRequirements `json:"requirements" gorm:"embedded"`                     // Requirements to select this choice
-	Rewards       MissionRewards      `json:"rewards" gorm:"embedded"`                          // Additional rewards for this choice
-	CreatedAt     time.Time           `json:"-" gorm:"not null"`
-	UpdatedAt     time.Time           `json:"-" gorm:"not null"`
+	ID              string                `json:"id" gorm:"primary_key"`
+	MissionID       string                `json:"missionId" gorm:"not null;references:missions.id"`
+	Text            string                `json:"text" gorm:"not null"`
+	NextMissionID   string                `json:"nextMissionId"`
+	Requirements    MissionRequirements   `json:"requirements" gorm:"embedded"`
+	Rewards         MissionRewards        `json:"rewards" gorm:"embedded"`
+	SequentialOrder bool                  `json:"sequentialOrder" gorm:"not null;default:false"`
+	Conditions      []CompletionCondition `json:"conditions,omitempty" gorm:"foreignKey:ChoiceID"`
+	POIs            []POI                 `json:"pois,omitempty" gorm:"foreignKey:ChoiceID"`
+	Operations      []MissionOperation    `json:"operations,omitempty" gorm:"foreignKey:ChoiceID"`
+	CreatedAt       time.Time             `json:"-" gorm:"not null"`
+	UpdatedAt       time.Time             `json:"-" gorm:"not null"`
 }
 
 // BeforeCreate is a GORM hook to generate UUID before creating a new mission choice
@@ -132,11 +136,11 @@ func (mc *MissionChoice) BeforeCreate(tx *gorm.DB) error {
 
 // PlayerCampaignProgress tracks a player's progress through campaigns
 type PlayerCampaignProgress struct {
-	ID               string     `json:"id" gorm:"type:uuid;primary_key"` // Keep as UUID for player progress
+	ID               string     `json:"id" gorm:"type:uuid;primary_key"`
 	PlayerID         string     `json:"playerId" gorm:"type:uuid;not null;references:players.id"`
-	CampaignID       string     `json:"campaignId" gorm:"not null;references:campaigns.id"` // Changed from type:uuid
-	CurrentChapterID string     `json:"currentChapterId" gorm:"references:chapters.id"`     // Changed from type:uuid
-	CurrentMissionID string     `json:"currentMissionId" gorm:"references:missions.id"`     // Changed from type:uuid
+	CampaignID       string     `json:"campaignId" gorm:"not null;references:campaigns.id"`
+	CurrentChapterID string     `json:"currentChapterId" gorm:"references:chapters.id"`
+	CurrentMissionID string     `json:"currentMissionId" gorm:"references:missions.id"`
 	IsCompleted      bool       `json:"isCompleted" gorm:"not null;default:false"`
 	CompletedAt      *time.Time `json:"completedAt"`
 	LastUpdated      time.Time  `json:"lastUpdated" gorm:"not null"`
@@ -154,21 +158,100 @@ func (p *PlayerCampaignProgress) BeforeCreate(tx *gorm.DB) error {
 
 // PlayerMissionProgress tracks a player's progress on individual missions
 type PlayerMissionProgress struct {
-	ID          string     `json:"id" gorm:"type:uuid;primary_key"` // Keep as UUID for player progress
-	PlayerID    string     `json:"playerId" gorm:"type:uuid;not null;references:players.id"`
-	MissionID   string     `json:"missionId" gorm:"not null;references:missions.id"`        // Changed from type:uuid
-	Status      string     `json:"status" gorm:"not null;default:'not_started'"`            // not_started, in_progress, completed, failed
-	ChoiceID    string     `json:"choiceId,omitempty" gorm:"references:mission_choices.id"` // Changed from type:uuid
-	StartedAt   *time.Time `json:"startedAt"`
-	CompletedAt *time.Time `json:"completedAt"`
-	CreatedAt   time.Time  `json:"-" gorm:"not null"`
-	UpdatedAt   time.Time  `json:"-" gorm:"not null"`
+	ID                  string     `json:"id" gorm:"type:uuid;primary_key"`
+	PlayerID            string     `json:"playerId" gorm:"type:uuid;not null;references:players.id"`
+	MissionID           string     `json:"missionId" gorm:"not null;references:missions.id"`
+	Status              string     `json:"status" gorm:"not null;default:'not_started'"` // not_started, in_progress, completed, failed
+	ChoiceID            string     `json:"choiceId,omitempty" gorm:"references:mission_choices.id"`
+	StartedAt           *time.Time `json:"startedAt"`
+	CompletedAt         *time.Time `json:"completedAt"`
+	CurrentActiveChoice string     `json:"currentActiveChoice" gorm:"default:''"`
+	ActionLog           string     `json:"actionLog" gorm:"type:text"` // JSON array of tracked actions
+	CreatedAt           time.Time  `json:"-" gorm:"not null"`
+	UpdatedAt           time.Time  `json:"-" gorm:"not null"`
 }
 
 // BeforeCreate is a GORM hook to generate UUID before creating a new mission progress record
 func (p *PlayerMissionProgress) BeforeCreate(tx *gorm.DB) error {
 	if p.ID == "" {
 		p.ID = uuid.New().String()
+	}
+	return nil
+}
+
+// POI represents a Point of Interest in the game world related to missions
+type POI struct {
+	ID           string     `json:"id" gorm:"primary_key"`
+	Name         string     `json:"name" gorm:"not null"`
+	Description  string     `json:"description" gorm:"not null"`
+	LocationType string     `json:"locationType" gorm:"not null"` // hotspot, region, district, etc.
+	LocationID   string     `json:"locationId" gorm:"not null"`   // ID of the location
+	MissionID    string     `json:"missionId" gorm:"not null;references:missions.id"`
+	ChoiceID     string     `json:"choiceId" gorm:"references:mission_choices.id"`
+	IsActive     bool       `json:"isActive" gorm:"not null;default:false"`
+	IsCompleted  bool       `json:"isCompleted" gorm:"not null;default:false"`
+	PlayerID     string     `json:"playerId" gorm:"type:uuid;references:players.id"` // Owner who activated this POI
+	CompletedAt  *time.Time `json:"completedAt"`
+	CreatedAt    time.Time  `json:"-" gorm:"not null"`
+	UpdatedAt    time.Time  `json:"-" gorm:"not null"`
+}
+
+// BeforeCreate is a GORM hook to generate UUID before creating a new POI
+func (p *POI) BeforeCreate(tx *gorm.DB) error {
+	if p.ID == "" {
+		p.ID = uuid.New().String()
+	}
+	return nil
+}
+
+// MissionOperation represents a special operation that is only available during missions
+type MissionOperation struct {
+	ID            string             `json:"id" gorm:"primary_key"`
+	Name          string             `json:"name" gorm:"not null"`
+	Description   string             `json:"description" gorm:"not null"`
+	OperationType string             `json:"operationType" gorm:"not null"` // Same as in regular operations
+	MissionID     string             `json:"missionId" gorm:"not null;references:missions.id"`
+	ChoiceID      string             `json:"choiceId" gorm:"references:mission_choices.id"`
+	Resources     OperationResources `json:"resources" gorm:"embedded"`
+	Rewards       OperationRewards   `json:"rewards" gorm:"embedded"`
+	Risks         OperationRisks     `json:"risks" gorm:"embedded"`
+	Duration      int                `json:"duration" gorm:"not null"`
+	SuccessRate   int                `json:"successRate" gorm:"not null"`
+	IsActive      bool               `json:"isActive" gorm:"not null;default:false"`
+	IsCompleted   bool               `json:"isCompleted" gorm:"not null;default:false"`
+	PlayerID      string             `json:"playerId" gorm:"type:uuid;references:players.id"` // Owner who activated this operation
+	CompletedAt   *time.Time         `json:"completedAt"`
+	CreatedAt     time.Time          `json:"-" gorm:"not null"`
+	UpdatedAt     time.Time          `json:"-" gorm:"not null"`
+}
+
+// BeforeCreate is a GORM hook to generate UUID before creating a new MissionOperation
+func (m *MissionOperation) BeforeCreate(tx *gorm.DB) error {
+	if m.ID == "" {
+		m.ID = uuid.New().String()
+	}
+	return nil
+}
+
+// CompletionCondition represents a condition required to complete a mission choice
+type CompletionCondition struct {
+	ID              string     `json:"id" gorm:"primary_key"`
+	ChoiceID        string     `json:"choiceId" gorm:"not null;references:mission_choices.id"`
+	Type            string     `json:"type" gorm:"not null"`                 // travel, territory, operation
+	RequiredValue   string     `json:"requiredValue" gorm:"not null"`        // Region ID, hotspot ID, operation type, etc.
+	AdditionalValue string     `json:"additionalValue" gorm:"default:''"`    // Additional parameters like action type
+	OrderIndex      int        `json:"orderIndex" gorm:"not null;default:0"` // For sequential ordering
+	IsCompleted     bool       `json:"isCompleted" gorm:"not null;default:false"`
+	PlayerID        string     `json:"playerId" gorm:"type:uuid;references:players.id"` // Owner tracking this condition
+	CompletedAt     *time.Time `json:"completedAt"`
+	CreatedAt       time.Time  `json:"-" gorm:"not null"`
+	UpdatedAt       time.Time  `json:"-" gorm:"not null"`
+}
+
+// BeforeCreate is a GORM hook to generate UUID before creating a new CompletionCondition
+func (c *CompletionCondition) BeforeCreate(tx *gorm.DB) error {
+	if c.ID == "" {
+		c.ID = uuid.New().String()
 	}
 	return nil
 }

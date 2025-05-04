@@ -324,3 +324,177 @@ func (c *CampaignController) CompleteMission(w http.ResponseWriter, r *http.Requ
 		result.Message,
 	)
 }
+
+// POI Controllers
+
+// GetPlayerActivePOIs handles getting all active POIs for a player
+func (c *CampaignController) GetPlayerActivePOIs(w http.ResponseWriter, r *http.Request) {
+	// Get player ID from context
+	playerID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		util.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	// Get active POIs
+	pois, err := c.campaignService.GetActivePOIs(playerID)
+	if err != nil {
+		c.logger.Error().Err(err).Msg("Failed to get active POIs")
+		util.RespondWithError(w, http.StatusInternalServerError, "Failed to get active POIs")
+		return
+	}
+
+	// Return success response
+	util.RespondWithJSON(w, http.StatusOK, pois)
+}
+
+// CompletePOI handles marking a POI as completed
+func (c *CampaignController) CompletePOI(w http.ResponseWriter, r *http.Request) {
+	// Get player ID from context
+	playerID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		util.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	// Get POI ID from URL
+	poiID := chi.URLParam(r, "id")
+	if poiID == "" {
+		util.RespondWithError(w, http.StatusBadRequest, "POI ID is required")
+		return
+	}
+
+	// Complete the POI
+	if err := c.campaignService.CompletePOI(poiID, playerID); err != nil {
+		c.logger.Error().Err(err).Msg("Failed to complete POI")
+		util.RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Return success response
+	util.RespondWithGameMessage(
+		w,
+		http.StatusOK,
+		map[string]interface{}{"success": true},
+		util.GameMessageTypeSuccess,
+		"Point of interest completed successfully.",
+	)
+}
+
+// GetPlayerActiveMissionOperations handles getting all active mission operations for a player
+func (c *CampaignController) GetPlayerActiveMissionOperations(w http.ResponseWriter, r *http.Request) {
+	// Get player ID from context
+	playerID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		util.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	// Get active mission operations
+	operations, err := c.campaignService.GetActiveMissionOperations(playerID)
+	if err != nil {
+		c.logger.Error().Err(err).Msg("Failed to get active mission operations")
+		util.RespondWithError(w, http.StatusInternalServerError, "Failed to get active mission operations")
+		return
+	}
+
+	// Return success response
+	util.RespondWithJSON(w, http.StatusOK, operations)
+}
+
+// StartMissionOperation handles starting a mission operation
+func (c *CampaignController) StartMissionOperation(w http.ResponseWriter, r *http.Request) {
+	// Get player ID from context
+	playerID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		util.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	// Get operation ID from URL
+	operationID := chi.URLParam(r, "id")
+	if operationID == "" {
+		util.RespondWithError(w, http.StatusBadRequest, "Operation ID is required")
+		return
+	}
+
+	// Activate the operation for the player
+	if err := c.campaignService.ActivateMissionOperationForPlayer(operationID, playerID); err != nil {
+		c.logger.Error().Err(err).Msg("Failed to start mission operation")
+		util.RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Return success response
+	util.RespondWithGameMessage(
+		w,
+		http.StatusOK,
+		map[string]interface{}{"success": true},
+		util.GameMessageTypeSuccess,
+		"Mission operation started successfully.",
+	)
+}
+
+// CompleteMissionOperation handles completing a mission operation
+func (c *CampaignController) CompleteMissionOperation(w http.ResponseWriter, r *http.Request) {
+	// Get player ID from context
+	playerID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		util.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	// Get operation ID from URL
+	operationID := chi.URLParam(r, "id")
+	if operationID == "" {
+		util.RespondWithError(w, http.StatusBadRequest, "Operation ID is required")
+		return
+	}
+
+	// Complete the operation
+	if err := c.campaignService.CompleteMissionOperation(operationID, playerID); err != nil {
+		c.logger.Error().Err(err).Msg("Failed to complete mission operation")
+		util.RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Return success response
+	util.RespondWithGameMessage(
+		w,
+		http.StatusOK,
+		map[string]interface{}{"success": true},
+		util.GameMessageTypeSuccess,
+		"Mission operation completed successfully.",
+	)
+}
+
+// TrackPlayerAction handles tracking player actions for mission progress
+func (c *CampaignController) TrackPlayerAction(w http.ResponseWriter, r *http.Request) {
+	// Get player ID from context
+	playerID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		util.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	// Parse request body
+	var request struct {
+		ActionType  string `json:"actionType"`
+		ActionValue string `json:"actionValue"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		util.RespondWithError(w, http.StatusBadRequest, "Invalid request format")
+		return
+	}
+
+	// Track the action
+	if err := c.campaignService.TrackPlayerAction(playerID, request.ActionType, request.ActionValue); err != nil {
+		c.logger.Error().Err(err).Msg("Failed to track player action")
+		util.RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Return success response
+	util.RespondWithJSON(w, http.StatusOK, map[string]interface{}{"success": true})
+}

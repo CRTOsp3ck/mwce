@@ -7,7 +7,9 @@ import {
   Mission,
   PlayerCampaignProgress,
   PlayerMissionProgress,
-  MissionCompleteResult
+  MissionCompleteResult,
+  POI,
+  MissionOperation
 } from '@/types/campaign';
 
 // Endpoints
@@ -19,6 +21,12 @@ const ENDPOINTS = {
   MISSIONS: '/campaigns/missions', // + /:id
   START_MISSION: '/campaigns/missions', // + /:id/start
   COMPLETE_MISSION: '/campaigns/missions', // + /:id/complete
+  ACTIVE_POIS: '/campaigns/pois',
+  COMPLETE_POI: '/campaigns/pois', // + /:id/complete
+  ACTIVE_OPERATIONS: '/campaigns/operations',
+  START_OPERATION: '/campaigns/operations', // + /:id/start
+  COMPLETE_OPERATION: '/campaigns/operations', // + /:id/complete
+  TRACK_ACTION: '/campaigns/actions/track',
 };
 
 export default {
@@ -85,6 +93,51 @@ export default {
   completeMission(missionId: string, choiceId?: string) {
     return api.post<MissionCompleteResult>(`${ENDPOINTS.COMPLETE_MISSION}/${missionId}/complete`, {
       choiceId: choiceId || ""
+    });
+  },
+
+  /**
+   * Get active POIs for the player
+   */
+  getActivePOIs() {
+    return api.get<POI[]>(ENDPOINTS.ACTIVE_POIS);
+  },
+
+  /**
+   * Complete a POI
+   */
+  completePOI(poiId: string) {
+    return api.post(`${ENDPOINTS.COMPLETE_POI}/${poiId}/complete`);
+  },
+
+  /**
+   * Get active mission operations for the player
+   */
+  getActiveMissionOperations() {
+    return api.get<MissionOperation[]>(ENDPOINTS.ACTIVE_OPERATIONS);
+  },
+
+  /**
+   * Start a mission operation
+   */
+  startMissionOperation(operationId: string) {
+    return api.post(`${ENDPOINTS.START_OPERATION}/${operationId}/start`);
+  },
+
+  /**
+   * Complete a mission operation
+   */
+  completeMissionOperation(operationId: string) {
+    return api.post(`${ENDPOINTS.COMPLETE_OPERATION}/${operationId}/complete`);
+  },
+
+  /**
+   * Track a player action
+   */
+  trackPlayerAction(actionType: string, actionValue: string) {
+    return api.post(ENDPOINTS.TRACK_ACTION, {
+      actionType,
+      actionValue
     });
   }
 };

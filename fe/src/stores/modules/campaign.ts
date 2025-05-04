@@ -10,7 +10,10 @@ import {
   PlayerCampaignProgress,
   PlayerMissionProgress,
   MissionStatus,
-  MissionCompleteResult
+  MissionCompleteResult,
+  POI,
+  MissionOperation,
+  CompletionCondition
 } from '@/types/campaign';
 
 interface CampaignState {
@@ -22,6 +25,10 @@ interface CampaignState {
   currentMission: Mission | null;
   isLoading: boolean;
   error: string | null;
+  activePOIs: POI[];
+  activeMissionOperations: MissionOperation[];
+  choiceProgress: { [key: string]: CompletionCondition[] };
+  isTracking: boolean;
 }
 
 export const useCampaignStore = defineStore('campaign', {
@@ -33,15 +40,19 @@ export const useCampaignStore = defineStore('campaign', {
     currentChapter: null,
     currentMission: null,
     isLoading: false,
-    error: null
+    error: null,
+    activePOIs: [],
+    activeMissionOperations: [],
+    choiceProgress: {},
+    isTracking: false
   }),
 
   getters: {
-    availableCampaigns: (state) => {
+    availableCampaigns: state => {
       return state.campaigns.filter(c => c.isActive);
     },
 
-    inProgressCampaigns: (state) => {
+    inProgressCampaigns: state => {
       const result: Campaign[] = [];
 
       for (const campaignId in state.campaignProgress) {
@@ -57,7 +68,7 @@ export const useCampaignStore = defineStore('campaign', {
       return result;
     },
 
-    completedCampaigns: (state) => {
+    completedCampaigns: state => {
       const result: Campaign[] = [];
 
       for (const campaignId in state.campaignProgress) {
@@ -73,28 +84,44 @@ export const useCampaignStore = defineStore('campaign', {
       return result;
     },
 
-    chapterMissions: (state) => {
+    chapterMissions: state => {
       if (!state.currentChapter) return [];
       return state.currentChapter.missions || [];
     },
 
-    missionChoices: (state) => {
+    missionChoices: state => {
       if (!state.currentMission) return [];
       return state.currentMission.choices || [];
     },
 
     // Helper getter to get mission status
-    getMissionStatus: (state) => (missionId: string) => {
+    getMissionStatus: state => (missionId: string) => {
       const progress = state.missionProgress[missionId];
       if (!progress) return MissionStatus.NOT_STARTED;
       return progress.status;
     },
 
     // Helper to check if a mission is locked
-    isMissionLocked: (state) => (missionId: string) => {
+    isMissionLocked: state => (missionId: string) => {
       const mission = state.currentChapter?.missions?.find(m => m.id === missionId);
       if (!mission) return true;
       return mission.isLocked;
+    },
+
+    getChoiceProgressPercent: state => (choiceId: string) => {
+      const conditions = state.choiceProgress[choiceId];
+      if (!conditions || conditions.length === 0) return 0;
+
+      const completedCount = conditions.filter(c => c.isCompleted).length;
+      return Math.floor((completedCount / conditions.length) * 100);
+    },
+
+    getPOIsByMission: state => (missionId: string) => {
+      return state.activePOIs.filter(poi => poi.missionId === missionId);
+    },
+
+    getOperationsByMission: state => (missionId: string) => {
+      return state.activeMissionOperations.filter(op => op.missionId === missionId);
     }
   },
 
@@ -180,7 +207,6 @@ export const useCampaignStore = defineStore('campaign', {
           if (progress && progress.currentMissionId) {
             await this.fetchMission(progress.currentMissionId);
           } else if (this.currentChapter.missions && this.currentChapter.missions.length > 0) {
-
             // If no progress, set the first mission as current
             await this.fetchMission(this.currentChapter.missions[0].id);
           }
@@ -374,6 +400,159 @@ export const useCampaignStore = defineStore('campaign', {
 
       if (rewards.heatReduction) {
         playerStore.profile.heat = Math.max(0, playerStore.profile.heat - rewards.heatReduction);
+      }
+    },
+
+    async fetchActivePOIs() {
+      try {
+        const response = await campaignService.getActivePOIs();
+
+        if (response.success && response.data) {
+          this.activePOIs = response.data;
+        }
+
+        return {
+          success: true,
+          data: response.data
+        };
+      } catch (error) {
+        console.error('Error fetching active POIs:', error);
+        return {
+          success: false,
+          message: error instanceof Error ? error.message : 'Unknown error'
+        };
+      }
+    },
+
+    async completePOI(poiId: string) {
+      try {
+        const response = await campaignService.completePOI(poiId);
+
+        if (response.success) {
+          // Update the POI in the store
+          const index = this.activePOIs.findIndex(poi => poi.id === poiId);
+          if (index >= 0) {
+            this.activePOIs[index].isCompleted = true;
+            this.activePOIs[index].completedAt = new Date().toISOString();
+          }
+
+          // Refresh the active POIs list
+          this.fetchActivePOIs();
+        }
+
+        return {
+          success: true,
+          message: response.gameMessage?.message || 'POI completed successfully'
+        };
+      } catch (error) {
+        console.error('Error completing POI:', error);
+        return {
+          success: false,
+          message: error instanceof Error ? error.message : 'Unknown error'
+        };
+      }
+    },
+
+    async fetchActiveMissionOperations() {
+      try {
+        const response = await campaignService.getActiveMissionOperations();
+
+        if (response.success && response.data) {
+          this.activeMissionOperations = response.data;
+        }
+
+        return {
+          success: true,
+          data: response.data
+        };
+      } catch (error) {
+        console.error('Error fetching active mission operations:', error);
+        return {
+          success: false,
+          message: error instanceof Error ? error.message : 'Unknown error'
+        };
+      }
+    },
+
+    async startMissionOperation(operationId: string) {
+      try {
+        const response = await campaignService.startMissionOperation(operationId);
+
+        if (response.success) {
+          // Refresh the active mission operations list
+          this.fetchActiveMissionOperations();
+        }
+
+        return {
+          success: true,
+          message: response.gameMessage?.message || 'Mission operation started successfully'
+        };
+      } catch (error) {
+        console.error('Error starting mission operation:', error);
+        return {
+          success: false,
+          message: error instanceof Error ? error.message : 'Unknown error'
+        };
+      }
+    },
+
+    async completeMissionOperation(operationId: string) {
+      try {
+        const response = await campaignService.completeMissionOperation(operationId);
+
+        if (response.success) {
+          // Update the operation in the store
+          const index = this.activeMissionOperations.findIndex(op => op.id === operationId);
+          if (index >= 0) {
+            this.activeMissionOperations[index].isCompleted = true;
+            this.activeMissionOperations[index].completedAt = new Date().toISOString();
+          }
+
+          // Refresh the active mission operations list
+          this.fetchActiveMissionOperations();
+        }
+
+        return {
+          success: true,
+          message: response.gameMessage?.message || 'Mission operation completed successfully'
+        };
+      } catch (error) {
+        console.error('Error completing mission operation:', error);
+        return {
+          success: false,
+          message: error instanceof Error ? error.message : 'Unknown error'
+        };
+      }
+    },
+
+    async trackPlayerAction(actionType: string, actionValue: string) {
+      if (this.isTracking) return; // Prevent multiple simultaneous tracking calls
+
+      this.isTracking = true;
+
+      try {
+        const response = await campaignService.trackPlayerAction(actionType, actionValue);
+
+        if (response.success) {
+          // After tracking, refresh active POIs and operations as they might have changed
+          this.fetchActivePOIs();
+          this.fetchActiveMissionOperations();
+
+          // Also refresh the current mission as it might have advanced
+          if (this.currentMission) {
+            this.fetchMission(this.currentMission.id);
+          }
+        }
+
+        this.isTracking = false;
+        return { success: true };
+      } catch (error) {
+        console.error('Error tracking player action:', error);
+        this.isTracking = false;
+        return {
+          success: false,
+          message: error instanceof Error ? error.message : 'Unknown error'
+        };
       }
     }
   }

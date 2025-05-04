@@ -179,7 +179,8 @@ async function logout() {
     <header class="app-header">
         <div class="logo">
             <router-link to="/">
-                <h1>Mafia Wars: <span class="gold-text">Criminal Empire</span></h1>
+              <!-- <h1>Mafia Wars: <span class="gold-text">Criminal Empire</span></h1> -->
+                <h1>Mafioso: <span class="gold-text">Criminal Empire</span></h1>
             </router-link>
         </div>
 

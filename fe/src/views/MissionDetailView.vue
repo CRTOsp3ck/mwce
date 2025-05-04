@@ -1,18 +1,23 @@
 <!-- src/views/MissionDetailView.vue -->
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import BaseButton from '@/components/ui/BaseButton.vue';
 import BaseModal from '@/components/ui/BaseModal.vue';
+import MissionPOIList from '@/components/campaign/MissionPOIList.vue';
+import MissionOperationList from '@/components/campaign/MissionOperationList.vue';
+import ChoiceProgressTracker from '@/components/campaign/ChoiceProgressTracker.vue';
 import { useCampaignStore } from '@/stores/modules/campaign';
 import { usePlayerStore } from '@/stores/modules/player';
+import { useTerritoryStore } from '@/stores/modules/territory';
 import { MissionChoice, MissionCompleteResult, MissionStatus } from '@/types/campaign';
 
 const route = useRoute();
 const router = useRouter();
 const campaignStore = useCampaignStore();
 const playerStore = usePlayerStore();
+const territoryStore = useTerritoryStore();
 
 // State
 const isLoading = ref(true);
@@ -48,6 +53,30 @@ const hasChoices = computed(() => {
 
 const missionComplete = computed(() => {
   return missionStatus.value === MissionStatus.COMPLETED;
+});
+
+const activePOIs = computed(() => {
+  if (!mission.value) return [];
+  return campaignStore.getPOIsByMission(mission.value.id);
+});
+
+const activeMissionOperations = computed(() => {
+  if (!mission.value) return [];
+  return campaignStore.getOperationsByMission(mission.value.id);
+});
+
+const activeChoice = computed(() => {
+  if (!missionProgress.value || !missionProgress.value.currentActiveChoice) return null;
+
+  // Find the choice from the mission
+  if (!mission.value || !mission.value.choices) return null;
+
+  return mission.value.choices.find(c => c.id === missionProgress.value.currentActiveChoice);
+});
+
+const activeConditions = computed(() => {
+  if (!activeChoice.value) return [];
+  return campaignStore.choiceProgress[activeChoice.value.id] || [];
 });
 
 // Player resources for requirement checks
@@ -147,6 +176,18 @@ async function completeMission(choiceId?: string) {
   }
 }
 
+async function handleCompletePOI(poiId: string) {
+  await campaignStore.completePOI(poiId);
+}
+
+async function handleStartOperation(operationId: string) {
+  await campaignStore.startMissionOperation(operationId);
+}
+
+async function handleCompleteOperation(operationId: string) {
+  await campaignStore.completeMissionOperation(operationId);
+}
+
 function checkRequirement(value: number | undefined, playerValue: number): string {
   if (!value) return 'met';
   return playerValue >= value ? 'met' : 'not-met';
@@ -190,11 +231,37 @@ onMounted(async () => {
   try {
     const missionId = route.params.id as string;
     await campaignStore.fetchMission(missionId);
+
+    // Also fetch active POIs and operations
+    await campaignStore.fetchActivePOIs();
+    await campaignStore.fetchActiveMissionOperations();
   } catch (error) {
     console.error('Error loading mission:', error);
   } finally {
     isLoading.value = false;
   }
+});
+
+// Track player actions for territoryService
+const unsubscribeTerritoryAction = territoryService.$on('territory-action', (action: string, hotspotId: string) => {
+  campaignStore.trackPlayerAction('territory', `${action}_${hotspotId}`);
+});
+
+// Track player travel for travelService
+const unsubscribeTravelAction = travelService.$on('travel-complete', (regionId: string) => {
+  campaignStore.trackPlayerAction('travel', regionId);
+});
+
+// Track operation completion for operationsService
+const unsubscribeOperationAction = operationsService.$on('operation-complete', (operationId: string) => {
+  campaignStore.trackPlayerAction('operation', operationId);
+});
+
+// Cleanup event listeners on component unmount
+onUnmounted(() => {
+  unsubscribeTerritoryAction();
+  unsubscribeTravelAction();
+  unsubscribeOperationAction();
 });
 </script>
 
@@ -250,6 +317,30 @@ onMounted(async () => {
           </div>
         </div>
       </div>
+
+      <!-- Active Choice Progress -->
+      <div v-if="activeChoice" class="active-choice-section">
+        <h3>Current Progress</h3>
+        <ChoiceProgressTracker
+          :choice="activeChoice"
+          :conditions="activeConditions"
+        />
+      </div>
+
+      <!-- Points of Interest -->
+      <MissionPOIList
+        v-if="activePOIs.length > 0"
+        :pois="activePOIs"
+        @complete="handleCompletePOI"
+      />
+
+      <!-- Mission Operations -->
+      <MissionOperationList
+        v-if="activeMissionOperations.length > 0"
+        :operations="activeMissionOperations"
+        @start="handleStartOperation"
+        @complete="handleCompleteOperation"
+      />
 
       <!-- Mission Requirements & Rewards -->
       <div class="mission-data-grid">

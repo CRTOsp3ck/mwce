@@ -118,3 +118,99 @@ export interface MissionCompleteResult {
   progress: PlayerMissionProgress;
   message: string;
 }
+
+export interface CompletionCondition {
+  id: string;
+  choiceId: string;
+  type: string;
+  requiredValue: string;
+  additionalValue: string;
+  orderIndex: number;
+  isCompleted: boolean;
+  completedAt?: string;
+}
+
+export interface POI {
+  id: string;
+  name: string;
+  description: string;
+  locationType: string;
+  locationId: string;
+  missionId: string;
+  choiceId: string;
+  isActive: boolean;
+  isCompleted: boolean;
+  completedAt?: string;
+}
+
+export interface MissionOperation {
+  id: string;
+  name: string;
+  description: string;
+  operationType: string;
+  missionId: string;
+  choiceId: string;
+  resources: OperationResources;
+  rewards: OperationRewards;
+  risks: OperationRisks;
+  duration: number;
+  successRate: number;
+  isActive: boolean;
+  isCompleted: boolean;
+  completedAt?: string;
+}
+
+export interface OperationResources {
+  crew: number;
+  weapons: number;
+  vehicles: number;
+  money: number;
+}
+
+export interface OperationRewards {
+  money?: number;
+  crew?: number;
+  weapons?: number;
+  vehicles?: number;
+  respect?: number;
+  influence?: number;
+  heatReduction?: number;
+}
+
+export interface OperationRisks {
+  crewLoss?: number;
+  weaponsLoss?: number;
+  vehiclesLoss?: number;
+  moneyLoss?: number;
+  heatIncrease?: number;
+  respectLoss?: number;
+}
+
+// Update MissionChoice interface
+export interface MissionChoice {
+  id: string;
+  missionId: string;
+  text: string;
+  nextMissionId: string;
+  requirements: MissionRequirements;
+  rewards: MissionRewards;
+  // Add new properties
+  sequentialOrder: boolean;
+  conditions?: CompletionCondition[];
+  pois?: POI[];
+  operations?: MissionOperation[];
+}
+
+// Update PlayerMissionProgress
+export interface PlayerMissionProgress {
+  id: string;
+  playerId: string;
+  missionId: string;
+  status: MissionStatus;
+  choiceId?: string;
+  startedAt?: string;
+  completedAt?: string;
+  // Add new fields
+  currentActiveChoice?: string;
+  actionLog?: string;
+}
