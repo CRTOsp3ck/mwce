@@ -3,8 +3,10 @@
 import { reactive } from 'vue';
 import { usePlayerStore } from '@/stores/modules/player';
 import { useTerritoryStore } from '@/stores/modules/territory';
+import { useCampaignStore } from '@/stores/modules/campaign';
 import { Hotspot } from '@/types/territory';
 import { Notification } from '@/types/player';
+import { POI, MissionOperation } from '@/types/campaign';
 
 // SSE event types
 export enum SSEEventType {
@@ -13,7 +15,13 @@ export enum SSEEventType {
   INCOME_GENERATED = 'income_generated',
   HOTSPOT_UPDATED = 'hotspot_updated',
   HOTSPOTS_UPDATED = 'hotspots_updated',
-  NOTIFICATION = 'notification'
+  NOTIFICATION = 'notification',
+
+  // Campaign-related types
+  CAMPAIGN_ACTION_TRACKED = 'campaign_action_tracked',
+  CAMPAIGN_CHOICE_UPDATED = 'campaign_choice_updated',
+  CAMPAIGN_POI_UPDATED = 'campaign_poi_updated',
+  CAMPAIGN_OPERATION_UPDATED = 'campaign_operation_updated'
 }
 
 // Define SSE event payloads
@@ -42,6 +50,31 @@ export interface HotspotsUpdatedEvent {
 
 export interface NotificationEvent {
   notification: Notification;
+}
+
+// New campaign event payload interfaces
+export interface CampaignActionTrackedEvent {
+  actionType: string;
+  actionValue: string;
+  missionId?: string;
+  choiceId?: string;
+  conditionCompleted?: boolean;
+}
+
+export interface CampaignChoiceUpdatedEvent {
+  missionId: string;
+  choiceId: string;
+  isCompleted: boolean;
+}
+
+export interface CampaignPOIUpdatedEvent {
+  poi: POI;
+  isActivated?: boolean;
+}
+
+export interface CampaignOperationUpdatedEvent {
+  operation: MissionOperation;
+  isActivated?: boolean;
 }
 
 // SSE service state
@@ -105,6 +138,7 @@ function connect() {
 function setupEventHandlers(eventSource: EventSource) {
   const playerStore = usePlayerStore();
   const territoryStore = useTerritoryStore();
+  const campaignStore = useCampaignStore();
 
   // Connected event
   eventSource.addEventListener(SSEEventType.CONNECTED, event => {
@@ -227,7 +261,7 @@ function setupEventHandlers(eventSource: EventSource) {
 
       // Update all hotspots
       if (data.hotspots && Array.isArray(data.hotspots)) {
-        data.hotspots.forEach(hotspot => {
+        data.hotspots.forEach((hotspot: any) => {
           // Ensure date fields are proper ISO strings
           if (hotspot.lastIncomeTime && typeof hotspot.lastIncomeTime !== 'string') {
             hotspot.lastIncomeTime = new Date(hotspot.lastIncomeTime).toISOString();
@@ -260,6 +294,88 @@ function setupEventHandlers(eventSource: EventSource) {
       playerStore.addNotification(data.notification);
     }
   });
+
+  // Campaign action tracking event handler
+  eventSource.addEventListener(SSEEventType.CAMPAIGN_ACTION_TRACKED, event => {
+    try {
+      const data = JSON.parse(event.data) as CampaignActionTrackedEvent;
+      console.log('Campaign action tracked event:', data);
+
+      // Update campaign store if a condition was completed
+      if (data.conditionCompleted && data.choiceId) {
+        // Refresh POIs and mission operations
+        campaignStore.fetchActivePOIs();
+        campaignStore.fetchActiveMissionOperations();
+
+        // If the action completed the entire choice, refresh the mission
+        if (data.missionId) {
+          campaignStore.fetchMission(data.missionId);
+        }
+      }
+    } catch (error) {
+      console.error('Error processing campaign action tracked event:', error);
+    }
+  });
+
+  // Campaign choice updated event handler
+  eventSource.addEventListener(SSEEventType.CAMPAIGN_CHOICE_UPDATED, event => {
+    try {
+      const data = JSON.parse(event.data) as CampaignChoiceUpdatedEvent;
+      console.log('Campaign choice updated event:', data);
+
+      // Refresh the mission with the updated choice
+      if (data.missionId) {
+        campaignStore.fetchMission(data.missionId);
+      }
+    } catch (error) {
+      console.error('Error processing campaign choice updated event:', error);
+    }
+  });
+
+  // Campaign POI updated event handler
+  eventSource.addEventListener(SSEEventType.CAMPAIGN_POI_UPDATED, event => {
+    try {
+      const data = JSON.parse(event.data) as CampaignPOIUpdatedEvent;
+      console.log('Campaign POI updated event:', data);
+
+      // Update the POI in the store
+      if (data.poi) {
+        // Find the POI in the activePOIs array and update it
+        const index = campaignStore.activePOIs.findIndex(p => p.id === data.poi.id);
+        if (index >= 0) {
+          campaignStore.activePOIs[index] = data.poi;
+        } else if (data.isActivated) {
+          // If it's a newly activated POI, add it to the array
+          campaignStore.activePOIs.push(data.poi);
+        }
+      }
+    } catch (error) {
+      console.error('Error processing campaign POI updated event:', error);
+    }
+  });
+
+  // Campaign mission operation updated event handler
+  eventSource.addEventListener(SSEEventType.CAMPAIGN_OPERATION_UPDATED, event => {
+    try {
+      const data = JSON.parse(event.data) as CampaignOperationUpdatedEvent;
+      console.log('Campaign operation updated event:', data);
+
+      // Update the operation in the store
+      if (data.operation) {
+        // Find the operation in the activeMissionOperations array and update it
+        const index = campaignStore.activeMissionOperations.findIndex(op => op.id === data.operation.id);
+        if (index >= 0) {
+          campaignStore.activeMissionOperations[index] = data.operation;
+        } else if (data.isActivated) {
+          // If it's a newly activated operation, add it to the array
+          campaignStore.activeMissionOperations.push(data.operation);
+        }
+      }
+    } catch (error) {
+      console.error('Error processing campaign operation updated event:', error);
+    }
+  });
+
 }
 
 /**

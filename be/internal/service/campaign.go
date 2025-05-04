@@ -61,6 +61,7 @@ type campaignService struct {
 	playerService     PlayerService
 	operationsService OperationsService
 	territoryService  TerritoryService
+	sseService        SSEService
 	logger            zerolog.Logger
 }
 
@@ -71,6 +72,7 @@ func NewCampaignService(
 	playerService PlayerService,
 	operationsService OperationsService,
 	territoryService TerritoryService,
+	sseService SSEService,
 	logger zerolog.Logger,
 ) CampaignService {
 	return &campaignService{
@@ -79,6 +81,7 @@ func NewCampaignService(
 		playerService:     playerService,
 		operationsService: operationsService,
 		territoryService:  territoryService,
+		sseService:        sseService,
 		logger:            logger,
 	}
 }
@@ -662,7 +665,24 @@ func (s *campaignService) ActivatePOIForPlayer(poiID string, playerID string) er
 	}
 
 	// Activate the POI
-	return s.campaignRepo.ActivatePOI(poiID, playerID)
+	if err = s.campaignRepo.ActivatePOI(poiID, playerID); err != nil {
+		return err
+	}
+
+	// Add SSE event
+	if s.sseService != nil {
+		// Get the activated POI
+		poi, err := s.campaignRepo.GetPOIByID(poiID)
+		if err == nil {
+			s.sseService.SendEventToPlayer(playerID, "campaign_poi_updated", map[string]interface{}{
+				"poi":         poi,
+				"isActivated": true,
+				"timestamp":   time.Now().Format(time.RFC3339),
+			})
+		}
+	}
+
+	return nil
 }
 
 func (s *campaignService) CompletePOI(poiID string, playerID string) error {
@@ -696,6 +716,19 @@ func (s *campaignService) CompletePOI(poiID string, playerID string) error {
 		s.CheckChoiceCompletion(playerID, mission.ID, poi.ChoiceID)
 	}
 
+	// Add SSE event
+	if s.sseService != nil {
+		// Get the updated POI
+		poi, err := s.campaignRepo.GetPOIByID(poiID)
+		if err == nil {
+			s.sseService.SendEventToPlayer(playerID, "campaign_poi_updated", map[string]interface{}{
+				"poi":         poi,
+				"isCompleted": true,
+				"timestamp":   time.Now().Format(time.RFC3339),
+			})
+		}
+	}
+
 	return nil
 }
 
@@ -717,7 +750,24 @@ func (s *campaignService) ActivateMissionOperationForPlayer(operationID string, 
 	}
 
 	// Activate the operation
-	return s.campaignRepo.ActivateMissionOperation(operationID, playerID)
+	if err = s.campaignRepo.ActivateMissionOperation(operationID, playerID); err != nil {
+		return nil
+	}
+
+	// Add SSE event
+	if s.sseService != nil {
+		// Get the activated operation
+		operation, err := s.campaignRepo.GetMissionOperationByID(operationID)
+		if err == nil {
+			s.sseService.SendEventToPlayer(playerID, "campaign_operation_updated", map[string]interface{}{
+				"operation":   operation,
+				"isActivated": true,
+				"timestamp":   time.Now().Format(time.RFC3339),
+			})
+		}
+	}
+
+	return nil
 }
 
 func (s *campaignService) CompleteMissionOperation(operationID string, playerID string) error {
@@ -749,6 +799,19 @@ func (s *campaignService) CompleteMissionOperation(operationID string, playerID 
 	// Check if this operation completion contributes to a choice completion
 	if operation.ChoiceID != "" {
 		s.CheckChoiceCompletion(playerID, mission.ID, operation.ChoiceID)
+	}
+
+	// Add SSE event
+	if s.sseService != nil {
+		// Get the updated operation
+		operation, err := s.campaignRepo.GetMissionOperationByID(operationID)
+		if err == nil {
+			s.sseService.SendEventToPlayer(playerID, "campaign_operation_updated", map[string]interface{}{
+				"operation":   operation,
+				"isCompleted": true,
+				"timestamp":   time.Now().Format(time.RFC3339),
+			})
+		}
 	}
 
 	return nil
@@ -812,8 +875,31 @@ func (s *campaignService) TrackPlayerAction(playerID string, actionType string, 
 						continue
 					}
 
+					// Send SSE event for condition completion
+					if s.sseService != nil {
+						eventData := map[string]interface{}{
+							"actionType":         actionType,
+							"actionValue":        actionValue,
+							"choiceId":           choice.ID,
+							"conditionCompleted": true,
+							"missionId":          progress.MissionID,
+							"timestamp":          time.Now().Format(time.RFC3339),
+						}
+						s.sseService.SendEventToPlayer(playerID, "campaign_action_tracked", eventData)
+					}
+
 					// Check if all conditions are now completed for this choice
-					s.CheckChoiceCompletion(playerID, progress.MissionID, choice.ID)
+					allCompleted, _ := s.CheckChoiceCompletion(playerID, progress.MissionID, choice.ID)
+					if allCompleted && s.sseService != nil {
+						// Send choice completion event
+						eventData := map[string]interface{}{
+							"missionId":   progress.MissionID,
+							"choiceId":    choice.ID,
+							"isCompleted": true,
+							"timestamp":   time.Now().Format(time.RFC3339),
+						}
+						s.sseService.SendEventToPlayer(playerID, "campaign_choice_updated", eventData)
+					}
 				}
 			}
 		} else {
@@ -841,6 +927,17 @@ func (s *campaignService) TrackPlayerAction(playerID string, actionType string, 
 
 						// Activate this choice for the player
 						s.ActivateChoice(playerID, mission.ID, choice.ID)
+
+						// Send SSE event for choice activation
+						if s.sseService != nil {
+							eventData := map[string]interface{}{
+								"missionId":   mission.ID,
+								"choiceId":    choice.ID,
+								"isActivated": true,
+								"timestamp":   time.Now().Format(time.RFC3339),
+							}
+							s.sseService.SendEventToPlayer(playerID, "campaign_choice_updated", eventData)
+						}
 						break
 					}
 				}

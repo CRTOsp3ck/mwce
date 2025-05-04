@@ -531,19 +531,10 @@ export const useCampaignStore = defineStore('campaign', {
       this.isTracking = true;
 
       try {
+        // Call the API to track the action
         const response = await campaignService.trackPlayerAction(actionType, actionValue);
 
-        if (response.success) {
-          // After tracking, refresh active POIs and operations as they might have changed
-          this.fetchActivePOIs();
-          this.fetchActiveMissionOperations();
-
-          // Also refresh the current mission as it might have advanced
-          if (this.currentMission) {
-            this.fetchMission(this.currentMission.id);
-          }
-        }
-
+        // No need to manually refresh data - SSE events will handle updates
         this.isTracking = false;
         return { success: true };
       } catch (error) {

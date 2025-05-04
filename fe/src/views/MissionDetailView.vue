@@ -1,7 +1,7 @@
 <!-- src/views/MissionDetailView.vue -->
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import BaseButton from '@/components/ui/BaseButton.vue';
 import BaseModal from '@/components/ui/BaseModal.vue';
@@ -10,14 +10,12 @@ import MissionOperationList from '@/components/campaign/MissionOperationList.vue
 import ChoiceProgressTracker from '@/components/campaign/ChoiceProgressTracker.vue';
 import { useCampaignStore } from '@/stores/modules/campaign';
 import { usePlayerStore } from '@/stores/modules/player';
-import { useTerritoryStore } from '@/stores/modules/territory';
 import { MissionChoice, MissionCompleteResult, MissionStatus } from '@/types/campaign';
 
 const route = useRoute();
 const router = useRouter();
 const campaignStore = useCampaignStore();
 const playerStore = usePlayerStore();
-const territoryStore = useTerritoryStore();
 
 // State
 const isLoading = ref(true);
@@ -242,27 +240,6 @@ onMounted(async () => {
   }
 });
 
-// Track player actions for territoryService
-const unsubscribeTerritoryAction = territoryService.$on('territory-action', (action: string, hotspotId: string) => {
-  campaignStore.trackPlayerAction('territory', `${action}_${hotspotId}`);
-});
-
-// Track player travel for travelService
-const unsubscribeTravelAction = travelService.$on('travel-complete', (regionId: string) => {
-  campaignStore.trackPlayerAction('travel', regionId);
-});
-
-// Track operation completion for operationsService
-const unsubscribeOperationAction = operationsService.$on('operation-complete', (operationId: string) => {
-  campaignStore.trackPlayerAction('operation', operationId);
-});
-
-// Cleanup event listeners on component unmount
-onUnmounted(() => {
-  unsubscribeTerritoryAction();
-  unsubscribeTravelAction();
-  unsubscribeOperationAction();
-});
 </script>
 
 <template>

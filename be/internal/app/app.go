@@ -58,6 +58,9 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 		&model.MissionChoice{},
 		&model.PlayerCampaignProgress{},
 		&model.PlayerMissionProgress{},
+		&model.POI{},
+		&model.MissionOperation{},
+		&model.CompletionCondition{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)
@@ -98,7 +101,7 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 	operationsService := service.NewOperationsService(operationsRepo, playerRepo, playerService, *cfg.Game, logger)
 	marketService := service.NewMarketService(marketRepo, playerRepo, playerService, cfg.Game, logger)
 	travelService := service.NewTravelService(playerRepo, territoryRepo, *cfg.Game, logger)
-	campaignService := service.NewCampaignService(campaignRepo, playerRepo, playerService, operationsService, territoryService, logger)
+	campaignService := service.NewCampaignService(campaignRepo, playerRepo, playerService, operationsService, territoryService, sseService, logger)
 	if err := campaignService.LoadCampaigns("../../configs/campaigns"); err != nil {
 		logger.Warn().Err(err).Msg("Failed to load campaigns data")
 	}
