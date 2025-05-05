@@ -20,7 +20,7 @@ import (
 
 // OperationsService handles operations-related business logic
 type OperationsService interface {
-	GetAvailableOperations(playerID string) ([]model.Operation, error)
+	GetAvailableOperations(playerID string, validOnly bool) ([]model.Operation, error)
 	GetOperationByID(id string) (*model.Operation, error)
 	GetCurrentOperations(playerID string) ([]model.OperationAttempt, error)
 	GetCompletedOperations(playerID string) ([]model.OperationAttempt, error)
@@ -64,13 +64,14 @@ func NewOperationsService(
 }
 
 // GetAvailableOperations retrieves available operations for a player
-func (s *operationsService) GetAvailableOperations(playerID string) ([]model.Operation, error) {
+func (s *operationsService) GetAvailableOperations(playerID string, validOnly bool) ([]model.Operation, error) {
 	// Get all active operations
 	var operations []model.Operation
-	if err := s.operationsRepo.GetDB().
-		Where("is_active = ?", true).
-		Where("available_until > ?", time.Now()).
-		Find(&operations).Error; err != nil {
+	query := s.operationsRepo.GetDB().Where("is_active = ?", true)
+	if validOnly {
+		query = query.Where("available_until > ?", time.Now())
+	}
+	if err := query.Find(&operations).Error; err != nil {
 		return nil, err
 	}
 

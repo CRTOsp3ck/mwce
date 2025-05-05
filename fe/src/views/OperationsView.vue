@@ -1259,28 +1259,28 @@ function hasInsufficientTimeRemaining(operation: Operation): boolean {
       position: relative;
       overflow: hidden;
 
-      &.insufficient-time {
-        position: relative;
+      // &.insufficient-time {
+      //   position: relative;
 
-        &::after {
-          content: "Insufficient Time Remaining";
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.75);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: $danger-color;
-          font-weight: bold;
-          font-size: 1.2rem;
-          text-transform: uppercase;
-          transform: rotate(-15deg);
-          z-index: 10;
-        }
-      }
+      //   &::after {
+      //     content: "Insufficient Time Remaining";
+      //     position: absolute;
+      //     top: 0;
+      //     left: 0;
+      //     right: 0;
+      //     bottom: 0;
+      //     background: rgba(0, 0, 0, 0.75);
+      //     display: flex;
+      //     align-items: center;
+      //     justify-content: center;
+      //     color: $danger-color;
+      //     font-weight: bold;
+      //     font-size: 1.2rem;
+      //     text-transform: uppercase;
+      //     transform: rotate(-15deg);
+      //     z-index: 10;
+      //   }
+      // }
 
       &.special-operation {
         @include gold-border;

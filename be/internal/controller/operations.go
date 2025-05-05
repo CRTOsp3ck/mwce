@@ -39,7 +39,7 @@ func (c *OperationsController) GetAvailableOperations(w http.ResponseWriter, r *
 	}
 
 	// Get available operations
-	operations, err := c.operationsService.GetAvailableOperations(playerID)
+	operations, err := c.operationsService.GetAvailableOperations(playerID, false)
 	if err != nil {
 		c.logger.Error().Err(err).Msg("Failed to get available operations")
 		util.RespondWithError(w, http.StatusInternalServerError, "Failed to get available operations")
