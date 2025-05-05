@@ -246,6 +246,53 @@ function formatDate(dateString: string | undefined): string {
   return date.toLocaleDateString();
 }
 
+// Add this function to your script section
+function formatTimeUntilExpiration(availableUntil: string): string {
+  // Access the refresh counter to ensure reactivity
+  const _ = timerRefreshCounter.value;
+
+  const now = new Date();
+  const expirationTime = new Date(availableUntil);
+
+  // Calculate time difference in milliseconds
+  const diffMs = expirationTime.getTime() - now.getTime();
+
+  // If already expired
+  if (diffMs <= 0) {
+    return 'Expired';
+  }
+
+  // Calculate hours, minutes, and seconds
+  const diffSec = Math.floor(diffMs / 1000);
+  const hours = Math.floor(diffSec / 3600);
+  const minutes = Math.floor((diffSec % 3600) / 60);
+  const seconds = diffSec % 60;
+
+  // Format the time remaining
+  if (hours > 0) {
+    return `${hours}h ${minutes}m ${seconds}s`;
+  } else if (minutes > 0) {
+    return `${minutes}m ${seconds}s`;
+  } else {
+    return `${seconds}s`;
+  }
+}
+
+// Add this function to check if an operation is expiring soon
+function isExpirationSoon(availableUntil: string): boolean {
+  // Access the refresh counter to ensure reactivity
+  const _ = timerRefreshCounter.value;
+
+  const now = new Date();
+  const expirationTime = new Date(availableUntil);
+
+  // Calculate time difference in milliseconds
+  const diffMs = expirationTime.getTime() - now.getTime();
+
+  // If less than 10 minutes remaining
+  return diffMs <= 10 * 60 * 1000 && diffMs > 0;
+}
+
 function hasRequirements(operation: Operation): boolean {
   return !!(
     operation.requirements.minInfluence ||
@@ -736,7 +783,9 @@ function hasInsufficientTimeRemaining(operation: Operation): boolean {
             </div>
             <div class="stat">
               <div class="stat-label">Available Until:</div>
-              <div class="stat-value">{{ formatDate(operation.availableUntil) }}</div>
+              <div class="stat-value countdown" :class="{ 'expiring-soon': isExpirationSoon(operation.availableUntil) }">
+                {{ formatTimeUntilExpiration(operation.availableUntil) }}
+              </div>
             </div>
           </div>
         </div>
@@ -1701,6 +1750,31 @@ function hasInsufficientTimeRemaining(operation: Operation): boolean {
   .modal-footer-actions {
     @include flex-between;
     width: 100%;
+  }
+
+  .countdown {
+    color: $info-color;
+    font-weight: 600;
+
+    // Add a subtle pulse animation when time is running low (under 10 minutes)
+    &.expiring-soon {
+      animation: pulse 1s infinite;
+      color: $warning-color;
+    }
+  }
+
+  @keyframes pulse {
+    0% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: 0.7;
+    }
+
+    100% {
+      opacity: 1;
+    }
   }
 }
 </style>
