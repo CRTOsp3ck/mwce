@@ -283,6 +283,9 @@ function canStartOperation(operation: Operation): boolean {
   if (operation.requirements.maxHeat && operation.requirements.maxHeat < playerHeat.value) return false;
   if (operation.requirements.minTitle && !meetsMinimumTitle(operation.requirements.minTitle)) return false;
 
+  // Check if there's enough time remaining
+  if (hasInsufficientTimeRemaining(operation)) return false;
+
   return true;
 }
 
@@ -332,6 +335,10 @@ function getOperationWarning(operation: Operation): string {
 
   if (operation.requirements.minTitle && !meetsMinimumTitle(operation.requirements.minTitle)) {
     return `Requires ${operation.requirements.minTitle} rank`;
+  }
+
+  if (hasInsufficientTimeRemaining(operation)) {
+    return 'Insufficient Time Remaining';
   }
 
   return '';
@@ -417,6 +424,13 @@ function closeStartModal() {
 async function confirmStartOperation() {
   if (!selectedOperation.value || isStartingOperation.value) return;
 
+  // Check if there's enough time remaining
+  if (hasInsufficientTimeRemaining(selectedOperation.value)) {
+    // Show notification or alert
+    // Using your notification system here
+    return;
+  }
+
   isStartingOperation.value = true;
 
   try {
@@ -474,6 +488,20 @@ function isAlmostComplete(operationAttempt: OperationAttempt): boolean {
   const progress = getProgressPercentage(operationAttempt);
   return progress >= 95 && progress < 100;
 }
+
+function hasInsufficientTimeRemaining(operation: Operation): boolean {
+  const now = new Date();
+  const availableUntil = new Date(operation.availableUntil);
+
+  // Calculate time remaining in seconds
+  const timeRemainingMs = availableUntil.getTime() - now.getTime();
+  const timeRemainingSecs = Math.floor(timeRemainingMs / 1000);
+
+  // If time remaining is less than operation duration, return true
+  return timeRemainingSecs < operation.duration;
+}
+
+
 </script>
 
 <template>
@@ -512,8 +540,10 @@ function isAlmostComplete(operationAttempt: OperationAttempt): boolean {
 
     <!-- Available Operations Tab -->
     <div v-if="activeTab === 'available'" class="operations-list available-operations">
-      <BaseCard v-for="operation in filteredOperations" :key="operation.id" class="operation-card"
-        :class="{ 'special-operation': operation.isSpecial }">
+      <BaseCard v-for="operation in filteredOperations" :key="operation.id" class="operation-card" :class="{
+        'special-operation': operation.isSpecial,
+        'insufficient-time': hasInsufficientTimeRemaining(operation)
+      }">
         <template #header>
           <div class="operation-badge" v-if="operation.isSpecial">
             Special
@@ -736,8 +766,8 @@ function isAlmostComplete(operationAttempt: OperationAttempt): boolean {
             </div>
             <div class="progress-bar">
               <div class="progress-fill"
-                   :class="{ 'almost-complete': isAlmostComplete(operation), 'complete': getProgressPercentage(operation) >= 100 }"
-                   :style="{ width: `${getProgressPercentage(operation)}%` }"></div>
+                :class="{ 'almost-complete': isAlmostComplete(operation), 'complete': getProgressPercentage(operation) >= 100 }"
+                :style="{ width: `${getProgressPercentage(operation)}%` }"></div>
             </div>
           </div>
 
@@ -782,9 +812,8 @@ function isAlmostComplete(operationAttempt: OperationAttempt): boolean {
         <template #footer>
           <div class="operation-footer">
             <div v-if="isOperationReady(operation)" class="collect-wrapper">
-              <BaseButton variant="primary"
-                         :loading="collectingOperationId === operation.id"
-                         @click="collectOperation(operation.id)">
+              <BaseButton variant="primary" :loading="collectingOperationId === operation.id"
+                @click="collectOperation(operation.id)">
                 Collect Operation
               </BaseButton>
               <div class="op-complete-message">Operation complete! Collect to see results and get rewards.</div>
@@ -1160,6 +1189,29 @@ function isAlmostComplete(operationAttempt: OperationAttempt): boolean {
     .operation-card {
       position: relative;
       overflow: hidden;
+
+      &.insufficient-time {
+        position: relative;
+
+        &::after {
+          content: "Insufficient Time Remaining";
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.75);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: $danger-color;
+          font-weight: bold;
+          font-size: 1.2rem;
+          text-transform: uppercase;
+          transform: rotate(-15deg);
+          z-index: 10;
+        }
+      }
 
       &.special-operation {
         @include gold-border;

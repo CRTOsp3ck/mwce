@@ -131,8 +131,15 @@ func (s *operationsService) StartOperation(playerID, operationID string, resourc
 	}
 
 	// Check if operation is still available
-	if operation.AvailableUntil.Before(time.Now()) {
+	now := time.Now()
+	if operation.AvailableUntil.Before(now) {
 		return nil, errors.New("operation is no longer available")
+	}
+
+	// Check if there's enough time remaining to complete the operation
+	timeRemaining := operation.AvailableUntil.Sub(now).Seconds()
+	if timeRemaining < float64(operation.Duration) {
+		return nil, errors.New("insufficient time remaining to complete this operation")
 	}
 
 	// Get the player

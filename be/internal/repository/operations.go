@@ -5,6 +5,7 @@ package repository
 import (
 	"errors"
 	"fmt"
+	"log"
 	"math/rand"
 	"time"
 
@@ -124,17 +125,12 @@ func (r *operationsRepository) GenerateDailyOperations(basicCount, specialCount 
 
 	// For existing operations that are still valid, ensure they remain active
 	// This helps maintain continuity for operations players have already started
+	/* Something not right here. GOtta think about this more. */
 	if err := r.db.GetDB().
 		Model(&model.Operation{}).
 		Where("available_until >= ?", time.Now()).
 		Update("is_active", true).Error; err != nil {
 		return fmt.Errorf("failed to ensure valid operations remain active: %w", err)
-	}
-
-	// Get the operations pool from the yaml file
-	operationsData, err := loadOperationsFromYAML()
-	if err != nil {
-		return fmt.Errorf("failed to load operations data: %w", err)
 	}
 
 	// Count existing active operations by type
@@ -151,34 +147,36 @@ func (r *operationsRepository) GenerateDailyOperations(basicCount, specialCount 
 		return fmt.Errorf("failed to count active special operations: %w", err)
 	}
 
-	// Maintain a record of operations already in the DB to avoid duplicates
-	var existingOperations []model.Operation
-	if err := r.db.GetDB().
-		Where("is_active = ?", true).
-		Find(&existingOperations).Error; err != nil {
-		return fmt.Errorf("failed to fetch existing operations: %w", err)
-	}
-
-	existingNames := make(map[string]bool)
-	for _, op := range existingOperations {
-		existingNames[op.Name] = true
+	// Get the operations pool from the yaml file
+	operationsData, err := loadOperationsFromYAML()
+	if err != nil {
+		return fmt.Errorf("failed to load operations data: %w", err)
 	}
 
 	now := time.Now()
-	availableUntil := now.Add(24 * time.Hour)
+
+	// Temporary adding the available until here as 2 minutes.
+	// This should be as part of the operations yaml file
+	availableUntil := now.Add(2 * time.Minute)
 
 	// Generate basic operations from the pool if needed
 	remainingBasic := int(basicCount) - int(basicOperationsCount)
 	if remainingBasic > 0 {
+		basicPool := operationsData.BasicOperations
+
+		// Check if pool is exhausted
+		if len(basicPool) == 0 {
+			log.Printf("WARNING: Basic operations pool is empty")
+		} else if len(basicPool) < remainingBasic {
+			log.Printf("WARNING: Basic operations pool has only %d operations, but %d are needed",
+				len(basicPool), remainingBasic)
+		}
+
+		// Add operations from pool
 		addedBasicCount := 0
-		for _, opTemplate := range operationsData.BasicOperations {
+		for _, opTemplate := range basicPool {
 			if addedBasicCount >= remainingBasic {
 				break
-			}
-
-			// Skip if this operation is already active in the DB
-			if existingNames[opTemplate.Name] {
-				continue
 			}
 
 			operation := model.Operation{
@@ -203,7 +201,6 @@ func (r *operationsRepository) GenerateDailyOperations(basicCount, specialCount 
 				return err
 			}
 
-			existingNames[opTemplate.Name] = true
 			addedBasicCount++
 		}
 
@@ -254,15 +251,21 @@ func (r *operationsRepository) GenerateDailyOperations(basicCount, specialCount 
 	// Generate special operations from the pool if needed
 	remainingSpecial := int(specialCount) - int(specialOperationsCount)
 	if remainingSpecial > 0 {
+		specialPool := operationsData.SpecialOperations
+
+		// Check if pool is exhausted
+		if len(specialPool) == 0 {
+			log.Printf("WARNING: Special operations pool is empty")
+		} else if len(specialPool) < remainingSpecial {
+			log.Printf("WARNING: Special operations pool has only %d operations, but %d are needed",
+				len(specialPool), remainingSpecial)
+		}
+
+		// Add operations from pool
 		addedSpecialCount := 0
-		for _, opTemplate := range operationsData.SpecialOperations {
+		for _, opTemplate := range specialPool {
 			if addedSpecialCount >= remainingSpecial {
 				break
-			}
-
-			// Skip if this operation is already active in the DB
-			if existingNames[opTemplate.Name] {
-				continue
 			}
 
 			operation := model.Operation{
@@ -287,7 +290,6 @@ func (r *operationsRepository) GenerateDailyOperations(basicCount, specialCount 
 				return err
 			}
 
-			existingNames[opTemplate.Name] = true
 			addedSpecialCount++
 		}
 

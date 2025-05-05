@@ -273,6 +273,713 @@ basic_operations:
     duration: 5
     success_rate: 70
 
+  - name: "Vintage Car Collection"
+    description: "Target a collector's garage storing rare vintage automobiles."
+    type: "carjacking"
+    resources:
+      crew: 3
+      weapons: 1
+      vehicles: 2
+      money: 0
+    rewards:
+      money: 4000
+      respect: 7
+      vehicles: 1
+    risks:
+      crew_loss: 1
+      weapons_loss: 2
+      heat_increase: 12
+    duration: 2400
+    success_rate: 65
+
+  - name: "Motor Show Heist"
+    description: "Infiltrate an automobile exhibition and steal a prototype car."
+    type: "carjacking"
+    resources:
+      crew: 4
+      weapons: 2
+      vehicles: 2
+      money: 1000
+    rewards:
+      money: 8000
+      respect: 15
+      vehicles: 1
+    risks:
+      crew_loss: 2
+      weapons_loss: 2
+      heat_increase: 25
+    duration: 3600
+    success_rate: 60
+
+  - name: "High-End Dealership Raid"
+    description: "Break into a luxury car dealership after hours."
+    type: "carjacking"
+    resources:
+      crew: 3
+      weapons: 2
+      vehicles: 2
+      money: 500
+    rewards:
+      money: 5000
+      respect: 10
+      vehicles: 2
+    risks:
+      crew_loss: 2
+      weapons_loss: 1
+      heat_increase: 20
+    duration: 3000
+    success_rate: 70
+
+  - name: "Shipping Container Theft"
+    description: "Intercept and steal a shipping container full of electronics."
+    type: "goods_smuggling"
+    resources:
+      crew: 4
+      weapons: 2
+      vehicles: 3
+      money: 2000
+    rewards:
+      money: 7000
+      respect: 12
+    risks:
+      crew_loss: 2
+      weapons_loss: 1
+      vehicles_loss: 1
+      heat_increase: 18
+    duration: 4500
+    success_rate: 70
+
+  - name: "Art Gallery Job"
+    description: "Steal valuable artwork from a private gallery."
+    type: "goods_smuggling"
+    resources:
+      crew: 3
+      weapons: 1
+      vehicles: 2
+      money: 1500
+    rewards:
+      money: 10000
+      respect: 15
+      influence: 5
+    risks:
+      crew_loss: 1
+      weapons_loss: 1
+      heat_increase: 20
+    duration: 3600
+    success_rate: 65
+
+  - name: "Jewelry Store Heist"
+    description: "Rob a high-end jewelry store during business hours."
+    type: "goods_smuggling"
+    resources:
+      crew: 5
+      weapons: 4
+      vehicles: 2
+      money: 2000
+    rewards:
+      money: 15000
+      respect: 20
+    risks:
+      crew_loss: 3
+      weapons_loss: 3
+      heat_increase: 35
+    duration: 1800
+    success_rate: 55
+
+  - name: "High Roller Loan Shark"
+    description: "Offer loans to casino high rollers and collect with interest."
+    type: "drug_trafficking"
+    resources:
+      crew: 2
+      weapons: 2
+      vehicles: 1
+      money: 5000
+    rewards:
+      money: 10000
+      respect: 10
+      influence: 5
+    risks:
+      crew_loss: 1
+      weapons_loss: 1
+      money_loss: 5000
+      heat_increase: 15
+    duration: 5400
+    success_rate: 75
+
+  - name: "Nightclub Distribution"
+    description: "Set up a distribution network through popular nightclubs."
+    type: "drug_trafficking"
+    resources:
+      crew: 4
+      weapons: 2
+      vehicles: 2
+      money: 3000
+    rewards:
+      money: 8000
+      respect: 15
+      influence: 10
+    risks:
+      crew_loss: 2
+      weapons_loss: 1
+      heat_increase: 25
+    duration: 4800
+    success_rate: 70
+
+  - name: "College Campus Network"
+    description: "Establish a drug distribution network on a college campus."
+    type: "drug_trafficking"
+    resources:
+      crew: 3
+      weapons: 1
+      vehicles: 2
+      money: 2000
+    rewards:
+      money: 6000
+      respect: 8
+      influence: 5
+    risks:
+      crew_loss: 1
+      weapons_loss: 1
+      heat_increase: 20
+    duration: 3600
+    success_rate: 80
+
+  - name: "Bribe Building Inspector"
+    description: "Bribe city officials to overlook code violations in your properties."
+    type: "official_bribing"
+    resources:
+      crew: 1
+      weapons: 0
+      vehicles: 1
+      money: 5000
+    rewards:
+      influence: 10
+      heat_reduction: 15
+    risks:
+      money_loss: 5000
+      heat_increase: 30
+    duration: 2700
+    success_rate: 75
+
+  - name: "Fix Parking Tickets"
+    description: "Pay off clerks to make parking violations disappear."
+    type: "official_bribing"
+    resources:
+      crew: 1
+      weapons: 0
+      vehicles: 1
+      money: 1000
+    rewards:
+      heat_reduction: 10
+      influence: 2
+    risks:
+      money_loss: 1000
+      heat_increase: 5
+    duration: 1200
+    success_rate: 90
+
+  - name: "Control Health Inspector"
+    description: "Pay off health inspectors to target rival businesses."
+    type: "official_bribing"
+    resources:
+      crew: 1
+      weapons: 0
+      vehicles: 1
+      money: 3000
+    rewards:
+      influence: 8
+      respect: 5
+    risks:
+      money_loss: 3000
+      heat_increase: 15
+    duration: 3600
+    success_rate: 80
+
+  - name: "City Hall Mole"
+    description: "Place an informant in city hall to gather valuable intel."
+    type: "intelligence_gathering"
+    resources:
+      crew: 1
+      weapons: 0
+      vehicles: 1
+      money: 5000
+    rewards:
+      influence: 15
+      heat_reduction: 10
+    risks:
+      money_loss: 5000
+      crew_loss: 1
+      heat_increase: 20
+    duration: 10800
+    success_rate: 70
+
+  - name: "Wiretap Operation"
+    description: "Install wiretaps on rival gang's phone lines."
+    type: "intelligence_gathering"
+    resources:
+      crew: 3
+      weapons: 1
+      vehicles: 2
+      money: 3000
+    rewards:
+      respect: 10
+      influence: 8
+    risks:
+      crew_loss: 2
+      weapons_loss: 1
+      heat_increase: 25
+    duration: 7200
+    success_rate: 65
+
+  - name: "Corrupt Clerk"
+    description: "Bribe a clerk to access police files on your organization."
+    type: "intelligence_gathering"
+    resources:
+      crew: 1
+      weapons: 0
+      vehicles: 1
+      money: 2000
+    rewards:
+      heat_reduction: 20
+      influence: 5
+    risks:
+      money_loss: 2000
+      heat_increase: 30
+    duration: 3600
+    success_rate: 75
+
+  - name: "Gang Territory Takeover"
+    description: "Force a small local gang to join your crew."
+    type: "crew_recruitment"
+    resources:
+      crew: 4
+      weapons: 3
+      vehicles: 2
+      money: 2000
+    rewards:
+      crew: 5
+      respect: 12
+    risks:
+      crew_loss: 2
+      weapons_loss: 2
+      heat_increase: 15
+    duration: 5400
+    success_rate: 70
+
+  - name: "Boxing Gym Recruitment"
+    description: "Recruit fighters from a local boxing gym."
+    type: "crew_recruitment"
+    resources:
+      crew: 2
+      weapons: 1
+      vehicles: 1
+      money: 1500
+    rewards:
+      crew: 3
+      respect: 5
+    risks:
+      crew_loss: 1
+      heat_increase: 5
+    duration: 2700
+    success_rate: 85
+
+  - name: "Protection Racket Expansion"
+    description: "Expand your protection racket to a new neighborhood."
+    type: "goods_smuggling"
+    resources:
+      crew: 4
+      weapons: 3
+      vehicles: 2
+      money: 1000
+    rewards:
+      money: 3000
+      influence: 10
+      respect: 8
+    risks:
+      crew_loss: 2
+      weapons_loss: 2
+      heat_increase: 20
+    duration: 4800
+    success_rate: 70
+
+  - name: "High-Stakes Poker Game"
+    description: "Host an illegal high-stakes poker game and skim profits."
+    type: "drug_trafficking"
+    resources:
+      crew: 3
+      weapons: 2
+      vehicles: 1
+      money: 10000
+    rewards:
+      money: 20000
+      influence: 5
+    risks:
+      money_loss: 10000
+      crew_loss: 1
+      heat_increase: 10
+    duration: 5400
+    success_rate: 75
+
+  - name: "Underground Fighting Ring"
+    description: "Establish an underground fighting ring for gambling profits."
+    type: "drug_trafficking"
+    resources:
+      crew: 5
+      weapons: 2
+      vehicles: 2
+      money: 5000
+    rewards:
+      money: 12000
+      crew: 2
+      respect: 15
+    risks:
+      crew_loss: 3
+      heat_increase: 20
+    duration: 7200
+    success_rate: 70
+
+  - name: "Dock Worker Intimidation"
+    description: "Intimidate dock workers to look the other way during smuggling operations."
+    type: "official_bribing"
+    resources:
+      crew: 4
+      weapons: 3
+      vehicles: 2
+      money: 2000
+    rewards:
+      influence: 10
+      respect: 8
+    risks:
+      crew_loss: 1
+      weapons_loss: 1
+      heat_increase: 15
+    duration: 3600
+    success_rate: 75
+
+  - name: "Racing Circuit Fixed Match"
+    description: "Fix the outcome of street races to make large betting gains."
+    type: "official_bribing"
+    resources:
+      crew: 2
+      weapons: 1
+      vehicles: 3
+      money: 5000
+    rewards:
+      money: 15000
+      vehicles: 1
+    risks:
+      money_loss: 5000
+      vehicles_loss: 1
+      heat_increase: 20
+    duration: 3600
+    success_rate: 70
+
+  - name: "Strip Club Acquisition"
+    description: "Take over a strip club through intimidation tactics."
+    type: "goods_smuggling"
+    resources:
+      crew: 5
+      weapons: 4
+      vehicles: 2
+      money: 10000
+    rewards:
+      money: 5000
+      respect: 15
+      influence: 10
+    risks:
+      crew_loss: 2
+      weapons_loss: 3
+      heat_increase: 25
+    duration: 5400
+    success_rate: 65
+
+  - name: "Social Media Blackmail"
+    description: "Acquire compromising photos of influential people for blackmail."
+    type: "intelligence_gathering"
+    resources:
+      crew: 2
+      weapons: 0
+      vehicles: 1
+      money: 3000
+    rewards:
+      influence: 20
+      respect: 5
+    risks:
+      crew_loss: 1
+      heat_increase: 20
+    duration: 7200
+    success_rate: 75
+
+  - name: "Auto Repair Chop Shop"
+    description: "Establish a chop shop under the cover of a legitimate auto repair business."
+    type: "carjacking"
+    resources:
+      crew: 4
+      weapons: 1
+      vehicles: 2
+      money: 5000
+    rewards:
+      money: 10000
+      vehicles: 2
+      influence: 5
+    risks:
+      crew_loss: 1
+      vehicles_loss: 1
+      heat_increase: 15
+    duration: 8600
+    success_rate: 80
+
+  - name: "Bank Insider Recruitment"
+    description: "Recruit a bank employee to provide information on high-value targets."
+    type: "crew_recruitment"
+    resources:
+      crew: 1
+      weapons: 0
+      vehicles: 1
+      money: 5000
+    rewards:
+      crew: 1
+      influence: 15
+    risks:
+      money_loss: 5000
+      heat_increase: 20
+    duration: 5400
+    success_rate: 70
+
+  - name: "Construction Site Extortion"
+    description: "Extort money from a construction company by threatening delays."
+    type: "goods_smuggling"
+    resources:
+      crew: 4
+      weapons: 3
+      vehicles: 2
+      money: 0
+    rewards:
+      money: 8000
+      respect: 10
+    risks:
+      crew_loss: 1
+      weapons_loss: 1
+      heat_increase: 15
+    duration: 2700
+    success_rate: 75
+
+  - name: "Illegal Street Rave"
+    description: "Organize an unauthorized rave in an abandoned warehouse."
+    type: "drug_trafficking"
+    resources:
+      crew: 5
+      weapons: 1
+      vehicles: 3
+      money: 3000
+    rewards:
+      money: 9000
+      respect: 12
+      crew: 2
+    risks:
+      crew_loss: 1
+      heat_increase: 20
+    duration: 6300
+    success_rate: 80
+
+  - name: "Sports Betting Ring"
+    description: "Set up an illegal sports betting operation in local bars."
+    type: "drug_trafficking"
+    resources:
+      crew: 3
+      weapons: 1
+      vehicles: 2
+      money: 5000
+    rewards:
+      money: 12000
+      influence: 8
+    risks:
+      crew_loss: 1
+      money_loss: 5000
+      heat_increase: 15
+    duration: 4800
+    success_rate: 75
+
+  - name: "Illegal Arms Deal"
+    description: "Broker a deal between arms dealers and local gangs."
+    type: "goods_smuggling"
+    resources:
+      crew: 4
+      weapons: 3
+      vehicles: 2
+      money: 5000
+    rewards:
+      money: 10000
+      weapons: 5
+      respect: 15
+    risks:
+      crew_loss: 2
+      weapons_loss: 2
+      heat_increase: 30
+    duration: 6000
+    success_rate: 65
+
+  - name: "Counterfeiting Operation"
+    description: "Set up a small counterfeiting operation for fake IDs and currency."
+    type: "goods_smuggling"
+    resources:
+      crew: 3
+      weapons: 1
+      vehicles: 1
+      money: 4000
+    rewards:
+      money: 12000
+      influence: 8
+    risks:
+      crew_loss: 1
+      money_loss: 4000
+      heat_increase: 25
+    duration: 7200
+    success_rate: 70
+
+  - name: "Illegal Casino Night"
+    description: "Host an underground casino night for wealthy clients."
+    type: "goods_smuggling"
+    resources:
+      crew: 4
+      weapons: 2
+      vehicles: 2
+      money: 8000
+    rewards:
+      money: 20000
+      influence: 10
+    risks:
+      crew_loss: 1
+      money_loss: 8000
+      heat_increase: 20
+    duration: 5400
+    success_rate: 75
+
+  - name: "Motorcycle Theft Ring"
+    description: "Target and steal high-end motorcycles for resale."
+    type: "carjacking"
+    resources:
+      crew: 3
+      weapons: 1
+      vehicles: 2
+      money: 0
+    rewards:
+      money: 6000
+      vehicles: 1
+      respect: 8
+    risks:
+      crew_loss: 1
+      weapons_loss: 1
+      heat_increase: 15
+    duration: 3600
+    success_rate: 75
+
+  - name: "Yacht Party Recruitment"
+    description: "Host a luxurious yacht party to recruit wealthy investors for your operations."
+    type: "crew_recruitment"
+    resources:
+      crew: 2
+      weapons: 0
+      vehicles: 1
+      money: 10000
+    rewards:
+      money: 15000
+      influence: 20
+    risks:
+      money_loss: 10000
+      heat_increase: 10
+    duration: 7200
+    success_rate: 80
+
+  - name: "Private Eye Blackmail"
+    description: "Hire a private investigator to gather dirt on a public official."
+    type: "intelligence_gathering"
+    resources:
+      crew: 1
+      weapons: 0
+      vehicles: 1
+      money: 5000
+    rewards:
+      influence: 15
+      heat_reduction: 20
+    risks:
+      money_loss: 5000
+      heat_increase: 30
+    duration: 8600
+    success_rate: 70
+
+  - name: "Union Infiltration"
+    description: "Place your people in key positions within labor unions."
+    type: "crew_recruitment"
+    resources:
+      crew: 3
+      weapons: 1
+      vehicles: 2
+      money: 5000
+    rewards:
+      crew: 3
+      influence: 12
+    risks:
+      crew_loss: 2
+      money_loss: 5000
+      heat_increase: 15
+    duration: 10800
+    success_rate: 70
+
+  - name: "Medical Supply Hijack"
+    description: "Intercept and steal a shipment of valuable medical supplies."
+    type: "goods_smuggling"
+    resources:
+      crew: 5
+      weapons: 3
+      vehicles: 3
+      money: 2000
+    rewards:
+      money: 15000
+      respect: 12
+    risks:
+      crew_loss: 2
+      weapons_loss: 2
+      vehicles_loss: 1
+      heat_increase: 25
+    duration: 3600
+    success_rate: 65
+
+  - name: "Corrupt College Dean"
+    description: "Blackmail a college dean to admit students with fake credentials."
+    type: "official_bribing"
+    resources:
+      crew: 2
+      weapons: 0
+      vehicles: 1
+      money: 8000
+    rewards:
+      influence: 15
+      respect: 10
+    risks:
+      money_loss: 8000
+      heat_increase: 25
+    duration: 5400
+    success_rate: 70
+
+  - name: "Lawyer Blackmail"
+    description: "Acquire compromising information to blackmail a prominent attorney."
+    type: "intelligence_gathering"
+    resources:
+      crew: 2
+      weapons: 1
+      vehicles: 1
+      money: 5000
+    rewards:
+      heat_reduction: 25
+      influence: 15
+    risks:
+      crew_loss: 1
+      money_loss: 5000
+      heat_increase: 30
+    duration: 7200
+    success_rate: 65
+
 # Pool of special operations
 special_operations:
   - name: "Armored Car Robbery"
@@ -475,3 +1182,197 @@ special_operations:
     # duration: 8600  # 143 minutes
     duration: 5
     success_rate: 75
+
+  - name: "Federal Reserve Infiltration"
+    description: "Place an undercover operative within the Federal Reserve."
+    type: "intelligence_gathering"
+    is_special: true
+    requirements:
+      min_influence: 60
+      max_heat: 30
+      min_title: "Consigliere"
+    resources:
+      crew: 3
+      weapons: 1
+      vehicles: 2
+      money: 20000
+    rewards:
+      influence: 30
+      heat_reduction: 40
+      respect: 20
+    risks:
+      crew_loss: 3
+      money_loss: 20000
+      heat_increase: 60
+    duration: 14400
+    success_rate: 50
+
+  - name: "Political Campaign Takeover"
+    description: "Secretly fund and control a mayoral campaign."
+    type: "official_bribing"
+    is_special: true
+    requirements:
+      min_influence: 50
+      max_heat: 40
+      min_title: "Underboss"
+    resources:
+      crew: 4
+      weapons: 0
+      vehicles: 3
+      money: 30000
+    rewards:
+      influence: 40
+      respect: 30
+      heat_reduction: 30
+    risks:
+      money_loss: 30000
+      heat_increase: 50
+    duration: 21600
+    success_rate: 60
+
+  - name: "Port Authority Corruption"
+    description: "Establish a network of corrupt officials throughout the port authority."
+    type: "official_bribing"
+    is_special: true
+    requirements:
+      min_influence: 45
+      max_heat: 45
+      min_title: "Capo"
+    resources:
+      crew: 3
+      weapons: 2
+      vehicles: 2
+      money: 25000
+    rewards:
+      influence: 35
+      respect: 25
+      money: 10000
+    risks:
+      crew_loss: 2
+      money_loss: 25000
+      heat_increase: 40
+    duration: 18000
+    success_rate: 65
+
+  - name: "Stadium Construction Bid Rigging"
+    description: "Manipulate the bidding process for a major stadium construction project."
+    type: "official_bribing"
+    is_special: true
+    requirements:
+      min_influence: 55
+      max_heat: 35
+      min_title: "Underboss"
+    resources:
+      crew: 5
+      weapons: 1
+      vehicles: 3
+      money: 40000
+    rewards:
+      money: 100000
+      influence: 25
+      respect: 20
+    risks:
+      crew_loss: 2
+      money_loss: 40000
+      heat_increase: 45
+    duration: 25200
+    success_rate: 60
+
+  - name: "Prison Break: Maximum Security"
+    description: "Orchestrate a breakout from a maximum-security prison for valuable crew members."
+    type: "crew_recruitment"
+    is_special: true
+    requirements:
+      min_influence: 50
+      max_heat: 40
+      min_title: "Underboss"
+    resources:
+      crew: 8
+      weapons: 6
+      vehicles: 4
+      money: 15000
+    rewards:
+      crew: 5
+      respect: 40
+      influence: 20
+    risks:
+      crew_loss: 5
+      weapons_loss: 6
+      vehicles_loss: 2
+      heat_increase: 70
+    duration: 10800
+    success_rate: 40
+
+  - name: "Military Hardware Theft"
+    description: "Break into a military base and steal advanced weapons."
+    type: "goods_smuggling"
+    is_special: true
+    requirements:
+      min_influence: 55
+      max_heat: 30
+      min_title: "Consigliere"
+    resources:
+      crew: 7
+      weapons: 7
+      vehicles: 4
+      money: 10000
+    rewards:
+      weapons: 15
+      respect: 35
+      influence: 25
+    risks:
+      crew_loss: 5
+      weapons_loss: 7
+      vehicles_loss: 2
+      heat_increase: 65
+    duration: 12600
+    success_rate: 45
+
+  - name: "International Art Heist"
+    description: "Steal priceless artwork from a major museum for a wealthy collector."
+    type: "goods_smuggling"
+    is_special: true
+    requirements:
+      min_influence: 45
+      max_heat: 35
+      min_title: "Capo"
+    resources:
+      crew: 6
+      weapons: 4
+      vehicles: 3
+      money: 20000
+    rewards:
+      money: 150000
+      respect: 30
+      influence: 15
+    risks:
+      crew_loss: 3
+      weapons_loss: 3
+      vehicles_loss: 1
+      heat_increase: 55
+    duration: 16200
+    success_rate: 55
+
+  - name: "Corporate Espionage"
+    description: "Infiltrate a major corporation to steal trade secrets."
+    type: "intelligence_gathering"
+    is_special: true
+    requirements:
+      min_influence: 40
+      max_heat: 30
+      min_title: "Capo"
+    resources:
+      crew: 4
+      weapons: 2
+      vehicles: 2
+      money: 15000
+    rewards:
+      money: 80000
+      influence: 20
+      respect: 15
+    risks:
+      crew_loss: 4
+      money_loss: 15000
+      heat_increase: 35
+    duration: 14400
+    success_rate: 60
