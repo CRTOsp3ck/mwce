@@ -276,3 +276,24 @@ func (c *OperationsController) CollectOperationReward(w http.ResponseWriter, r *
 		}(),
 	)
 }
+
+func (c *OperationsController) GetOperationsRefreshInfo(w http.ResponseWriter, r *http.Request) {
+	// Get player ID from context
+	playerID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		util.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+	_ = playerID
+
+	// Get refresh info
+	refreshInfo, err := c.operationsService.GetOperationsRefreshInfo()
+	if err != nil {
+		c.logger.Error().Err(err).Msg("Failed to get operations refresh info")
+		util.RespondWithError(w, http.StatusInternalServerError, "Failed to get operations refresh info")
+		return
+	}
+
+	// Return success response
+	util.RespondWithJSON(w, http.StatusOK, refreshInfo)
+}

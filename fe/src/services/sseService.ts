@@ -8,7 +8,7 @@ import { useCampaignStore } from '@/stores/modules/campaign';
 import { Hotspot } from '@/types/territory';
 import { Notification } from '@/types/player';
 import { POI, MissionOperation } from '@/types/campaign';
-import { Operation } from '@/types/operations';
+import { Operation, OperationsRefreshInfo } from '@/types/operations';
 
 // SSE event types
 export enum SSEEventType {
@@ -85,7 +85,9 @@ export interface CampaignOperationUpdatedEvent {
 export interface OperationsRefreshedEvent {
   operations: Operation[];
   timestamp: string;
+  refreshInfo?: OperationsRefreshInfo;
 }
+
 
 // SSE service state
 const state = reactive({
@@ -393,7 +395,7 @@ function setupEventHandlers(eventSource: EventSource) {
 
       // Update the operations store
       const operationsStore = useOperationsStore();
-      operationsStore.handleOperationsRefreshed(data.operations);
+      operationsStore.handleOperationsRefreshed(data.operations, data.refreshInfo);
     } catch (error) {
       console.error('Error processing operations refreshed event:', error);
     }

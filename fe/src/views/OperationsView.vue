@@ -164,6 +164,9 @@ onMounted(async () => {
     }
   }
 
+  // Fetch operations refresh info
+  await operationsStore.fetchOperationsRefreshInfo();
+
   // Start the operations timer
   operationsStore.startOperationTimer();
 
@@ -578,6 +581,12 @@ function hasInsufficientTimeRemaining(operation: Operation): boolean {
       <p class="subtitle">Complete operations to gain resources, respect, and influence across the city.</p>
     </div>
 
+    <!-- Refresh timer -->
+    <div class="operations-refresh-timer">
+      <div class="timer-label">Next Operations Refresh:</div>
+      <div class="timer-value">{{ operationsStore.timeUntilNextOperationsRefresh }}</div>
+    </div>
+
     <div class="operations-tabs">
       <button class="tab-button" :class="{ active: activeTab === 'available' }" @click="navigateToTab('available')">
         Available Operations
@@ -783,7 +792,8 @@ function hasInsufficientTimeRemaining(operation: Operation): boolean {
             </div>
             <div class="stat">
               <div class="stat-label">Available Until:</div>
-              <div class="stat-value countdown" :class="{ 'expiring-soon': isExpirationSoon(operation.availableUntil) }">
+              <div class="stat-value countdown"
+                :class="{ 'expiring-soon': isExpirationSoon(operation.availableUntil) }">
                 {{ formatTimeUntilExpiration(operation.availableUntil) }}
               </div>
             </div>
@@ -1774,6 +1784,30 @@ function hasInsufficientTimeRemaining(operation: Operation): boolean {
 
     100% {
       opacity: 1;
+    }
+  }
+
+  .operations-refresh-timer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: $spacing-lg;
+    padding: $spacing-md;
+    background-color: rgba($background-lighter, 0.1);
+    border-radius: $border-radius-md;
+    border: 1px solid rgba($secondary-color, 0.2);
+
+    .timer-label {
+      font-weight: 500;
+      color: $text-color;
+    }
+
+    .timer-value {
+      font-size: $font-size-lg;
+      font-weight: bold;
+      color: $secondary-color;
+      font-family: monospace;
     }
   }
 }

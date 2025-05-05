@@ -8,7 +8,8 @@ import {
   OperationResources,
   OperationResult,
   OperationStatus,
-  OperationAttempt
+  OperationAttempt,
+  OperationsRefreshInfo
 } from '@/types/operations';
 import { usePlayerStore } from './player';
 
@@ -22,6 +23,8 @@ interface OperationsState {
   error: string | null;
   timerRefreshCounter: number; // Used to force timer updates
   incomeTimerInterval: number | null;
+
+  refreshInfo: OperationsRefreshInfo | null;
 }
 
 export const useOperationsStore = defineStore('operations', {
@@ -34,10 +37,35 @@ export const useOperationsStore = defineStore('operations', {
     isLoading: false,
     error: null,
     timerRefreshCounter: 0,
-    incomeTimerInterval: null
+    incomeTimerInterval: null,
+    refreshInfo: null,
   }),
 
   getters: {
+    timeUntilNextOperationsRefresh: (state): string => {
+      // Force reactivity with timer counter
+      const _ = state.timerRefreshCounter;
+
+      if (!state.refreshInfo || !state.refreshInfo.nextRefreshTime) {
+        return 'Waiting for data...';
+      }
+
+      const now = new Date();
+      const nextRefresh = new Date(state.refreshInfo.nextRefreshTime);
+      const diffMs = nextRefresh.getTime() - now.getTime();
+
+      if (diffMs <= 0) {
+        return 'Soon...';
+      }
+
+      // Format as HH:MM:SS
+      const hours = Math.floor(diffMs / (1000 * 60 * 60)).toString().padStart(2, '0');
+      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
+      const seconds = Math.floor((diffMs % (1000 * 60)) / 1000).toString().padStart(2, '0');
+
+      return `${hours}:${minutes}:${seconds}`;
+    },
+
     selectedOperation: (state) => {
       return state.selectedOperationId
         ? state.availableOperations.find(o => o.id === state.selectedOperationId)
@@ -120,6 +148,35 @@ export const useOperationsStore = defineStore('operations', {
   },
 
   actions: {
+    async fetchOperationsRefreshInfo() {
+      try {
+        const response = await operationsService.getOperationsRefreshInfo();
+        if (response.success && response.data) {
+          this.refreshInfo = response.data;
+        }
+      } catch (error) {
+        console.error('Error fetching operations refresh info:', error);
+      }
+    },
+
+    // Update handleOperationsRefreshed
+    handleOperationsRefreshed(operations: Operation[], refreshInfo?: OperationsRefreshInfo) {
+      // Existing code...
+      this.availableOperations = operations;
+
+      // Update cache with new operations
+      operations.forEach(operation => {
+        this.operationsCache[operation.id] = operation;
+      });
+
+      // Update refresh information if provided
+      if (refreshInfo) {
+        this.refreshInfo = refreshInfo;
+      }
+
+      console.log('Operations refreshed via SSE:', operations.length);
+    },
+
     async fetchAvailableOperations() {
       this.isLoading = true;
       this.error = null;
@@ -194,18 +251,6 @@ export const useOperationsStore = defineStore('operations', {
       } finally {
         this.isLoading = false;
       }
-    },
-
-    handleOperationsRefreshed(operations: Operation[]) {
-      // Update available operations
-      this.availableOperations = operations;
-
-      // Update cache with new operations
-      operations.forEach(operation => {
-        this.operationsCache[operation.id] = operation;
-      });
-
-      console.log('Operations refreshed via SSE:', operations.length);
     },
 
     selectOperation(operationId: string | null) {

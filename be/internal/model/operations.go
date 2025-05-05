@@ -119,3 +119,10 @@ type OperationResult struct {
 type StartOperationRequest struct {
 	Resources OperationResources `json:"resources" binding:"required"`
 }
+
+// OperationsRefreshInfo represents information about operations refresh timing
+type OperationsRefreshInfo struct {
+	RefreshInterval int    `json:"refreshInterval"` // in minutes
+	LastRefreshTime string `json:"lastRefreshTime"` // ISO8601 format
+	NextRefreshTime string `json:"nextRefreshTime"` // ISO8601 format
+}

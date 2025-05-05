@@ -93,3 +93,9 @@ export enum OperationStatus {
   FAILED = "failed",
   CANCELLED = "cancelled",
 }
+
+export interface OperationsRefreshInfo {
+  refreshInterval: number;  // in minutes
+  lastRefreshTime: string;  // ISO8601 format
+  nextRefreshTime: string;  // ISO8601 format
+}

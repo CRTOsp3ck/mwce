@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"mwce-be/internal/util"
 	"strconv"
+	"sync"
 	"time"
 
 	"mwce-be/internal/config"
@@ -33,6 +34,8 @@ type OperationsService interface {
 
 	// Scheduled jobs
 	StartPeriodicOperationsRefresh()
+
+	GetOperationsRefreshInfo() (*model.OperationsRefreshInfo, error)
 }
 
 type operationsService struct {
@@ -42,6 +45,9 @@ type operationsService struct {
 	sseService     SSEService
 	gameConfig     config.GameConfig
 	logger         zerolog.Logger
+
+	lastRefreshTime time.Time
+	refreshMutex    sync.RWMutex
 }
 
 // NewOperationsService creates a new operations service
@@ -54,13 +60,32 @@ func NewOperationsService(
 	logger zerolog.Logger,
 ) OperationsService {
 	return &operationsService{
-		operationsRepo: operationsRepo,
-		playerRepo:     playerRepo,
-		playerService:  playerService,
-		sseService:     sseService,
-		gameConfig:     gameConfig,
-		logger:         logger,
+		operationsRepo:  operationsRepo,
+		playerRepo:      playerRepo,
+		playerService:   playerService,
+		sseService:      sseService,
+		gameConfig:      gameConfig,
+		logger:          logger,
+		lastRefreshTime: time.Now(),
+		refreshMutex:    sync.RWMutex{},
 	}
+}
+
+func (s *operationsService) GetOperationsRefreshInfo() (*model.OperationsRefreshInfo, error) {
+	// Get refresh information safely with lock
+	s.refreshMutex.RLock()
+	lastRefreshTime := s.lastRefreshTime
+	s.refreshMutex.RUnlock()
+
+	// Calculate next refresh time
+	refreshInterval := s.gameConfig.OperationsRefreshInterval
+	nextRefreshTime := lastRefreshTime.Add(time.Duration(refreshInterval) * time.Minute)
+
+	return &model.OperationsRefreshInfo{
+		RefreshInterval: refreshInterval,
+		LastRefreshTime: lastRefreshTime.Format(time.RFC3339),
+		NextRefreshTime: nextRefreshTime.Format(time.RFC3339),
+	}, nil
 }
 
 // GetAvailableOperations retrieves available operations for a player
@@ -795,11 +820,26 @@ func (s *operationsService) RefreshDailyOperations() error {
 			}
 		}
 
-		// Send SSE event using the sseService field
+		now := time.Now()
+
+		// Update lastRefreshTime
+		s.refreshMutex.Lock()
+		s.lastRefreshTime = now
+		s.refreshMutex.Unlock()
+
+		// Send SSE event with refresh information
+		nextRefreshTime := now.Add(time.Duration(s.gameConfig.OperationsRefreshInterval) * time.Minute)
+
 		s.sseService.SendEventToAll("operations_refreshed", map[string]interface{}{
 			"operations": activeOperations,
-			"timestamp":  time.Now().Format(time.RFC3339),
+			"timestamp":  now.Format(time.RFC3339),
+			"refreshInfo": map[string]interface{}{
+				"refreshInterval": s.gameConfig.OperationsRefreshInterval,
+				"lastRefreshTime": now.Format(time.RFC3339),
+				"nextRefreshTime": nextRefreshTime.Format(time.RFC3339),
+			},
 		})
+
 	}
 
 	return nil

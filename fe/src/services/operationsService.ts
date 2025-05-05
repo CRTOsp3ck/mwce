@@ -5,7 +5,8 @@ import {
   Operation,
   OperationAttempt,
   OperationResources,
-  OperationResult
+  OperationResult,
+  OperationsRefreshInfo
 } from '@/types/operations';
 
 // Define types that match backend models
@@ -17,10 +18,15 @@ export interface StartOperationRequest {
 const ENDPOINTS = {
   OPERATIONS: '/operations',
   CURRENT: '/operations/current',
-  COMPLETED: '/operations/completed'
+  COMPLETED: '/operations/completed',
+  REFRESH_INFO: '/operations/refresh-info'
 };
 
 export default {
+  getOperationsRefreshInfo() {
+    return api.get<OperationsRefreshInfo>(ENDPOINTS.REFRESH_INFO);
+  },
+
   /**
    * Get all available operations
    */
