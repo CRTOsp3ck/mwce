@@ -345,13 +345,33 @@ function getOperationWarning(operation: Operation): string {
 }
 
 function getOperationName(operationAttempt: OperationAttempt): string {
-  const operation = availableOperations.value.find(op => op.id === operationAttempt.operationId);
-  return operation ? operation.name : 'Unknown Operation';
+  // First check if the operation is in the cache
+  const operation = operationsStore.getOperationById(operationAttempt.operationId);
+
+  if (operation) {
+    return operation.name;
+  }
+
+  // If not in cache, fetch it (this will update the cache for next time)
+  operationsStore.fetchOperationDetails(operationAttempt.operationId);
+
+  // Return a temporary placeholder while loading
+  return "Loading...";
 }
 
 function getOperationType(operationAttempt: OperationAttempt): string {
-  const operation = availableOperations.value.find(op => op.id === operationAttempt.operationId);
-  return operation ? formatOperationType(operation.type) : 'Unknown Type';
+  // First check if the operation is in the cache
+  const operation = operationsStore.getOperationById(operationAttempt.operationId);
+
+  if (operation) {
+    return formatOperationType(operation.type);
+  }
+
+  // If not in cache, fetch it (this will update the cache for next time)
+  operationsStore.fetchOperationDetails(operationAttempt.operationId);
+
+  // Return a temporary placeholder while loading
+  return "Loading...";
 }
 
 function getProgressPercentage(operationAttempt: OperationAttempt): number {

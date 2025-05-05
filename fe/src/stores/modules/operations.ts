@@ -16,6 +16,7 @@ interface OperationsState {
   availableOperations: Operation[];
   currentOperations: OperationAttempt[];
   completedOperations: OperationAttempt[];
+  operationsCache: Record<string, Operation>;
   selectedOperationId: string | null;
   isLoading: boolean;
   error: string | null;
@@ -28,6 +29,7 @@ export const useOperationsStore = defineStore('operations', {
     availableOperations: [],
     currentOperations: [],
     completedOperations: [],
+    operationsCache: {},
     selectedOperationId: null,
     isLoading: false,
     error: null,
@@ -110,7 +112,11 @@ export const useOperationsStore = defineStore('operations', {
       // If already passed or less than 5 minutes remaining
       const diffMs = endTime.getTime() - now.getTime();
       return diffMs <= 5 * 60 * 1000 && diffMs >= 0;
-    }
+    },
+
+    getOperationById: (state) => (operationId: string): Operation | undefined => {
+      return state.operationsCache[operationId];
+    },
   },
 
   actions: {
@@ -122,6 +128,11 @@ export const useOperationsStore = defineStore('operations', {
         const response = await operationsService.getAvailableOperations();
         if (response.success && response.data) {
           this.availableOperations = response.data;
+
+          // Update the operations cache with all available operations
+          response.data.forEach(operation => {
+            this.operationsCache[operation.id] = operation;
+          });
         } else {
           throw new Error('Failed to get operations data');
         }
@@ -133,6 +144,22 @@ export const useOperationsStore = defineStore('operations', {
       }
     },
 
+    async fetchOperationDetails(operationId: string) {
+      // Only fetch if we don't already have it in cache
+      if (!this.operationsCache[operationId]) {
+        try {
+          const response = await operationsService.getOperation(operationId);
+          if (response.success && response.data) {
+            // Add to cache
+            this.operationsCache[operationId] = response.data;
+          }
+        } catch (error) {
+          console.error(`Error fetching operation details for ${operationId}:`, error);
+        }
+      }
+      return this.operationsCache[operationId];
+    },
+
     async fetchPlayerOperations() {
       this.isLoading = true;
 
@@ -141,18 +168,44 @@ export const useOperationsStore = defineStore('operations', {
         const currentResponse = await operationsService.getCurrentOperations();
         if (currentResponse.success && currentResponse.data) {
           this.currentOperations = currentResponse.data;
+
+          // Fetch details for any operations not in cache
+          for (const attempt of currentResponse.data) {
+            if (!this.operationsCache[attempt.operationId]) {
+              await this.fetchOperationDetails(attempt.operationId);
+            }
+          }
         }
 
         // Get completed operations
         const completedResponse = await operationsService.getCompletedOperations();
         if (completedResponse.success && completedResponse.data) {
           this.completedOperations = completedResponse.data;
+
+          // Fetch details for any operations not in cache
+          for (const attempt of completedResponse.data) {
+            if (!this.operationsCache[attempt.operationId]) {
+              await this.fetchOperationDetails(attempt.operationId);
+            }
+          }
         }
       } catch (error) {
         console.error('Error fetching player operations:', error);
       } finally {
         this.isLoading = false;
       }
+    },
+
+    handleOperationsRefreshed(operations: Operation[]) {
+      // Update available operations
+      this.availableOperations = operations;
+
+      // Update cache with new operations
+      operations.forEach(operation => {
+        this.operationsCache[operation.id] = operation;
+      });
+
+      console.log('Operations refreshed via SSE:', operations.length);
     },
 
     selectOperation(operationId: string | null) {

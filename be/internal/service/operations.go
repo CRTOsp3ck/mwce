@@ -39,6 +39,7 @@ type operationsService struct {
 	operationsRepo repository.OperationsRepository
 	playerRepo     repository.PlayerRepository
 	playerService  PlayerService
+	sseService     SSEService
 	gameConfig     config.GameConfig
 	logger         zerolog.Logger
 }
@@ -48,6 +49,7 @@ func NewOperationsService(
 	operationsRepo repository.OperationsRepository,
 	playerRepo repository.PlayerRepository,
 	playerService PlayerService,
+	sseService SSEService,
 	gameConfig config.GameConfig,
 	logger zerolog.Logger,
 ) OperationsService {
@@ -55,6 +57,7 @@ func NewOperationsService(
 		operationsRepo: operationsRepo,
 		playerRepo:     playerRepo,
 		playerService:  playerService,
+		sseService:     sseService,
 		gameConfig:     gameConfig,
 		logger:         logger,
 	}
@@ -767,10 +770,35 @@ func (s *operationsService) RefreshDailyOperations() error {
 			Int("target_special", s.gameConfig.SpecialOperationsCount).
 			Msg("Generating new operations to meet target counts")
 
-		return s.operationsRepo.GenerateDailyOperations(
+		err := s.operationsRepo.GenerateDailyOperations(
 			s.gameConfig.DailyOperationsCount,
 			s.gameConfig.SpecialOperationsCount,
 		)
+
+		if err != nil {
+			return err
+		}
+
+		// After successfully generating new operations, fetch them to send via SSE
+		allOperations, err := s.operationsRepo.GetAllOperations()
+		if err != nil {
+			s.logger.Error().Err(err).Msg("Failed to fetch operations for SSE notification")
+			return nil // Don't fail the refresh just because we couldn't send notification
+		}
+
+		// Filter to just active operations that are still available
+		var activeOperations []model.Operation
+		for _, op := range allOperations {
+			if op.IsActive && op.AvailableUntil.After(time.Now()) {
+				activeOperations = append(activeOperations, op)
+			}
+		}
+
+		// Send SSE event using the sseService field
+		s.sseService.SendEventToAll("operations_refreshed", map[string]interface{}{
+			"operations": activeOperations,
+			"timestamp":  time.Now().Format(time.RFC3339),
+		})
 	}
 
 	return nil

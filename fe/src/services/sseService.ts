@@ -3,10 +3,12 @@
 import { reactive } from 'vue';
 import { usePlayerStore } from '@/stores/modules/player';
 import { useTerritoryStore } from '@/stores/modules/territory';
+import { useOperationsStore } from '@/stores/modules/operations';
 import { useCampaignStore } from '@/stores/modules/campaign';
 import { Hotspot } from '@/types/territory';
 import { Notification } from '@/types/player';
 import { POI, MissionOperation } from '@/types/campaign';
+import { Operation } from '@/types/operations';
 
 // SSE event types
 export enum SSEEventType {
@@ -21,7 +23,10 @@ export enum SSEEventType {
   CAMPAIGN_ACTION_TRACKED = 'campaign_action_tracked',
   CAMPAIGN_CHOICE_UPDATED = 'campaign_choice_updated',
   CAMPAIGN_POI_UPDATED = 'campaign_poi_updated',
-  CAMPAIGN_OPERATION_UPDATED = 'campaign_operation_updated'
+  CAMPAIGN_OPERATION_UPDATED = 'campaign_operation_updated',
+
+  // Operations-related types
+  OPERATIONS_REFRESHED = 'operations_refreshed',
 }
 
 // Define SSE event payloads
@@ -75,6 +80,11 @@ export interface CampaignPOIUpdatedEvent {
 export interface CampaignOperationUpdatedEvent {
   operation: MissionOperation;
   isActivated?: boolean;
+}
+
+export interface OperationsRefreshedEvent {
+  operations: Operation[];
+  timestamp: string;
 }
 
 // SSE service state
@@ -373,6 +383,19 @@ function setupEventHandlers(eventSource: EventSource) {
       }
     } catch (error) {
       console.error('Error processing campaign operation updated event:', error);
+    }
+  });
+
+  eventSource.addEventListener(SSEEventType.OPERATIONS_REFRESHED, event => {
+    try {
+      const data = JSON.parse(event.data) as OperationsRefreshedEvent;
+      console.log('Operations refreshed event received:', data);
+
+      // Update the operations store
+      const operationsStore = useOperationsStore();
+      operationsStore.handleOperationsRefreshed(data.operations);
+    } catch (error) {
+      console.error('Error processing operations refreshed event:', error);
     }
   });
 
