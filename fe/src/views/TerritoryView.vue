@@ -1448,23 +1448,28 @@ onBeforeUnmount(() => {
                     <span class="resource-icon">👥</span>
                     <label>Crew</label>
                   </div>
-                  <span class="resource-available">Current Allocation:&nbsp; {{ actionResources.crew }} / {{ availableCrew }}</span>
+                  <span class="resource-available">Current Allocation: {{ actionResources.crew }} / {{ availableCrew
+                    }}</span>
                 </div>
 
                 <div class="control-actions">
                   <div class="adjustment-buttons">
-                    <button class="adjust-btn" @click="adjustResource('crew', -5)"
+                    <button class="adjust-btn large-adjust" @click="adjustResource('crew', -10)"
+                      :disabled="actionResources.crew < 10">-10</button>
+                    <button class="adjust-btn large-adjust" @click="adjustResource('crew', -5)"
                       :disabled="actionResources.crew < 5">-5</button>
                     <button class="adjust-btn" @click="adjustResource('crew', -1)"
-                      :disabled="actionResources.crew <= 0">-1</button>
+                      :disabled="actionResources.crew <= 0">-</button>
                     <div class="number-input">
                       <input type="number" v-model.number="actionResources.crew" :min="0" :max="availableCrew"
                         @input="validateResourceInput('crew')" />
                     </div>
                     <button class="adjust-btn" @click="adjustResource('crew', 1)"
-                      :disabled="actionResources.crew >= availableCrew">+1</button>
-                    <button class="adjust-btn" @click="adjustResource('crew', 5)"
+                      :disabled="actionResources.crew >= availableCrew">+</button>
+                    <button class="adjust-btn large-adjust" @click="adjustResource('crew', 5)"
                       :disabled="actionResources.crew + 5 > availableCrew">+5</button>
+                    <button class="adjust-btn large-adjust" @click="adjustResource('crew', 10)"
+                      :disabled="actionResources.crew + 10 > availableCrew">+10</button>
                   </div>
                 </div>
 
@@ -1481,23 +1486,28 @@ onBeforeUnmount(() => {
                     <span class="resource-icon">🔫</span>
                     <label>Weapons</label>
                   </div>
-                  <span class="resource-available">Current Allocation:&nbsp; {{ actionResources.weapons }} / {{ availableWeapons }}</span>
+                  <span class="resource-available">Current Allocation: {{ actionResources.weapons }} / {{
+                    availableWeapons }}</span>
                 </div>
 
                 <div class="control-actions">
                   <div class="adjustment-buttons">
-                    <button class="adjust-btn" @click="adjustResource('weapons', -5)"
+                    <button class="adjust-btn large-adjust" @click="adjustResource('weapons', -10)"
+                      :disabled="actionResources.weapons < 10">-10</button>
+                    <button class="adjust-btn large-adjust" @click="adjustResource('weapons', -5)"
                       :disabled="actionResources.weapons < 5">-5</button>
                     <button class="adjust-btn" @click="adjustResource('weapons', -1)"
-                      :disabled="actionResources.weapons <= 0">-1</button>
+                      :disabled="actionResources.weapons <= 0">-</button>
                     <div class="number-input">
                       <input type="number" v-model.number="actionResources.weapons" :min="0" :max="availableWeapons"
                         @input="validateResourceInput('weapons')" />
                     </div>
                     <button class="adjust-btn" @click="adjustResource('weapons', 1)"
-                      :disabled="actionResources.weapons >= availableWeapons">+1</button>
-                    <button class="adjust-btn" @click="adjustResource('weapons', 5)"
+                      :disabled="actionResources.weapons >= availableWeapons">+</button>
+                    <button class="adjust-btn large-adjust" @click="adjustResource('weapons', 5)"
                       :disabled="actionResources.weapons + 5 > availableWeapons">+5</button>
+                    <button class="adjust-btn large-adjust" @click="adjustResource('weapons', 10)"
+                      :disabled="actionResources.weapons + 10 > availableWeapons">+10</button>
                   </div>
                 </div>
 
@@ -1514,23 +1524,28 @@ onBeforeUnmount(() => {
                     <span class="resource-icon">🚗</span>
                     <label>Vehicles</label>
                   </div>
-                  <span class="resource-available">Current Allocation:&nbsp; {{ actionResources.vehicles }} / {{ availableVehicles }}</span>
+                  <span class="resource-available">Current Allocation: {{ actionResources.vehicles }} / {{
+                    availableVehicles }}</span>
                 </div>
 
                 <div class="control-actions">
                   <div class="adjustment-buttons">
-                    <button class="adjust-btn" @click="adjustResource('vehicles', -5)"
+                    <button class="adjust-btn large-adjust" @click="adjustResource('vehicles', -10)"
+                      :disabled="actionResources.vehicles < 10">-10</button>
+                    <button class="adjust-btn large-adjust" @click="adjustResource('vehicles', -5)"
                       :disabled="actionResources.vehicles < 5">-5</button>
                     <button class="adjust-btn" @click="adjustResource('vehicles', -1)"
-                      :disabled="actionResources.vehicles <= 0">-1</button>
+                      :disabled="actionResources.vehicles <= 0">-</button>
                     <div class="number-input">
                       <input type="number" v-model.number="actionResources.vehicles" :min="0" :max="availableVehicles"
                         @input="validateResourceInput('vehicles')" />
                     </div>
                     <button class="adjust-btn" @click="adjustResource('vehicles', 1)"
-                      :disabled="actionResources.vehicles >= availableVehicles">+1</button>
-                    <button class="adjust-btn" @click="adjustResource('vehicles', 5)"
+                      :disabled="actionResources.vehicles >= availableVehicles">+</button>
+                    <button class="adjust-btn large-adjust" @click="adjustResource('vehicles', 5)"
                       :disabled="actionResources.vehicles + 5 > availableVehicles">+5</button>
+                    <button class="adjust-btn large-adjust" @click="adjustResource('vehicles', 10)"
+                      :disabled="actionResources.vehicles + 10 > availableVehicles">+10</button>
                   </div>
                 </div>
 
