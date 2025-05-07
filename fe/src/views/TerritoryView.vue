@@ -90,6 +90,46 @@ const displayedHotspots = computed(() => {
   return result;
 });
 
+// Allocation preset definitions
+const allocationPresets = computed(() => [
+  {
+    name: 'None',
+    allocation: { crew: 0, weapons: 0, vehicles: 0 }
+  },
+  {
+    name: 'Minimal',
+    allocation: {
+      crew: Math.min(1, availableCrew.value),
+      weapons: 0,
+      vehicles: 0
+    }
+  },
+  {
+    name: 'Balanced',
+    allocation: {
+      crew: Math.floor(availableCrew.value * 0.3),
+      weapons: Math.floor(availableWeapons.value * 0.3),
+      vehicles: Math.floor(availableVehicles.value * 0.3)
+    }
+  },
+  {
+    name: 'Aggressive',
+    allocation: {
+      crew: Math.floor(availableCrew.value * 0.5),
+      weapons: Math.floor(availableWeapons.value * 0.7),
+      vehicles: Math.floor(availableVehicles.value * 0.4)
+    }
+  },
+  {
+    name: 'All In',
+    allocation: {
+      crew: availableCrew.value,
+      weapons: availableWeapons.value,
+      vehicles: availableVehicles.value
+    }
+  }
+]);
+
 // Controlled hotspots
 const controlledHotspots = computed(() => {
   return territoryStore.controlledHotspots;
@@ -538,6 +578,57 @@ function formatTimeAgo(timestamp: string): string {
   }
 }
 
+// Helper methods for resource allocation UI
+function getResourceIcon(resource: 'crew' | 'weapons' | 'vehicles'): string {
+  const icons = {
+    crew: '👥',
+    weapons: '🔫',
+    vehicles: '🚗'
+  };
+  return icons[resource];
+}
+
+function getResourceLabel(resource: 'crew' | 'weapons' | 'vehicles'): string {
+  return resource.charAt(0).toUpperCase() + resource.slice(1);
+}
+
+function getAvailableResource(resource: 'crew' | 'weapons' | 'vehicles'): number {
+  const availableResources = {
+    crew: availableCrew.value,
+    weapons: availableWeapons.value,
+    vehicles: availableVehicles.value
+  };
+  return availableResources[resource];
+}
+
+// Methods to handle resource allocation UI interactions
+function applyAllocationPreset(preset: { name: string, allocation: ActionResources }): void {
+  actionResources.value = { ...preset.allocation };
+}
+
+function adjustResource(resource: 'crew' | 'weapons' | 'vehicles', amount: number): void {
+  const availableResource = getAvailableResource(resource);
+
+  let newValue = actionResources.value[resource] + amount;
+  newValue = Math.max(0, Math.min(availableResource, newValue));
+
+  actionResources.value[resource] = newValue;
+}
+
+function validateResourceInput(resourceType: 'crew' | 'weapons' | 'vehicles'): void {
+  const maxValue = getAvailableResource(resourceType);
+  const currentValue = actionResources.value[resourceType];
+
+  // Ensure value is not negative
+  if (currentValue < 0) {
+    actionResources.value[resourceType] = 0;
+  }
+  // Ensure value does not exceed maximum
+  else if (currentValue > maxValue) {
+    actionResources.value[resourceType] = maxValue;
+  }
+}
+
 // Action functions
 function selectHotspot(hotspot: Hotspot) {
   territoryStore.selectHotspot(hotspot.id);
@@ -900,7 +991,8 @@ onBeforeUnmount(() => {
                 <h3>{{ hotspot.name }}</h3>
                 <div class="hotspot-type">{{ hotspot.type }}</div>
               </div>
-              <div class="hotspot-info-icon" @mouseover.stop="showTooltip(hotspot, $event)" @mouseleave.stop="hideTooltip">
+              <div class="hotspot-info-icon" @mouseover.stop="showTooltip(hotspot, $event)"
+                @mouseleave.stop="hideTooltip">
                 <span class="info-icon">ℹ️</span>
               </div>
             </div>
@@ -1098,7 +1190,8 @@ onBeforeUnmount(() => {
                 <h3>{{ hotspot.name }}</h3>
                 <div class="hotspot-type">{{ hotspot.type }}</div>
               </div>
-              <div class="hotspot-info-icon" @mouseover.stop="showTooltip(hotspot, $event)" @mouseleave.stop="hideTooltip">
+              <div class="hotspot-info-icon" @mouseover.stop="showTooltip(hotspot, $event)"
+                @mouseleave.stop="hideTooltip">
                 <span class="info-icon">ℹ️</span>
               </div>
             </div>
@@ -1331,38 +1424,121 @@ onBeforeUnmount(() => {
         <div class="resource-allocation">
           <h4>Allocate Resources</h4>
 
-          <div class="resource-sliders">
-            <div class="resource-slider">
-              <div class="slider-header">
-                <div class="resource-label">
-                  <span class="resource-icon">👥</span>
-                  <label>Crew: {{ actionResources.crew }}</label>
-                </div>
-                <span class="resource-available">Available: {{ availableCrew }}</span>
+          <div class="resource-allocation-ui">
+            <div class="allocation-presets">
+              <h5>Quick Allocation:</h5>
+              <div class="preset-buttons">
+                <button v-for="preset in allocationPresets" :key="preset.name" @click="applyAllocationPreset(preset)"
+                  :class="{
+                    'active':
+                      actionResources.crew === preset.allocation.crew &&
+                      actionResources.weapons === preset.allocation.weapons &&
+                      actionResources.vehicles === preset.allocation.vehicles
+                  }" class="preset-button">
+                  {{ preset.name }}
+                </button>
               </div>
-              <input type="range" v-model="actionResources.crew" :min="0" :max="availableCrew" step="1">
             </div>
 
-            <div class="resource-slider">
-              <div class="slider-header">
-                <div class="resource-label">
-                  <span class="resource-icon">🔫</span>
-                  <label>Weapons: {{ actionResources.weapons }}</label>
+            <div class="resource-controls">
+              <!-- Crew Resource Control -->
+              <div class="resource-control">
+                <div class="control-header">
+                  <div class="resource-label">
+                    <span class="resource-icon">👥</span>
+                    <label>Crew</label>
+                  </div>
+                  <span class="resource-available">Current Allocation:&nbsp; {{ actionResources.crew }} / {{ availableCrew }}</span>
                 </div>
-                <span class="resource-available">Available: {{ availableWeapons }}</span>
-              </div>
-              <input type="range" v-model="actionResources.weapons" :min="0" :max="availableWeapons" step="1">
-            </div>
 
-            <div class="resource-slider">
-              <div class="slider-header">
-                <div class="resource-label">
-                  <span class="resource-icon">🚗</span>
-                  <label>Vehicles: {{ actionResources.vehicles }}</label>
+                <div class="control-actions">
+                  <div class="adjustment-buttons">
+                    <button class="adjust-btn" @click="adjustResource('crew', -5)"
+                      :disabled="actionResources.crew < 5">-5</button>
+                    <button class="adjust-btn" @click="adjustResource('crew', -1)"
+                      :disabled="actionResources.crew <= 0">-1</button>
+                    <div class="number-input">
+                      <input type="number" v-model.number="actionResources.crew" :min="0" :max="availableCrew"
+                        @input="validateResourceInput('crew')" />
+                    </div>
+                    <button class="adjust-btn" @click="adjustResource('crew', 1)"
+                      :disabled="actionResources.crew >= availableCrew">+1</button>
+                    <button class="adjust-btn" @click="adjustResource('crew', 5)"
+                      :disabled="actionResources.crew + 5 > availableCrew">+5</button>
+                  </div>
                 </div>
-                <span class="resource-available">Available: {{ availableVehicles }}</span>
+
+                <div class="resource-allocation-bar">
+                  <div class="allocation-fill"
+                    :style="{ width: `${(actionResources.crew / Math.max(1, availableCrew)) * 100}%` }"></div>
+                </div>
               </div>
-              <input type="range" v-model="actionResources.vehicles" :min="0" :max="availableVehicles" step="1">
+
+              <!-- Weapons Resource Control -->
+              <div class="resource-control">
+                <div class="control-header">
+                  <div class="resource-label">
+                    <span class="resource-icon">🔫</span>
+                    <label>Weapons</label>
+                  </div>
+                  <span class="resource-available">Current Allocation:&nbsp; {{ actionResources.weapons }} / {{ availableWeapons }}</span>
+                </div>
+
+                <div class="control-actions">
+                  <div class="adjustment-buttons">
+                    <button class="adjust-btn" @click="adjustResource('weapons', -5)"
+                      :disabled="actionResources.weapons < 5">-5</button>
+                    <button class="adjust-btn" @click="adjustResource('weapons', -1)"
+                      :disabled="actionResources.weapons <= 0">-1</button>
+                    <div class="number-input">
+                      <input type="number" v-model.number="actionResources.weapons" :min="0" :max="availableWeapons"
+                        @input="validateResourceInput('weapons')" />
+                    </div>
+                    <button class="adjust-btn" @click="adjustResource('weapons', 1)"
+                      :disabled="actionResources.weapons >= availableWeapons">+1</button>
+                    <button class="adjust-btn" @click="adjustResource('weapons', 5)"
+                      :disabled="actionResources.weapons + 5 > availableWeapons">+5</button>
+                  </div>
+                </div>
+
+                <div class="resource-allocation-bar">
+                  <div class="allocation-fill"
+                    :style="{ width: `${(actionResources.weapons / Math.max(1, availableWeapons)) * 100}%` }"></div>
+                </div>
+              </div>
+
+              <!-- Vehicles Resource Control -->
+              <div class="resource-control">
+                <div class="control-header">
+                  <div class="resource-label">
+                    <span class="resource-icon">🚗</span>
+                    <label>Vehicles</label>
+                  </div>
+                  <span class="resource-available">Current Allocation:&nbsp; {{ actionResources.vehicles }} / {{ availableVehicles }}</span>
+                </div>
+
+                <div class="control-actions">
+                  <div class="adjustment-buttons">
+                    <button class="adjust-btn" @click="adjustResource('vehicles', -5)"
+                      :disabled="actionResources.vehicles < 5">-5</button>
+                    <button class="adjust-btn" @click="adjustResource('vehicles', -1)"
+                      :disabled="actionResources.vehicles <= 0">-1</button>
+                    <div class="number-input">
+                      <input type="number" v-model.number="actionResources.vehicles" :min="0" :max="availableVehicles"
+                        @input="validateResourceInput('vehicles')" />
+                    </div>
+                    <button class="adjust-btn" @click="adjustResource('vehicles', 1)"
+                      :disabled="actionResources.vehicles >= availableVehicles">+1</button>
+                    <button class="adjust-btn" @click="adjustResource('vehicles', 5)"
+                      :disabled="actionResources.vehicles + 5 > availableVehicles">+5</button>
+                  </div>
+                </div>
+
+                <div class="resource-allocation-bar">
+                  <div class="allocation-fill"
+                    :style="{ width: `${(actionResources.vehicles / Math.max(1, availableVehicles)) * 100}%` }"></div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1515,12 +1691,8 @@ onBeforeUnmount(() => {
     :position="tooltipPosition" />
 
   <!-- Hotspot Detail Modal -->
-  <HotspotDetailModal
-    :visible="showDetailModal"
-    @update:visible="showDetailModal = $event"
-    :hotspot="detailModalHotspot"
-    @open-action-modal="handleOpenActionModal"
-  />
+  <HotspotDetailModal :visible="showDetailModal" @update:visible="showDetailModal = $event"
+    :hotspot="detailModalHotspot" @open-action-modal="handleOpenActionModal" />
 </template>
 
 <style lang="scss">
@@ -1528,46 +1700,46 @@ onBeforeUnmount(() => {
   // @include page-container;
 
   .hotspot-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: $spacing-md;
-
-  .hotspot-title-area {
-    flex: 1;
-  }
-
-  h3 {
-    margin: 0 0 $spacing-xs 0;
-    font-size: $font-size-lg;
-  }
-
-  .hotspot-type {
-    color: $text-secondary;
-    font-size: $font-size-sm;
-  }
-
-  .hotspot-info-icon {
-    cursor: help;
-    height: 24px;
-    width: 24px;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background-color: rgba($background-lighter, 0.2);
-    transition: all 0.2s ease;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: $spacing-md;
 
-    &:hover {
-      background-color: rgba($gold-color, 0.2);
-      transform: scale(1.1);
+    .hotspot-title-area {
+      flex: 1;
     }
 
-    .info-icon {
-      font-size: 14px;
+    h3 {
+      margin: 0 0 $spacing-xs 0;
+      font-size: $font-size-lg;
+    }
+
+    .hotspot-type {
+      color: $text-secondary;
+      font-size: $font-size-sm;
+    }
+
+    .hotspot-info-icon {
+      cursor: help;
+      height: 24px;
+      width: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background-color: rgba($background-lighter, 0.2);
+      transition: all 0.2s ease;
+
+      &:hover {
+        background-color: rgba($gold-color, 0.2);
+        transform: scale(1.1);
+      }
+
+      .info-icon {
+        font-size: 14px;
+      }
     }
   }
-}
 
   .page-header {
     @include flex-column;
@@ -2413,58 +2585,160 @@ onBeforeUnmount(() => {
           margin-bottom: $spacing-md;
         }
 
-        .resource-sliders {
+        /* New Resource Allocation UI Styles */
+        .resource-allocation-ui {
           @include flex-column;
           gap: $spacing-md;
           margin-bottom: $spacing-lg;
 
-          .resource-slider {
-            .slider-header {
-              @include flex-between;
-              margin-bottom: $spacing-xs;
+          .allocation-presets {
+            margin-bottom: $spacing-sm;
 
-              .resource-label {
-                display: flex;
-                align-items: center;
-                gap: $spacing-xs;
-                font-weight: 500;
+            h5 {
+              margin: 0 0 $spacing-sm 0;
+              font-size: $font-size-md;
+            }
 
-                .resource-icon {
-                  font-size: 18px;
+            .preset-buttons {
+              display: flex;
+              flex-wrap: wrap;
+              gap: $spacing-sm;
+
+              .preset-button {
+                background-color: $background-lighter;
+                border: 1px solid $border-color;
+                border-radius: $border-radius-sm;
+                padding: $spacing-sm $spacing-md;
+                font-size: $font-size-sm;
+                color: $text-color;
+                cursor: pointer;
+                transition: $transition-base;
+
+                &:hover {
+                  background-color: rgba($secondary-color, 0.1);
+                  border-color: $secondary-color;
+                }
+
+                &.active {
+                  background-color: $secondary-color;
+                  border-color: $secondary-color;
+                  color: $background-darker;
+                  font-weight: 500;
+                }
+              }
+            }
+          }
+
+          .resource-controls {
+            @include flex-column;
+            gap: $spacing-md;
+
+            .resource-control {
+              background-color: rgba($background-lighter, 0.1);
+              border-radius: $border-radius-md;
+              padding: $spacing-md;
+              @include flex-column;
+              gap: $spacing-sm;
+
+              .control-header {
+                @include flex-between;
+                margin-bottom: $spacing-xs;
+
+                .resource-label {
+                  display: flex;
+                  align-items: center;
+                  gap: $spacing-xs;
+                  font-weight: 500;
+
+                  .resource-icon {
+                    font-size: 18px;
+                  }
+                }
+
+                .resource-available {
+                  font-weight: 600;
+                  color: $secondary-color;
                 }
               }
 
-              .resource-available {
-                font-size: $font-size-sm;
-                color: $text-secondary;
+              .control-actions {
+                .adjustment-buttons {
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  gap: $spacing-xs;
+
+                  .adjust-btn {
+                    background-color: $background-lighter;
+                    border: 1px solid $border-color;
+                    color: $text-color;
+                    border-radius: $border-radius-sm;
+                    padding: 4px 8px;
+                    font-size: $font-size-sm;
+                    cursor: pointer;
+                    transition: $transition-base;
+                    min-width: 32px;
+
+                    &:hover:not(:disabled) {
+                      background-color: $secondary-color;
+                      color: $background-darker;
+                    }
+
+                    &:disabled {
+                      opacity: 0.5;
+                      cursor: not-allowed;
+                    }
+                  }
+
+                  .number-input {
+                    flex: 1;
+                    max-width: 80px;
+
+                    input {
+                      width: 100%;
+                      background-color: $background-darker;
+                      border: 1px solid $border-color;
+                      color: $text-color;
+                      border-radius: $border-radius-sm;
+                      padding: 4px 8px;
+                      text-align: center;
+                      font-size: $font-size-md;
+                      font-weight: 600;
+
+                      &:focus {
+                        outline: none;
+                        border-color: $secondary-color;
+                      }
+
+                      /* Remove spinner arrows in Chrome, Safari, Edge, Opera */
+                      &::-webkit-outer-spin-button,
+                      &::-webkit-inner-spin-button {
+                        -webkit-appearance: none;
+                        margin: 0;
+                      }
+
+                      /* Remove spinner arrows in Firefox */
+                      // &[type=number] {
+                      //   -moz-appearance: textfield;
+                      // }
+                    }
+                  }
+                }
               }
-            }
 
-            input[type="range"] {
-              width: 100%;
-              // -webkit-appearance: none;
-              height: 8px;
-              border-radius: 4px;
-              background: $background-darker;
-              outline: none;
+              .resource-allocation-bar {
+                height: 8px;
+                background-color: $background-darker;
+                border-radius: $border-radius-sm;
+                overflow: hidden;
+                margin-top: $spacing-xs;
 
-              &::-webkit-slider-thumb {
-                -webkit-appearance: none;
-                appearance: none;
-                width: 18px;
-                height: 18px;
-                border-radius: 50%;
-                background: $secondary-color;
-                cursor: pointer;
-              }
-
-              &::-moz-range-thumb {
-                width: 18px;
-                height: 18px;
-                border-radius: 50%;
-                background: $secondary-color;
-                cursor: pointer;
-                border: none;
+                .allocation-fill {
+                  height: 100%;
+                  background: linear-gradient(to right, $primary-color, $secondary-color);
+                  border-radius: $border-radius-sm;
+                  transition: width 0.3s ease;
+                }
               }
             }
           }
