@@ -26,7 +26,7 @@ export const useTravelStore = defineStore('travel', {
 
   getters: {
     // Whether the player is in any region or at "headquarters"
-    isInRegion: state => !!state.currentRegion,
+    // isInRegion: state => !!state.currentRegion,
 
     // Whether the player is in a specific region
     isInRegion: state => (regionId: string) => {
@@ -82,7 +82,7 @@ export const useTravelStore = defineStore('travel', {
 
       try {
         const response = await travelService.getCurrentRegion();
-        if (response.success) {
+        if (response.success && response.data) {
           this.currentRegion = response.data;
         } else {
           throw new Error('Failed to load current region');
