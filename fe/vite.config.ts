@@ -10,7 +10,7 @@ export default defineConfig({
   plugins: [
     vue(),
     vueJsx(),
-    vueDevTools(),
+    // vueDevTools(),
   ],
   resolve: {
     alias: {
@@ -27,6 +27,11 @@ export default defineConfig({
           @import "@/assets/styles/_variables.scss";
           @import "@/assets/styles/_mixins.scss";
         `,
+        silenceDeprecations: [
+          'global-builtin',
+          'color-functions',
+          'import',
+        ],
       },
     },
   },
