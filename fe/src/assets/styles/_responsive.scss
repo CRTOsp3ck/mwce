@@ -679,12 +679,159 @@
 
 // Hover effects only on desktop devices
 /*
+// Complete hover effects for desktop devices
 @media (hover: hover) {
-  // Apply hover effects only on devices that support hover
-  .nav-item:hover,
-  .region-indicator:hover,
+  .nav-item:hover {
+    color: $secondary-color;
+    background-color: rgba($secondary-color, 0.1);
+    transform: translateY(-2px);
+  }
+
+  .region-indicator:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
   .base-button:hover {
-    // Hover styles remain the same
+    transform: translateY(-2px);
+
+    // Variant-specific hover effects
+    &.variant-primary {
+      background-color: lighten($primary-color, 5%);
+      box-shadow: 0 4px 8px rgba($primary-color, 0.3);
+    }
+
+    &.variant-secondary {
+      background-color: lighten($secondary-color, 5%);
+      box-shadow: 0 4px 8px rgba($secondary-color, 0.3);
+    }
+
+    &.variant-danger {
+      background-color: lighten($danger-color, 5%);
+      box-shadow: 0 4px 8px rgba($danger-color, 0.3);
+    }
+
+    &.variant-success {
+      background-color: lighten($success-color, 5%);
+      box-shadow: 0 4px 8px rgba($success-color, 0.3);
+    }
+
+    &.variant-warning {
+      background-color: lighten($warning-color, 5%);
+      box-shadow: 0 4px 8px rgba($warning-color, 0.3);
+    }
+
+    &.variant-info {
+      background-color: lighten($info-color, 5%);
+      box-shadow: 0 4px 8px rgba($info-color, 0.3);
+    }
+
+    &.variant-outline {
+      background-color: rgba($secondary-color, 0.1);
+      border-color: lighten($secondary-color, 10%);
+    }
+
+    &.variant-text {
+      background-color: rgba($secondary-color, 0.1);
+      color: lighten($secondary-color, 10%);
+    }
+  }
+
+  // Additional hover effects for specific components
+  .menu-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-left: 3px solid $secondary-color;
+    padding-left: calc($spacing-md - 3px);
+  }
+
+  .notification-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    transform: translateX(5px);
+  }
+
+  .more-menu-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    transform: translateX(5px);
+  }
+
+  .game-card:hover {
+    transform: translateY(-5px);
+    box-shadow: $shadow-lg;
+  }
+
+  .scroll-arrow:hover {
+    opacity: 1 !important;
+    color: $secondary-color;
+    transform: translateY(-50%) scale(1.1);
+  }
+
+  .close-overlay:hover,
+  .close-more-menu:hover,
+  .modal-close:hover {
+    color: $text-color;
+    transform: scale(1.1);
+  }
+
+  .mark-read-btn:hover {
+    text-decoration: underline;
+    color: lighten($secondary-color, 10%);
+  }
+
+  .action-btn:hover {
+    background-color: lighten($secondary-color, 5%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba($secondary-color, 0.3);
+  }
+
+  .tab-btn:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  .dropdown-menu .menu-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-left: 3px solid transparent;
+  }
+
+  .user-controls .profile-link:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  .user-controls .notification-bell .bell-icon:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+
+    .notification-icon {
+      color: $secondary-color;
+    }
+  }
+
+  .login-btn:hover {
+    background-color: rgba($secondary-color, 0.1);
+    border-color: lighten($secondary-color, 10%);
+  }
+
+  .register-btn:hover {
+    background-color: lighten($secondary-color, 5%);
+  }
+
+  // Sidebar specific hover effects
+  .app-sidebar {
+    .nav-item:hover {
+      background-color: rgba($background-lighter, 0.2);
+    }
+
+    .player-avatar:hover {
+      box-shadow: 0 0 15px rgba($secondary-color, 0.7);
+    }
+  }
+
+  // Header specific hover effects
+  .app-header {
+    .nav-item:hover {
+      &.active:after {
+        box-shadow: 0 0 12px rgba($secondary-color, 0.7);
+      }
+    }
   }
 }
 */
