@@ -1,12 +1,14 @@
-// src/components/layout/AppSidebar.vue
+// src/components/layout/AppSidebar.vue (Updated to use centralized navigation)
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import BaseButton from '@/components/ui/BaseButton.vue';
+import BaseTooltip from '@/components/ui/BaseTooltip.vue';
 import { usePlayerStore } from '@/stores/modules/player';
 import { useTerritoryStore } from '@/stores/modules/territory';
 import { useTravelStore } from '@/stores/modules/travel';
+import { getSidebarNavItems } from '@/config/navigationConfig';
 
 const router = useRouter();
 const route = useRoute();
@@ -15,6 +17,9 @@ const territoryStore = useTerritoryStore();
 
 // Access the travel store
 const travelStore = useTravelStore();
+
+// Get navigation items from central config
+const menuItems = computed(() => getSidebarNavItems());
 
 // Check if the player is in a region
 const currentRegion = computed(() => travelStore.currentRegion);
@@ -73,25 +78,13 @@ function formatNumber(value: number): string {
   return value.toString();
 }
 
-// Navigation menu items with region requirements
-const menuItems = computed(() => [
-  { path: '/', name: 'Dashboard', icon: '📊', requiresRegion: false },
-  { path: '/campaigns', name: 'Campaign', icon: '📜', requiresRegion: true },
-  { path: '/travel', name: 'Travel Agency', icon: '✈️', requiresRegion: false },
-  { path: '/territory', name: 'Territory', icon: '🏙️', requiresRegion: true },
-  { path: '/operations', name: 'Operations', icon: '🎯', requiresRegion: true },
-  { path: '/market', name: 'Market', icon: '💹', requiresRegion: true },
-  { path: '/rankings', name: 'Rankings', icon: '🏆', requiresRegion: false },
-  { path: '/nft', name: 'NFT', icon: '💎', requiresRegion: false },
-]);
-
 // Check if a menu item is active
 function isActive(path: string): boolean {
   return route.path === path;
 }
 
 // Navigate to a path, respecting region requirements
-function navigateTo(item: { path: string, requiresRegion: boolean }): void {
+function navigateTo(item: any): void {
   if (item.requiresRegion && !isInRegion.value) {
     // If requires region but player has no region, go to travel view
     router.push({
@@ -191,39 +184,46 @@ function navigateTo(item: { path: string, requiresRegion: boolean }): void {
       </div>
     </div>
 
-    <!-- Updated Navigation Menu -->
+    <!-- Updated Navigation Menu with tooltips -->
     <nav class="sidebar-nav">
-      <div
+      <BaseTooltip
         v-for="item in menuItems"
-        :key="item.path"
-        class="nav-item"
-        :class="{
-          active: isActive(item.path),
-          disabled: item.requiresRegion && !isInRegion
-        }"
-        @click="navigateTo(item)"
+        :key="item.id"
+        :text="item.tooltip"
+        position="right"
       >
-        <span class="nav-icon">{{ item.icon }}</span>
-        <span class="nav-label">{{ item.name }}</span>
-        <span
-          v-if="item.requiresRegion && !isInRegion"
-          class="region-required"
-          title="You need to travel to a region first"
-        >🌎</span>
-      </div>
+        <div
+          class="nav-item"
+          :class="{
+            active: isActive(item.path),
+            disabled: item.requiresRegion && !isInRegion
+          }"
+          @click="navigateTo(item)"
+        >
+          <span class="nav-icon">{{ item.icon }}</span>
+          <span class="nav-label">{{ item.name }}</span>
+          <span
+            v-if="item.requiresRegion && !isInRegion"
+            class="region-required"
+            title="You need to travel to a region first"
+          >🌎</span>
+        </div>
+      </BaseTooltip>
     </nav>
 
     <div class="sidebar-actions">
-      <button class="action-btn collect-all" @click="collectAllPending"
-        :disabled="pendingCollections <= 0 || isLoading">
-        <div style="display: flex; flex-direction: column; gap: 8px; align-items: center;">
-          <div class="icon">💼</div>
-          <div>Collect All</div>
-          <div style="display: flex; flex-direction: column; gap: 2px;">
-            <div>${{ formatNumber(pendingCollections) }}</div>
+      <BaseTooltip text="Collect all pending income from your territories">
+        <button class="action-btn collect-all" @click="collectAllPending"
+          :disabled="pendingCollections <= 0 || isLoading">
+          <div style="display: flex; flex-direction: column; gap: 8px; align-items: center;">
+            <div class="icon">💼</div>
+            <div>Collect All</div>
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div>${{ formatNumber(pendingCollections) }}</div>
+            </div>
           </div>
-        </div>
-      </button>
+        </button>
+      </BaseTooltip>
     </div>
   </aside>
 </template>
@@ -375,7 +375,7 @@ function navigateTo(item: { path: string, requiresRegion: boolean }): void {
     }
   }
 
-  /* Updated navigation menu styling */
+  /* Updated navigation menu styling with tooltip support */
   .sidebar-nav {
     @include flex-column;
     gap: $spacing-xs;

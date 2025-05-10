@@ -1,10 +1,12 @@
-// src/components/layout/AppHeader.vue
+// src/components/layout/AppHeader.vue (Updated)
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { usePlayerStore } from '@/stores/modules/player';
 import { useTravelStore } from '@/stores/modules/travel';
+import { getHeaderNavItems } from '@/config/navigationConfig';
+import BaseTooltip from '@/components/ui/BaseTooltip.vue';
 import {
     Notification,
     NotificationType
@@ -14,6 +16,9 @@ const route = useRoute();
 const router = useRouter();
 const playerStore = usePlayerStore();
 const travelStore = useTravelStore();
+
+// Get navigation items from central config
+const navItems = getHeaderNavItems();
 
 // UI state
 const currentRoute = computed(() => route.path);
@@ -34,18 +39,6 @@ const playerAvatar = ref('🤵');
 // Current region info
 const currentRegion = computed(() => travelStore.currentRegion);
 const currentLocationName = computed(() => travelStore.currentLocationName);
-
-// Navigation
-const navItems = [
-{ path: '/', name: 'Dashboard', icon: '📊', requiresRegion: false },
-  { path: '/campaigns', name: 'Campaign', icon: '📜', requiresRegion: true },
-  { path: '/travel', name: 'Travel Agency', icon: '✈️', requiresRegion: false },
-  { path: '/territory', name: 'Territory', icon: '🏙️', requiresRegion: true },
-  { path: '/operations', name: 'Operations', icon: '🎯', requiresRegion: true },
-  { path: '/market', name: 'Market', icon: '💹', requiresRegion: true },
-  { path: '/rankings', name: 'Rankings', icon: '🏆', requiresRegion: false },
-  { path: '/nft', name: 'NFT', icon: '💎', requiresRegion: false },
-];
 
 // Notifications
 const notifications = computed(() => playerStore.notifications);
@@ -135,6 +128,27 @@ function formatTime(date: string): string {
     return `${Math.floor(diff / 1440)} days ago`;
 }
 
+// Check if a menu item is disabled (requires region but player has no region)
+function isMenuItemDisabled(item: any): boolean {
+    return item.requiresRegion && !currentRegion.value;
+}
+
+// Navigation helper
+function navigateToItem(item: any): void {
+    if (item.requiresRegion && !currentRegion.value) {
+        // If requires region but player has no region, go to travel view
+        router.push({
+            path: '/travel',
+            query: {
+                returnTo: item.path,
+                message: 'You need to travel to a region first'
+            }
+        });
+    } else {
+        router.push(item.path);
+    }
+}
+
 // Action functions
 function toggleNotifications(event: MouseEvent) {
     event.stopPropagation();
@@ -181,24 +195,37 @@ async function logout() {
     <header class="app-header">
         <div class="logo">
             <router-link to="/">
-              <!-- <h1>Mafia Wars: <span class="gold-text">Criminal Empire</span></h1> -->
                 <h1>Mafioso: <span class="gold-text">Criminal Empire</span></h1>
             </router-link>
         </div>
 
         <nav class="main-nav">
-            <router-link v-for="item in navItems" :key="item.path" :to="item.path" class="nav-item"
-                :class="{ active: currentRoute === item.path }">
-                <span class="nav-icon">{{ item.icon }}</span>
-                <!-- <span class="nav-label">{{ item.name }}</span> -->
-            </router-link>
+            <BaseTooltip
+                v-for="item in navItems"
+                :key="item.id"
+                :text="item.tooltip"
+                position="bottom"
+            >
+                <div
+                    @click="navigateToItem(item)"
+                    class="nav-item"
+                    :class="{
+                        active: currentRoute === item.path,
+                        disabled: isMenuItemDisabled(item)
+                    }"
+                >
+                    <span class="nav-icon">{{ item.icon }}</span>
+                </div>
+            </BaseTooltip>
         </nav>
 
-        <!-- Region indicator added here -->
-        <div class="region-indicator" @click="router.push('/travel')">
-            <div class="region-icon">{{ currentRegion ? '🌆' : '🏠' }}</div>
-            <div class="region-name">{{ currentLocationName }}</div>
-        </div>
+        <!-- Region indicator with tooltip -->
+        <BaseTooltip text="Click to travel to different regions">
+            <div class="region-indicator" @click="router.push('/travel')">
+                <div class="region-icon">{{ currentRegion ? '🌆' : '🏠' }}</div>
+                <div class="region-name">{{ currentLocationName }}</div>
+            </div>
+        </BaseTooltip>
 
         <div class="user-controls">
             <div class="user-menu" v-if="isLoggedIn">
@@ -236,72 +263,74 @@ async function logout() {
                 </div>
             </div>
 
-            <div class="notification-bell" @click="toggleNotifications">
-                <div class="bell-icon">
-                    <i class="notification-icon">🔔</i>
-                    <span v-if="unreadNotifications" class="notification-badge">{{ unreadNotifications }}</span>
-                </div>
-
-                <div v-if="showNotifications" class="notifications-dropdown">
-                    <div class="notifications-header">
-                        <h4>Notifications</h4>
-                        <button @click.stop="markAllAsRead" class="mark-read-btn">Mark all as read</button>
+            <BaseTooltip text="Notifications" position="bottom">
+                <div class="notification-bell" @click="toggleNotifications">
+                    <div class="bell-icon">
+                        <i class="notification-icon">🔔</i>
+                        <span v-if="unreadNotifications" class="notification-badge">{{ unreadNotifications }}</span>
                     </div>
 
-                    <div class="notifications-tabs">
-                        <button class="tab-btn" :class="{ active: activeNotifTab === 'all' }"
-                            @click.stop="activeNotifTab = 'all'">
-                            All
-                        </button>
-                        <button class="tab-btn" :class="{ active: activeNotifTab === 'territory' }"
-                            @click.stop="activeNotifTab = 'territory'">
-                            Territory
-                        </button>
-                        <button class="tab-btn" :class="{ active: activeNotifTab === 'operations' }"
-                            @click.stop="activeNotifTab = 'operations'">
-                            Operations
-                        </button>
-                    </div>
+                    <div v-if="showNotifications" class="notifications-dropdown">
+                        <div class="notifications-header">
+                            <h4>Notifications</h4>
+                            <button @click.stop="markAllAsRead" class="mark-read-btn">Mark all as read</button>
+                        </div>
 
-                    <div class="notifications-list" v-if="filteredNotifications.length > 0">
-                        <div v-for="notification in filteredNotifications" :key="notification.id"
-                            class="notification-item" :class="{
-                                'unread': !notification.read,
-                                'territory': notification.type === 'territory',
-                                'operation': notification.type === 'operation',
-                                'collection': notification.type === 'collection',
-                                'heat': notification.type === 'heat',
-                                'system': notification.type === 'system',
-                                'travel': notification.type === 'travel'
-                            }">
-                            <div class="notification-icon">
-                                {{ getNotificationIcon(notification.type) }}
-                            </div>
-                            <div class="notification-content">
-                                <p>{{ notification.message }}</p>
-                                <span class="notification-time">{{ formatTime(notification.timestamp) }}</span>
-                            </div>
-                            <div class="notification-actions">
-                                <button v-if="!notification.read" class="action-btn mark-read"
-                                    @click.stop="markAsRead(notification.id)">
-                                    ✓
-                                </button>
+                        <div class="notifications-tabs">
+                            <button class="tab-btn" :class="{ active: activeNotifTab === 'all' }"
+                                @click.stop="activeNotifTab = 'all'">
+                                All
+                            </button>
+                            <button class="tab-btn" :class="{ active: activeNotifTab === 'territory' }"
+                                @click.stop="activeNotifTab = 'territory'">
+                                Territory
+                            </button>
+                            <button class="tab-btn" :class="{ active: activeNotifTab === 'operations' }"
+                                @click.stop="activeNotifTab = 'operations'">
+                                Operations
+                            </button>
+                        </div>
+
+                        <div class="notifications-list" v-if="filteredNotifications.length > 0">
+                            <div v-for="notification in filteredNotifications" :key="notification.id"
+                                class="notification-item" :class="{
+                                    'unread': !notification.read,
+                                    'territory': notification.type === 'territory',
+                                    'operation': notification.type === 'operation',
+                                    'collection': notification.type === 'collection',
+                                    'heat': notification.type === 'heat',
+                                    'system': notification.type === 'system',
+                                    'travel': notification.type === 'travel'
+                                }">
+                                <div class="notification-icon">
+                                    {{ getNotificationIcon(notification.type) }}
+                                </div>
+                                <div class="notification-content">
+                                    <p>{{ notification.message }}</p>
+                                    <span class="notification-time">{{ formatTime(notification.timestamp) }}</span>
+                                </div>
+                                <div class="notification-actions">
+                                    <button v-if="!notification.read" class="action-btn mark-read"
+                                        @click.stop="markAsRead(notification.id)">
+                                        ✓
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div v-else class="empty-notifications">
-                        <div class="empty-icon">🔍</div>
-                        <p>No notifications</p>
-                    </div>
+                        <div v-else class="empty-notifications">
+                            <div class="empty-icon">🔍</div>
+                            <p>No notifications</p>
+                        </div>
 
-                    <div class="notifications-footer">
-                        <router-link to="/notifications" class="view-all-link" @click="showNotifications = false">
-                            View All Notifications
-                        </router-link>
+                        <div class="notifications-footer">
+                            <router-link to="/notifications" class="view-all-link" @click="showNotifications = false">
+                                View All Notifications
+                            </router-link>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </BaseTooltip>
 
             <div class="action-buttons" v-if="!isLoggedIn">
                 <router-link to="/login" class="login-btn">
@@ -344,7 +373,7 @@ async function logout() {
 
     .main-nav {
         display: flex;
-        gap: $spacing-md;
+        gap: $spacing-sm;
 
         @include respond-to(xs) {
             display: none;
@@ -364,16 +393,11 @@ async function logout() {
             font-size: $font-size-sm;
             letter-spacing: 1px;
             border-radius: $border-radius-sm;
+            cursor: pointer;
 
             .nav-icon {
                 font-size: 18px;
             }
-
-            // .nav-label {
-            //     @media (max-width: $breakpoint-lg - 1) and (min-width: $breakpoint-md) {
-            //         display: none;
-            //     }
-            // }
 
             &:hover,
             &.active {
@@ -390,16 +414,23 @@ async function logout() {
                 height: 2px;
                 background-color: $secondary-color;
                 box-shadow: 0 0 8px rgba($secondary-color, 0.5);
+            }
 
-                // @media (max-width: $breakpoint-md - 1) {
-                //     bottom: 0;
-                // }
+            &.disabled {
+                opacity: 0.6;
+
+                &:after {
+                    content: '⚠️';
+                    position: absolute;
+                    top: -2px;
+                    right: -2px;
+                    font-size: 10px;
+                }
             }
         }
-
     }
 
-    /* New region indicator styling */
+    /* Region indicator styling */
     .region-indicator {
         display: flex;
         align-items: center;
@@ -736,7 +767,6 @@ async function logout() {
                             border-left-color: $text-secondary;
                         }
 
-                        /* New travel notification styling */
                         &.travel {
                             border-left-color: $primary-color;
                         }

@@ -212,67 +212,134 @@
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
   z-index: 100;
 
-  // Navigation items
-  .nav-items {
+  .nav-items-container {
     display: flex;
     width: 100%;
+    position: relative;
+    overflow: hidden;
 
-    .nav-item {
-      flex: 1;
+    .scroll-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 36px;
+      height: 50px;
+      background: none;
+      border: none;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: $spacing-xs 0;
-      color: $text-secondary;
-      text-decoration: none;
-      position: relative;
-      transition: $transition-base;
+      z-index: 10;
+      color: $text-color;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      padding: 0;
 
-      &.active {
+      &.visible {
+        opacity: 1;
+      }
+
+      &.left-arrow {
+        left: 0;
+        background: linear-gradient(to right, $background-lighter, transparent);
+        padding-right: 12px;
+      }
+
+      &.right-arrow {
+        right: 0;
+        background: linear-gradient(to left, $background-lighter, transparent);
+        padding-left: 12px;
+      }
+
+      &:hover {
+        opacity: 1 !important;
         color: $secondary-color;
-
-        &:after {
-          content: '';
-          position: absolute;
-          bottom: 0;
-          width: 40%;
-          height: 2px;
-          background-color: $secondary-color;
-          box-shadow: 0 0 8px rgba($secondary-color, 0.5);
-        }
       }
 
-      &.disabled {
-        opacity: 0.6;
+      svg {
+        filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.5));
+      }
+    }
+
+    .nav-items-wrapper {
+      flex: 1;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-behavior: smooth;
+      scrollbar-width: none; /* Firefox */
+      -ms-overflow-style: none; /* IE and Edge */
+
+      &::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, and Opera */
       }
 
-      // Show player stats button
-      &.stats-btn {
-        .nav-icon {
+      .nav-items {
+        display: flex;
+        min-width: max-content;
+        white-space: nowrap;
+        padding: 0 40px; /* Space for arrows */
+
+        .nav-item {
+          flex: 0 0 auto;
+          min-width: 65px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: $spacing-xs $spacing-sm;
+          color: $text-secondary;
+          text-decoration: none;
           position: relative;
+          transition: $transition-base;
+          cursor: pointer;
 
-          .stats-badge {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            width: 14px;
-            height: 14px;
-            background-color: $secondary-color;
-            border-radius: 50%;
+          &.active {
+            color: $secondary-color;
+
+            &:after {
+              content: '';
+              position: absolute;
+              bottom: 0;
+              width: 40%;
+              height: 2px;
+              background-color: $secondary-color;
+              box-shadow: 0 0 8px rgba($secondary-color, 0.5);
+            }
+          }
+
+          &.disabled {
+            opacity: 0.6;
+          }
+
+          // Stats button styling
+          &.stats-btn {
+            .nav-icon {
+              position: relative;
+
+              .stats-badge {
+                position: absolute;
+                top: -5px;
+                right: -5px;
+                width: 14px;
+                height: 14px;
+                background-color: $secondary-color;
+                border-radius: 50%;
+              }
+            }
+          }
+
+          .nav-icon {
+            font-size: 20px;
+            margin-bottom: 2px;
+          }
+
+          .nav-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
           }
         }
-      }
-
-      .nav-icon {
-        font-size: 20px;
-        margin-bottom: 2px;
-      }
-
-      .nav-label {
-        font-size: 10px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
       }
     }
   }
@@ -285,51 +352,245 @@
 // Player stats overlay (shown when stats button is clicked on mobile)
 .player-stats-overlay {
   position: fixed;
-  bottom: 60px; // Position above the mobile navbar
+  top: 0;
   left: 0;
   right: 0;
-  background-color: $background-card;
-  border-top: 1px solid $border-color;
-  box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.3);
-  z-index: 99;
-  transform: translateY(100%);
-  transition: transform 0.3s ease;
-  max-height: 70vh;
-  overflow-y: auto;
-  padding: $spacing-md;
+  bottom: 60px;
+  z-index: 101;
 
-  &.open {
-    transform: translateY(0);
-  }
-
-  .close-overlay {
+  .overlay-backdrop {
     position: absolute;
-    top: $spacing-sm;
-    right: $spacing-sm;
-    background: none;
-    border: none;
-    color: $text-secondary;
-    font-size: 20px;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
   }
 
-  .player-attributes,
-  .player-stats,
-  .territory-control {
-    margin-bottom: $spacing-lg;
-  }
+  .overlay-content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-height: 70vh;
+    background-color: $background-card;
+    border-top: 1px solid $border-color;
+    box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.3);
+    overflow-y: auto;
+    padding: $spacing-md;
 
-  .overlay-header {
-    @include flex-between;
-    margin-bottom: $spacing-md;
+    .close-overlay {
+      position: absolute;
+      top: $spacing-sm;
+      right: $spacing-sm;
+      background: none;
+      border: none;
+      color: $text-secondary;
+      font-size: 20px;
+      z-index: 10;
+      cursor: pointer;
 
-    h3 {
-      margin: 0;
-      @include gold-accent;
+      &:hover {
+        color: $text-color;
+      }
+    }
+
+    .overlay-header {
+      @include flex-between;
+      margin-bottom: $spacing-md;
+      padding-right: 30px; // Space for close button
+
+      h3 {
+        margin: 0;
+        @include gold-accent;
+        font-size: $font-size-lg;
+      }
+
+      > div {
+        color: $text-secondary;
+        font-size: $font-size-sm;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+    }
+
+    .player-attributes {
+      @include flex-column;
+      gap: $spacing-sm;
+      margin-bottom: $spacing-lg;
+      padding: $spacing-sm;
+      background-color: rgba(255, 255, 255, 0.03);
+      border-radius: $border-radius-md;
+
+      .attribute {
+        @include flex-between;
+        padding: $spacing-xs 0;
+
+        .attribute-label {
+          display: flex;
+          align-items: center;
+          gap: $spacing-sm;
+          color: $text-secondary;
+
+          .icon {
+            font-size: 20px;
+            width: 24px;
+            text-align: center;
+          }
+        }
+
+        .attribute-value {
+          font-weight: 600;
+          color: $text-color;
+        }
+      }
+    }
+
+    .player-stats {
+      @include flex-column;
+      gap: $spacing-md;
+      margin-bottom: $spacing-lg;
+
+      .stat {
+        .stat-label {
+          @include flex-between;
+          margin-bottom: $spacing-xs;
+          font-size: $font-size-sm;
+          color: $text-secondary;
+        }
+
+        .progress-bar {
+          height: 10px;
+          background-color: rgba(255, 255, 255, 0.1);
+          border-radius: 5px;
+          overflow: hidden;
+          margin-bottom: 4px;
+
+          .progress-fill {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 0.3s ease;
+
+            &.respect {
+              background-color: $success-color;
+              box-shadow: 0 0 8px rgba($success-color, 0.5);
+            }
+
+            &.influence {
+              background-color: $info-color;
+              box-shadow: 0 0 8px rgba($info-color, 0.5);
+            }
+
+            &.heat {
+              background-color: $danger-color;
+              box-shadow: 0 0 8px rgba($danger-color, 0.5);
+            }
+          }
+        }
+
+        .stat-value {
+          text-align: right;
+          font-size: $font-size-sm;
+          font-weight: 600;
+        }
+      }
+    }
+
+    .territory-control {
+      padding: $spacing-md;
+      background-color: rgba(255, 255, 255, 0.03);
+      border-radius: $border-radius-md;
+
+      h4 {
+        margin-top: 0;
+        margin-bottom: $spacing-md;
+        color: $secondary-color;
+        font-size: $font-size-md;
+      }
+
+      .control-stats {
+        @include flex-column;
+        gap: $spacing-sm;
+        margin-bottom: $spacing-md;
+
+        .control-stat {
+          @include flex-between;
+
+          .control-label {
+            font-size: $font-size-sm;
+            color: $text-secondary;
+          }
+
+          .control-value {
+            font-weight: 600;
+            color: $text-color;
+          }
+        }
+      }
+
+      .sidebar-actions {
+        .action-btn {
+          @include button-base;
+          width: 100%;
+          background-color: $secondary-color;
+          color: $background-color;
+          padding: $spacing-md;
+          position: relative;
+          border-radius: $border-radius-md;
+
+          &:hover {
+            background-color: lighten($secondary-color, 5%);
+          }
+
+          &:active {
+            background-color: darken($secondary-color, 5%);
+          }
+
+          &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+
+            &:hover {
+              background-color: $secondary-color;
+            }
+          }
+
+          > div {
+            text-align: center;
+          }
+        }
+      }
     }
   }
 
   @include respond-to(md) {
     display: none; // Hide on desktop
+  }
+}
+
+// Slide up animations
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-up-enter-from,
+.slide-up-leave-to {
+  .overlay-content {
+    transform: translateY(100%);
+  }
+  .overlay-backdrop {
+    opacity: 0;
+  }
+}
+
+.slide-up-enter-to,
+.slide-up-leave-from {
+  .overlay-content {
+    transform: translateY(0);
+  }
+  .overlay-backdrop {
+    opacity: 1;
   }
 }
 
@@ -417,6 +678,7 @@
 }
 
 // Hover effects only on desktop devices
+/*
 @media (hover: hover) {
   // Apply hover effects only on devices that support hover
   .nav-item:hover,
@@ -425,6 +687,7 @@
     // Hover styles remain the same
   }
 }
+*/
 
 // Touch active state for mobile
 @media (hover: none) {
@@ -433,6 +696,31 @@
   .region-indicator:active,
   .base-button:active {
     transform: scale(0.97);
+  }
+
+  .mobile-nav-bar {
+    .nav-item {
+      min-width: 70px;
+      padding: $spacing-sm;
+
+      &:active {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+    }
+
+    .scroll-arrow {
+      &:active {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+    }
+  }
+
+  .stats-overlay {
+    .close-overlay:active,
+    .action-btn:active,
+    .attribute:active {
+      transform: scale(0.95);
+    }
   }
 }
 
@@ -465,4 +753,68 @@
       }
     }
   }
+}
+
+// Enhanced backdrop for stats overlay
+.stats-overlay-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 60px;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 98;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+
+  &.open {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+// Improved mobile sidebar styling
+.app-sidebar {
+  display: none;
+
+  @include respond-to(md) {
+    display: flex;
+    width: 280px;
+    border-right: 1px solid $border-color;
+  }
+}
+
+// Mobile header specific adjustments
+.mobile-header {
+  .region-indicator {
+    padding: $spacing-xs $spacing-sm;
+    margin: 0 $spacing-sm;
+
+    .region-name {
+      max-width: 100px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .notification-bell {
+    .notifications-dropdown {
+      right: -10px;
+      width: calc(100vw - 20px);
+      max-width: 290px;
+
+      @include respond-to(md) {
+        right: 0;
+        width: 320px;
+      }
+    }
+  }
+}
+
+// Smooth scrolling for stats overlay
+.player-stats-overlay {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
 }
