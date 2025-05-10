@@ -57,4 +57,5 @@ export enum NotificationType {
   COLLECTION = "collection",
   HEAT = "heat",
   SYSTEM = "system",
+  TRAVEL = "travel"
 }

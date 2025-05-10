@@ -125,7 +125,7 @@ func (r *operationsRepository) GenerateDailyOperations(basicCount, specialCount 
 
 	// For existing operations that are still valid, ensure they remain active
 	// This helps maintain continuity for operations players have already started
-	/* Something not right here. GOtta think about this more. */
+	/* Something not right here. Gotta think about this more. */
 	if err := r.db.GetDB().
 		Model(&model.Operation{}).
 		Where("available_until >= ?", time.Now()).
@@ -157,7 +157,7 @@ func (r *operationsRepository) GenerateDailyOperations(basicCount, specialCount 
 
 	// Temporary adding the available until here as 2 minutes.
 	// This should be as part of the operations yaml file
-	availableUntil := now.Add(2 * time.Minute)
+	availableUntil := now.Add(45 * time.Minute)
 
 	// Generate basic operations from the pool if needed
 	remainingBasic := int(basicCount) - int(basicOperationsCount)
