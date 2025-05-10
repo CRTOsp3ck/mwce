@@ -174,12 +174,12 @@ operations:
     max_heat: 50
 
 travel:
-  baseCost: 1000
-  baseCatchChance: 10.0
-  heatMultiplier: 0.5
-  maxCatchChance: 75.0
-  baseFineFactor: 0.15
-  minimumFine: 500
-  maxFinePercent: 0.5
-  caughtHeatIncrease: 20
-  successHeatReduction: 5
+  base_cost: 1000
+  base_catch_chance: 10.0
+  heat_multiplier: 0.5
+  max_catch_chance: 75.0
+  base_fine_factor: 0.15
+  minimum_fine: 500
+  max_fine_percent: 0.5
+  caught_heat_increase: 20
+  success_heat_reduction: 5
