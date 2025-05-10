@@ -1699,15 +1699,15 @@ onBeforeUnmount(() => {
         </BaseButton>
       </template>
     </BaseModal>
+
+    <!-- Hotspot Tooltip -->
+    <HotspotTooltip v-if="tooltipHotspot" :hotspot="tooltipHotspot" :visible="tooltipVisible"
+      :position="tooltipPosition" />
+
+    <!-- Hotspot Detail Modal -->
+    <HotspotDetailModal :visible="showDetailModal" @update:visible="showDetailModal = $event"
+      :hotspot="detailModalHotspot" @open-action-modal="handleOpenActionModal" />
   </div>
-
-  <!-- Hotspot Tooltip -->
-  <HotspotTooltip v-if="tooltipHotspot" :hotspot="tooltipHotspot" :visible="tooltipVisible"
-    :position="tooltipPosition" />
-
-  <!-- Hotspot Detail Modal -->
-  <HotspotDetailModal :visible="showDetailModal" @update:visible="showDetailModal = $event"
-    :hotspot="detailModalHotspot" @open-action-modal="handleOpenActionModal" />
 </template>
 
 <style lang="scss">

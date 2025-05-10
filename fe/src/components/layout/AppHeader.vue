@@ -37,12 +37,14 @@ const currentLocationName = computed(() => travelStore.currentLocationName);
 
 // Navigation
 const navItems = [
-    { name: 'Home', path: '/' },
-    { name: 'Territory', path: '/territory' },
-    { name: 'Operations', path: '/operations' },
-    { name: 'Market', path: '/market' },
-    { name: 'Rankings', path: '/rankings' },
-    { name: 'NFT', path: '/nft' }
+{ path: '/', name: 'Dashboard', icon: '📊', requiresRegion: false },
+  { path: '/campaigns', name: 'Campaign', icon: '📜', requiresRegion: true },
+  { path: '/travel', name: 'Travel Agency', icon: '✈️', requiresRegion: false },
+  { path: '/territory', name: 'Territory', icon: '🏙️', requiresRegion: true },
+  { path: '/operations', name: 'Operations', icon: '🎯', requiresRegion: true },
+  { path: '/market', name: 'Market', icon: '💹', requiresRegion: true },
+  { path: '/rankings', name: 'Rankings', icon: '🏆', requiresRegion: false },
+  { path: '/nft', name: 'NFT', icon: '💎', requiresRegion: false },
 ];
 
 // Notifications
@@ -187,7 +189,8 @@ async function logout() {
         <nav class="main-nav">
             <router-link v-for="item in navItems" :key="item.path" :to="item.path" class="nav-item"
                 :class="{ active: currentRoute === item.path }">
-                {{ item.name }}
+                <span class="nav-icon">{{ item.icon }}</span>
+                <!-- <span class="nav-label">{{ item.name }}</span> -->
             </router-link>
         </nav>
 
@@ -348,6 +351,9 @@ async function logout() {
         }
 
         .nav-item {
+            display: flex;
+            align-items: center;
+            gap: $spacing-xs;
             color: $text-secondary;
             text-decoration: none;
             padding: $spacing-sm;
@@ -357,10 +363,22 @@ async function logout() {
             text-transform: uppercase;
             font-size: $font-size-sm;
             letter-spacing: 1px;
+            border-radius: $border-radius-sm;
+
+            .nav-icon {
+                font-size: 18px;
+            }
+
+            // .nav-label {
+            //     @media (max-width: $breakpoint-lg - 1) and (min-width: $breakpoint-md) {
+            //         display: none;
+            //     }
+            // }
 
             &:hover,
             &.active {
                 color: $secondary-color;
+                background-color: rgba($secondary-color, 0.1);
             }
 
             &.active:after {
@@ -372,8 +390,13 @@ async function logout() {
                 height: 2px;
                 background-color: $secondary-color;
                 box-shadow: 0 0 8px rgba($secondary-color, 0.5);
+
+                // @media (max-width: $breakpoint-md - 1) {
+                //     bottom: 0;
+                // }
             }
         }
+
     }
 
     /* New region indicator styling */
