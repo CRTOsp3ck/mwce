@@ -1230,11 +1230,11 @@ onBeforeUnmount(() => {
               <BaseButton v-if="hotspot.pendingCollection > 0" variant="outline" small disabled
                 title="Travel to this region to collect">
                 <span style="opacity: 0.6;">Collect</span>
-                <span style="font-size: 0.9em; opacity: 0.7;">(Travel Required)</span>
+                <!-- <span style="font-size: 0.9em; opacity: 0.7;">(Travel Required)</span> -->
               </BaseButton>
               <BaseButton variant="outline" small disabled title="Travel to this region to manage defense">
                 <span style="opacity: 0.6;">Defend</span>
-                <span style="font-size: 0.9em; opacity: 0.7;">(Travel Required)</span>
+                <!-- <span style="font-size: 0.9em; opacity: 0.7;">(Travel Required)</span> -->
               </BaseButton>
             </div>
           </div>
