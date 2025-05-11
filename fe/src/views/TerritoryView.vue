@@ -1007,7 +1007,7 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- Section Separator -->
-      <!-- <div class="section-separator"></div> -->
+      <div class="section-separator"></div>
 
       <!-- Current Region Hotspots Section -->
       <div v-if="currentRegionName" class="hotspots-section">
