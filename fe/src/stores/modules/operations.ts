@@ -592,6 +592,24 @@ export const useOperationsStore = defineStore('operations', {
           console.log('Added new operation to current operations list:', completedOperation.id);
         }
       }
+    },
+
+    $reset() {
+      this.availableOperations = [];
+      this.currentOperations = [];
+      this.completedOperations = [];
+      this.operationsCache = {};
+      this.selectedOperationId = null;
+      this.isLoading = false;
+      this.error = null;
+      this.timerRefreshCounter = 0;
+      this.refreshInfo = null;
+
+      // Stop any running timers
+      if (this.incomeTimerInterval) {
+        clearInterval(this.incomeTimerInterval);
+        this.incomeTimerInterval = null;
+      }
     }
   }
 });

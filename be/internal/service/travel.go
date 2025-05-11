@@ -34,6 +34,7 @@ type TravelService interface {
 type travelService struct {
 	playerRepo    repository.PlayerRepository
 	territoryRepo repository.TerritoryRepository
+	sseService    SSEService
 	gameConfig    config.GameConfig
 	logger        zerolog.Logger
 }
@@ -42,12 +43,14 @@ type travelService struct {
 func NewTravelService(
 	playerRepo repository.PlayerRepository,
 	territoryRepo repository.TerritoryRepository,
+	sseService SSEService,
 	gameConfig config.GameConfig,
 	logger zerolog.Logger,
 ) TravelService {
 	return &travelService{
 		playerRepo:    playerRepo,
 		territoryRepo: territoryRepo,
+		sseService:    sseService,
 		gameConfig:    gameConfig,
 		logger:        logger,
 	}
@@ -203,12 +206,6 @@ func (s *travelService) Travel(playerID string, regionID string) (*model.TravelR
 		}
 
 		response.Message = fmt.Sprintf("You have successfully traveled from %s to %s for $%d. Your heat has decreased by %d.", fromText, destRegion.Name, travelCost, heatReduction)
-
-		// Check if this is the first time visiting this region
-		// In a real implementation, you would track visited regions and update stats accordingly
-		// For now, we'll just add a placeholder
-		// playerStats, _ := s.playerRepo.GetPlayerStats(playerID)
-		// if is first visit, playerStats.RegionsVisited++
 	}
 
 	// Save the travel attempt
@@ -234,6 +231,23 @@ func (s *travelService) Travel(playerID string, regionID string) (*model.TravelR
 
 	// Save notification
 	_ = s.playerRepo.AddNotification(notification)
+
+	// Send SSE notification only if travel was successful
+	if response.Success {
+		s.logger.Info().
+			Str("playerID", playerID).
+			Str("regionID", regionID).
+			Msg("Sending travel success SSE notification")
+
+		// Send the notification
+		s.sseService.SendEventToPlayer(playerID, "player_region_changed", map[string]interface{}{
+			"event":      "player_region_changed",
+			"playerId":   playerID,
+			"regionId":   regionID,
+			"regionName": destRegion.Name,
+			"timestamp":  time.Now().Format(time.RFC3339),
+		})
+	}
 
 	return response, nil
 }

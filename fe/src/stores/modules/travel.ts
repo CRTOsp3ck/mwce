@@ -127,19 +127,10 @@ export const useTravelStore = defineStore('travel', {
 
         this.lastTravelResponse = response.data;
 
-        // If travel was successful, update current region
+        // If travel was successful, we don't need to update region here
+        // The SSE event will handle updating all data when we arrive
         if (response.data.success) {
-          // Find the region object in available regions
-          const region = this.availableRegions.find(r => r.id === regionId);
-
-          if (region) {
-            this.currentRegion = region;
-          } else {
-            // If region not found in available regions, fetch the current region
-            await this.fetchCurrentRegion();
-          }
-
-          // Update player's money and heat in player store
+          // Just update the immediate effects (money and heat)
           const playerStore = usePlayerStore();
           if (playerStore.profile) {
             // Deduct travel cost
@@ -186,6 +177,15 @@ export const useTravelStore = defineStore('travel', {
       } finally {
         this.isLoading = false;
       }
+    },
+
+    $reset() {
+      this.availableRegions = [];
+      this.currentRegion = null;
+      this.travelHistory = [];
+      this.isLoading = false;
+      this.error = null;
+      this.lastTravelResponse = null;
     }
   }
 });

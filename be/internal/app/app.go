@@ -107,7 +107,7 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 	territoryService := service.NewTerritoryService(territoryRepo, playerRepo, sseService, *cfg.Game, logger)
 	operationsService := service.NewOperationsService(operationsRepo, playerRepo, playerService, sseService, *cfg.Game, logger)
 	marketService := service.NewMarketService(marketRepo, playerRepo, playerService, cfg.Game, logger)
-	travelService := service.NewTravelService(playerRepo, territoryRepo, *cfg.Game, logger)
+	travelService := service.NewTravelService(playerRepo, territoryRepo, sseService, *cfg.Game, logger)
 	campaignService := service.NewCampaignService(campaignRepo, playerRepo, playerService, operationsService, territoryService, sseService, logger)
 	if err := campaignService.LoadCampaigns("../../configs/campaigns"); err != nil {
 		logger.Warn().Err(err).Msg("Failed to load campaigns data")

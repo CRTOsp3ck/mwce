@@ -5,6 +5,7 @@ import { usePlayerStore } from '@/stores/modules/player';
 import { useTerritoryStore } from '@/stores/modules/territory';
 import { useOperationsStore } from '@/stores/modules/operations';
 import { useCampaignStore } from '@/stores/modules/campaign';
+import { useTravelStore } from '@/stores/modules/travel';
 import { Hotspot } from '@/types/territory';
 import { Notification } from '@/types/player';
 import { POI, MissionOperation } from '@/types/campaign';
@@ -18,6 +19,7 @@ export enum SSEEventType {
   HOTSPOT_UPDATED = 'hotspot_updated',
   HOTSPOTS_UPDATED = 'hotspots_updated',
   NOTIFICATION = 'notification',
+  PLAYER_REGION_CHANGED = 'player_region_changed',
 
   // Campaign-related types
   CAMPAIGN_ACTION_TRACKED = 'campaign_action_tracked',
@@ -55,6 +57,14 @@ export interface HotspotsUpdatedEvent {
 
 export interface NotificationEvent {
   notification: Notification;
+}
+
+export interface PlayerRegionChangedEvent {
+  event: string;
+  playerId: string;
+  regionId: string;
+  regionName: string;
+  timestamp: string;
 }
 
 // New campaign event payload interfaces
@@ -97,6 +107,59 @@ const state = reactive({
   lastEventId: '',
   error: null as Error | null
 });
+
+/**
+ * Invalidate cache and reload all affected data when player region changes
+ */
+async function invalidateAndReloadAllData() {
+  const playerStore = usePlayerStore();
+  const territoryStore = useTerritoryStore();
+  const operationsStore = useOperationsStore();
+  const travelStore = useTravelStore();
+  const campaignStore = useCampaignStore();
+
+  console.log('Invalidating cache and reloading all data after region change...');
+
+  // Stop any active timers before reloading data
+  territoryStore.stopIncomeTimer();
+  operationsStore.stopOperationTimer();
+
+  try {
+    // Clear existing data to force fresh load
+    territoryStore.$reset();
+    operationsStore.$reset();
+    travelStore.$reset();
+
+    // Reload all player data
+    await playerStore.fetchProfile();
+
+    // Reload travel data
+    await travelStore.fetchCurrentRegion();
+    await travelStore.fetchAvailableRegions();
+
+    // Reload territory data
+    await territoryStore.fetchTerritoryData();
+    await territoryStore.fetchRecentActions();
+
+    // Reload operations data
+    await operationsStore.fetchAvailableOperations();
+    await operationsStore.fetchPlayerOperations();
+    await operationsStore.fetchOperationsRefreshInfo();
+
+    // Reload campaign data
+    await campaignStore.fetchCampaigns();
+    await campaignStore.fetchActivePOIs();
+    await campaignStore.fetchActiveMissionOperations();
+
+    // Restart timers
+    territoryStore.startIncomeTimer();
+    operationsStore.startOperationTimer();
+
+    console.log('Successfully reloaded all data after region change');
+  } catch (error) {
+    console.error('Error reloading data after region change:', error);
+  }
+}
 
 /**
  * Establishes an SSE connection with the server
@@ -167,6 +230,36 @@ function setupEventHandlers(eventSource: EventSource) {
     state.connected = true;
     state.reconnecting = false;
     state.error = null;
+  });
+
+  // Player region changed event handler
+  eventSource.addEventListener(SSEEventType.PLAYER_REGION_CHANGED, async event => {
+    try {
+      const data = JSON.parse(event.data) as PlayerRegionChangedEvent;
+      console.log('Player region changed event received:', data);
+
+      // Update player store with new region information
+      const playerStore = usePlayerStore();
+      if (playerStore.profile) {
+        playerStore.profile.currentRegionId = data.regionId;
+        playerStore.profile.currentRegionName = data.regionName;
+      }
+
+      // Invalidate all cache and reload all affected data
+      await invalidateAndReloadAllData();
+
+      // Show a notification about the region change
+      const notification: Notification = {
+        playerId: data.playerId,
+        message: `You have arrived in ${data.regionName}`,
+        type: 'travel' as any,
+        timestamp: new Date().toISOString(),
+        read: false
+      };
+      playerStore.addNotification(notification);
+    } catch (error) {
+      console.error('Error processing player region changed event:', error);
+    }
   });
 
   eventSource.addEventListener(SSEEventType.INCOME_GENERATED, event => {

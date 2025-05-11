@@ -774,6 +774,28 @@ export const useTerritoryStore = defineStore('territory', {
 
       // Force timer refresh
       this.timerRefreshCounter++;
+    },
+
+    $reset() {
+      this.regions = [];
+      this.districts = [];
+      this.cities = [];
+      this.hotspots = [];
+      this.selectedRegionId = null;
+      this.selectedDistrictId = null;
+      this.selectedCityId = null;
+      this.selectedHotspotId = null;
+      this.filteredHotspots = [];
+      this.recentActions = [];
+      this.isLoading = false;
+      this.error = null;
+      this.timerRefreshCounter = 0;
+
+      // Stop any running timers
+      if (this.incomeTimerInterval) {
+        clearInterval(this.incomeTimerInterval);
+        this.incomeTimerInterval = null;
+      }
     }
   }
 });
