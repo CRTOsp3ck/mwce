@@ -54,7 +54,64 @@ func (r *playerRepository) CreatePlayer(player *model.Player) error {
 	return r.db.GetDB().Create(player).Error
 }
 
+// GetPlayerByID retrieves a player by ID with all calculated fields including regional data
+func (r *playerRepository) GetPlayerByID(id string) (*model.Player, error) {
+	var player model.Player
+	if err := r.db.GetDB().Where("id = ?", id).First(&player).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("player not found")
+		}
+		return nil, err
+	}
+
+	// Get additional calculated fields
+	controlledHotspots, err := r.GetControlledHotspotsCount(id)
+	if err != nil {
+		return nil, err
+	}
+	player.ControlledHotspots = controlledHotspots
+
+	totalHotspots, err := r.GetTotalHotspotsCount()
+	if err != nil {
+		return nil, err
+	}
+	player.TotalHotspots = totalHotspots
+
+	hourlyRevenue, err := r.CalculateHourlyRevenue(id)
+	if err != nil {
+		return nil, err
+	}
+	player.HourlyRevenue = hourlyRevenue
+
+	pendingCollections, err := r.CalculatePendingCollections(id)
+	if err != nil {
+		return nil, err
+	}
+	player.PendingCollections = pendingCollections
+
+	// Get regional data if player is in a region
+	if player.CurrentRegionID != nil {
+		// Get region name
+		var region model.Region
+		if err := r.db.GetDB().Where("id = ?", *player.CurrentRegionID).First(&region).Error; err == nil {
+			player.CurrentRegionName = region.Name
+		}
+
+		// Get regional statistics
+		regionalData, err := r.GetRegionalStatistics(id, *player.CurrentRegionID)
+		if err == nil {
+			player.RegionalControlled = regionalData.ControlledHotspots
+			player.RegionalTotalHotspots = regionalData.TotalHotspots
+			player.RegionalRevenue = regionalData.HourlyRevenue
+			player.RegionalPending = regionalData.PendingCollections
+		}
+	}
+
+	return &player, nil
+}
+
 // GetPlayerByID retrieves a player by ID
+/*
 func (r *playerRepository) GetPlayerByID(id string) (*model.Player, error) {
 	var player model.Player
 	if err := r.db.GetDB().Where("id = ?", id).First(&player).Error; err != nil {
@@ -91,6 +148,7 @@ func (r *playerRepository) GetPlayerByID(id string) (*model.Player, error) {
 
 	return &player, nil
 }
+*/
 
 // GetPlayerByEmail retrieves a player by email
 func (r *playerRepository) GetPlayerByEmail(email string) (*model.Player, error) {
@@ -303,4 +361,182 @@ func (r *playerRepository) GetPlayerCurrentRegion(playerID string) (*string, err
 	}
 
 	return player.CurrentRegionID, nil
+}
+
+// RegionalStatistics represents statistics for a player in a specific region
+type RegionalStatistics struct {
+	ControlledHotspots int
+	TotalHotspots      int
+	HourlyRevenue      int
+	PendingCollections int
+}
+
+// GetRegionalStatistics retrieves player statistics for a specific region
+func (r *playerRepository) GetRegionalStatistics(playerID, regionID string) (*RegionalStatistics, error) {
+	var stats RegionalStatistics
+
+	// Get total hotspots in the region
+	var totalCount int64
+	subquery := r.db.GetDB().
+		Select("cities.district_id").
+		Table("cities").
+		Where("cities.id = hotspots.city_id")
+
+	subquery2 := r.db.GetDB().
+		Select("districts.region_id").
+		Table("districts").
+		Where("districts.id = (?)", subquery)
+
+	if err := r.db.GetDB().
+		Model(&model.Hotspot{}).
+		Where("is_legal = ?", true).
+		Where("(?) = ?", subquery2, regionID).
+		Count(&totalCount).Error; err != nil {
+		return nil, err
+	}
+	stats.TotalHotspots = int(totalCount)
+
+	// Get controlled hotspots in the region
+	var controlledCount int64
+	if err := r.db.GetDB().
+		Model(&model.Hotspot{}).
+		Where("controller_id = ?", playerID).
+		Where("is_legal = ?", true).
+		Where("(?) = ?", subquery2, regionID).
+		Count(&controlledCount).Error; err != nil {
+		return nil, err
+	}
+	stats.ControlledHotspots = int(controlledCount)
+
+	// Calculate hourly revenue in the region
+	var revenue sql.NullInt64
+	if err := r.db.GetDB().
+		Model(&model.Hotspot{}).
+		Where("controller_id = ?", playerID).
+		Where("(?) = ?", subquery2, regionID).
+		Select("COALESCE(SUM(income), 0)").
+		Scan(&revenue).Error; err != nil {
+		return nil, err
+	}
+	stats.HourlyRevenue = int(revenue.Int64)
+
+	// Calculate pending collections in the region
+	var pending sql.NullInt64
+	if err := r.db.GetDB().
+		Model(&model.Hotspot{}).
+		Where("controller_id = ?", playerID).
+		Where("(?) = ?", subquery2, regionID).
+		Select("COALESCE(SUM(pending_collection), 0)").
+		Scan(&pending).Error; err != nil {
+		return nil, err
+	}
+	stats.PendingCollections = int(pending.Int64)
+
+	return &stats, nil
+}
+
+// GetControlledHotspotsByRegion counts hotspots controlled by a player in a specific region
+func (r *playerRepository) GetControlledHotspotsByRegion(playerID, regionID string) (int, error) {
+	var count int64
+
+	// Complex query to join through the location hierarchy
+	subquery := r.db.GetDB().
+		Select("cities.district_id").
+		Table("cities").
+		Where("cities.id = hotspots.city_id")
+
+	subquery2 := r.db.GetDB().
+		Select("districts.region_id").
+		Table("districts").
+		Where("districts.id = (?)", subquery)
+
+	if err := r.db.GetDB().
+		Model(&model.Hotspot{}).
+		Where("controller_id = ?", playerID).
+		Where("(?) = ?", subquery2, regionID).
+		Count(&count).Error; err != nil {
+		return 0, err
+	}
+
+	return int(count), nil
+}
+
+// GetTotalHotspotsInRegion counts all legal hotspots in a specific region
+func (r *playerRepository) GetTotalHotspotsInRegion(regionID string) (int, error) {
+	var count int64
+
+	// Complex query to join through the location hierarchy
+	subquery := r.db.GetDB().
+		Select("cities.district_id").
+		Table("cities").
+		Where("cities.id = hotspots.city_id")
+
+	subquery2 := r.db.GetDB().
+		Select("districts.region_id").
+		Table("districts").
+		Where("districts.id = (?)", subquery)
+
+	if err := r.db.GetDB().
+		Model(&model.Hotspot{}).
+		Where("is_legal = ?", true).
+		Where("(?) = ?", subquery2, regionID).
+		Count(&count).Error; err != nil {
+		return 0, err
+	}
+
+	return int(count), nil
+}
+
+// CalculateHourlyRevenueInRegion calculates total hourly revenue for a player in a specific region
+func (r *playerRepository) CalculateHourlyRevenueInRegion(playerID, regionID string) (int, error) {
+	var total sql.NullInt64
+
+	// Complex query to join through the location hierarchy
+	subquery := r.db.GetDB().
+		Select("cities.district_id").
+		Table("cities").
+		Where("cities.id = hotspots.city_id")
+
+	subquery2 := r.db.GetDB().
+		Select("districts.region_id").
+		Table("districts").
+		Where("districts.id = (?)", subquery)
+
+	if err := r.db.GetDB().
+		Model(&model.Hotspot{}).
+		Where("controller_id = ?", playerID).
+		Where("(?) = ?", subquery2, regionID).
+		Select("COALESCE(SUM(income), 0)").
+		Scan(&total).Error; err != nil {
+		return 0, err
+	}
+
+	return int(total.Int64), nil
+}
+
+// CalculatePendingCollectionsInRegion calculates pending collections for a player in a specific region
+func (r *playerRepository) CalculatePendingCollectionsInRegion(playerID, regionID string) (int, error) {
+	var total sql.NullInt64
+
+	// Complex query to join through the location hierarchy
+	subquery := r.db.GetDB().
+		Select("cities.district_id").
+		Table("cities").
+		Where("cities.id = hotspots.city_id")
+
+	subquery2 := r.db.GetDB().
+		Select("districts.region_id").
+		Table("districts").
+		Where("districts.id = (?)", subquery)
+
+	if err := r.db.GetDB().
+		Model(&model.Hotspot{}).
+		Where("controller_id = ?", playerID).
+		Where("(?) = ?", subquery2, regionID).
+		Select("COALESCE(SUM(pending_collection), 0)").
+		Scan(&total).Error; err != nil {
+		return 0, err
+	}
+
+	return int(total.Int64), nil
 }

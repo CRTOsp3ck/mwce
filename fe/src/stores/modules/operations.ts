@@ -12,6 +12,7 @@ import {
   OperationsRefreshInfo
 } from '@/types/operations';
 import { usePlayerStore } from './player';
+import { useTerritoryStore } from './territory';
 
 interface OperationsState {
   availableOperations: Operation[];
@@ -21,9 +22,8 @@ interface OperationsState {
   selectedOperationId: string | null;
   isLoading: boolean;
   error: string | null;
-  timerRefreshCounter: number; // Used to force timer updates
+  timerRefreshCounter: number;
   incomeTimerInterval: number | null;
-
   refreshInfo: OperationsRefreshInfo | null;
 }
 
@@ -43,7 +43,6 @@ export const useOperationsStore = defineStore('operations', {
 
   getters: {
     timeUntilNextOperationsRefresh: (state): string => {
-      // Force reactivity with timer counter
       const _ = state.timerRefreshCounter;
 
       if (!state.refreshInfo || !state.refreshInfo.nextRefreshTime) {
@@ -58,7 +57,6 @@ export const useOperationsStore = defineStore('operations', {
         return 'Soon...';
       }
 
-      // Format as HH:MM:SS
       const hours = Math.floor(diffMs / (1000 * 60 * 60)).toString().padStart(2, '0');
       const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
       const seconds = Math.floor((diffMs % (1000 * 60)) / 1000).toString().padStart(2, '0');
@@ -70,6 +68,46 @@ export const useOperationsStore = defineStore('operations', {
       return state.selectedOperationId
         ? state.availableOperations.find(o => o.id === state.selectedOperationId)
         : null;
+    },
+
+    // Region-aware getters
+    regionalOperations: (state) => {
+      const playerStore = usePlayerStore();
+      const currentRegionId = playerStore.profile?.currentRegionId;
+
+      if (!currentRegionId) {
+        // If not in any region, show only global operations (no regionId)
+        return state.availableOperations.filter(o => !o.regionId);
+      }
+
+      // If in a region, show both regional and global operations
+      return state.availableOperations.filter(o => !o.regionId || o.regionId === currentRegionId);
+    },
+
+    globalOperations: (state) => {
+      return state.availableOperations.filter(o => !o.regionId);
+    },
+
+    regionalBasicOperations: (state) => {
+      const playerStore = usePlayerStore();
+      const currentRegionId = playerStore.profile?.currentRegionId;
+
+      if (!currentRegionId) {
+        return state.availableOperations.filter(o => !o.isSpecial && !o.regionId);
+      }
+
+      return state.availableOperations.filter(o => !o.isSpecial && (!o.regionId || o.regionId === currentRegionId));
+    },
+
+    regionalSpecialOperations: (state) => {
+      const playerStore = usePlayerStore();
+      const currentRegionId = playerStore.profile?.currentRegionId;
+
+      if (!currentRegionId) {
+        return state.availableOperations.filter(o => o.isSpecial && !o.regionId);
+      }
+
+      return state.availableOperations.filter(o => o.isSpecial && (!o.regionId || o.regionId === currentRegionId));
     },
 
     basicOperations: (state) => {
@@ -100,7 +138,6 @@ export const useOperationsStore = defineStore('operations', {
 
     // Time-related getters with reactivity through timerRefreshCounter
     getTimeRemaining: (state) => (operationId: string): string => {
-      // Use the refresh counter to make this getter reactive to timer changes
       const _ = state.timerRefreshCounter;
 
       const inProgressOp = state.currentOperations.find(op => op.id === operationId);
@@ -124,7 +161,6 @@ export const useOperationsStore = defineStore('operations', {
     },
 
     isOpCompletionSoon: (state) => (operationId: string): boolean => {
-      // Use the refresh counter to make this getter reactive to timer changes
       const _ = state.timerRefreshCounter;
 
       const inProgressOp = state.currentOperations.find(op => op.id === operationId);
@@ -137,13 +173,31 @@ export const useOperationsStore = defineStore('operations', {
       const endTime = new Date(startTime.getTime() + (operation.duration * 1000));
       const now = new Date();
 
-      // If already passed or less than 5 minutes remaining
       const diffMs = endTime.getTime() - now.getTime();
       return diffMs <= 5 * 60 * 1000 && diffMs >= 0;
     },
 
     getOperationById: (state) => (operationId: string): Operation | undefined => {
       return state.operationsCache[operationId];
+    },
+
+    // Get operations with region information
+    getOperationWithRegion: (state) => (operationId: string): Operation & { regionName?: string } | undefined => {
+      const operation = state.operationsCache[operationId];
+      if (!operation) return undefined;
+
+      // Add region name if available
+      if (operation.regionId) {
+        // Get region name from territory store (you'll need to import it)
+        const territoryStore = useTerritoryStore();
+        const region = territoryStore.regions.find(r => r.id === operation.regionId);
+        return {
+          ...operation,
+          regionName: region?.name
+        };
+      }
+
+      return operation;
     },
   },
 
@@ -159,9 +213,13 @@ export const useOperationsStore = defineStore('operations', {
       }
     },
 
-    // Update handleOperationsRefreshed
+    // Handle operations refreshed - now properly handles regional operations
     handleOperationsRefreshed(operations: Operation[], refreshInfo?: OperationsRefreshInfo) {
-      // Existing code...
+      // Filter operations based on current region
+      const playerStore = usePlayerStore();
+      const currentRegionId = playerStore.profile?.currentRegionId;
+
+      // Store all operations but display them filtered by region
       this.availableOperations = operations;
 
       // Update cache with new operations
@@ -174,7 +232,14 @@ export const useOperationsStore = defineStore('operations', {
         this.refreshInfo = refreshInfo;
       }
 
-      console.log('Operations refreshed via SSE:', operations.length);
+      // Log regional context
+      if (currentRegionId) {
+        const regionalOps = operations.filter(o => !o.regionId || o.regionId === currentRegionId);
+        console.log(`Operations refreshed for region ${currentRegionId}: ${regionalOps.length} operations available`);
+      } else {
+        const globalOps = operations.filter(o => !o.regionId);
+        console.log(`Global operations refreshed: ${globalOps.length} operations available`);
+      }
     },
 
     async fetchAvailableOperations() {
@@ -190,6 +255,18 @@ export const useOperationsStore = defineStore('operations', {
           response.data.forEach(operation => {
             this.operationsCache[operation.id] = operation;
           });
+
+          // Log regional context
+          const playerStore = usePlayerStore();
+          const currentRegionId = playerStore.profile?.currentRegionId;
+
+          if (currentRegionId) {
+            const regionalOps = response.data.filter(o => !o.regionId || o.regionId === currentRegionId);
+            console.log(`Fetched ${regionalOps.length} operations for current region`);
+          } else {
+            const globalOps = response.data.filter(o => !o.regionId);
+            console.log(`Fetched ${globalOps.length} global operations`);
+          }
         } else {
           throw new Error('Failed to get operations data');
         }
@@ -301,6 +378,7 @@ export const useOperationsStore = defineStore('operations', {
       }
     },
 
+    // Rest of the actions remain the same...
     async cancelOperation(operationId: string) {
       this.isLoading = true;
       this.error = null;
@@ -488,9 +566,6 @@ export const useOperationsStore = defineStore('operations', {
     handleOperationCompletion(completedOperation: OperationAttempt) {
       console.log('Handling operation completion from SSE:', completedOperation);
 
-      // For our new flow, operations received from SSE are NOT moved to completed
-      // They stay in currentOperations, just with updated status
-
       // Find if this operation is in our current operations list
       const operationIndex = this.currentOperations.findIndex(op => op.id === completedOperation.id);
 
@@ -499,7 +574,6 @@ export const useOperationsStore = defineStore('operations', {
         // but keep it in the current operations list
         this.currentOperations[operationIndex] = {
           ...this.currentOperations[operationIndex],
-          // We DON'T change the status here - it stays as IN_PROGRESS until collected
           completionTime: completedOperation.completionTime
         };
 

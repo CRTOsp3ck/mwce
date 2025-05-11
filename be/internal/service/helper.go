@@ -2,7 +2,10 @@
 
 package service
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 // Helper function to format money
 func formatMoney(amount int) string {
@@ -18,4 +21,9 @@ func formatMoney(amount int) string {
 func formatMessage(title string, format string, a ...interface{}) string {
 	content := fmt.Sprintf(format, a...)
 	return fmt.Sprintf("%s: %s", title, content)
+}
+
+// ptrTime creates a pointer to a time.Time
+func ptrTime(t time.Time) *time.Time {
+	return &t
 }

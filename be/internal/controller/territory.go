@@ -422,3 +422,47 @@ func (c *TerritoryController) CollectAllHotspotIncome(w http.ResponseWriter, r *
 		)
 	}
 }
+
+func (h *TerritoryController) CollectAllRegionalHotspotIncome(w http.ResponseWriter, r *http.Request) {
+	// Get player ID from context
+	playerID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		util.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	// Collect income from all hotspots in current region
+	result, err := h.territoryService.CollectAllHotspotIncomeInCurrentRegion(playerID)
+	if err != nil {
+		h.logger.Error().Err(err).Str("playerID", playerID).Msg("Failed to collect all regional hotspot income")
+		util.RespondWithError(w, http.StatusInternalServerError, "Failed to collect hotspot income")
+		return
+	}
+
+	// Prepare response data
+	responseData := struct {
+		CollectedAmount int    `json:"collectedAmount"`
+		HotspotsCount   int    `json:"hotspotsCount"`
+		Message         string `json:"message"`
+	}{
+		CollectedAmount: result.CollectedAmount,
+		HotspotsCount:   result.HotspotsCount,
+		Message:         result.Message,
+	}
+
+	messageType := util.GameMessageTypeSuccess
+
+	util.RespondWithGameMessage(
+		w,
+		http.StatusOK,
+		responseData,
+		messageType,
+		result.Message,
+	)
+
+	h.logger.Info().
+		Str("playerID", playerID).
+		Int("totalAmount", result.CollectedAmount).
+		Int("hotspotsCount", result.HotspotsCount).
+		Msg("Successfully collected all regional hotspot income")
+}

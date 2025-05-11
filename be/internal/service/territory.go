@@ -26,15 +26,23 @@ type TerritoryService interface {
 	GetAllCities() ([]model.City, error)
 	GetCitiesByDistrictID(districtID string) ([]model.City, error)
 	GetCityByID(id string) (*model.City, error)
+
+	// Region-aware hotspot methods
 	GetAllHotspots() ([]model.Hotspot, error)
+	GetHotspotsInCurrentRegion(playerID string) ([]model.Hotspot, error)
 	GetHotspotsByCity(cityID string) ([]model.Hotspot, error)
 	GetHotspotByID(id string) (*model.Hotspot, error)
+
 	GetControlledHotspots(playerID string) ([]model.Hotspot, error)
+	GetControlledHotspotsInCurrentRegion(playerID string) ([]model.Hotspot, error)
 	GetRecentActions(playerID string) ([]model.TerritoryAction, error)
+	GetRecentActionsInCurrentRegion(playerID string, limit int) ([]model.TerritoryAction, error)
+
 	PerformAction(playerID, actionType string, request model.PerformActionRequest) (*model.ActionResult, error)
 	UpdateHotspotIncome() error
 	CollectHotspotIncome(playerID, hotspotID string) (*model.CollectResponse, error)
 	CollectAllHotspotIncome(playerID string) (*model.CollectAllResponse, error)
+	CollectAllHotspotIncomeInCurrentRegion(playerID string) (*model.CollectAllResponse, error)
 
 	// Scheduled jobs
 	StartPeriodicIncomeGeneration()
@@ -66,6 +74,257 @@ func NewTerritoryService(
 		gameConfig:    gameConfig,
 		logger:        logger,
 	}
+}
+
+// Region-aware hotspot methods
+
+// GetHotspotsInCurrentRegion retrieves hotspots in the player's current region
+func (s *territoryService) GetHotspotsInCurrentRegion(playerID string) ([]model.Hotspot, error) {
+	// Get player to find their current region
+	player, err := s.playerRepo.GetPlayerByID(playerID)
+	if err != nil {
+		return nil, err
+	}
+
+	// If player is not in any region, return empty list
+	if player.CurrentRegionID == nil {
+		return []model.Hotspot{}, nil
+	}
+
+	// Get hotspots in the player's current region
+	return s.territoryRepo.GetHotspotsByRegion(*player.CurrentRegionID)
+}
+
+// GetControlledHotspotsInCurrentRegion retrieves hotspots controlled by player in their current region
+func (s *territoryService) GetControlledHotspotsInCurrentRegion(playerID string) ([]model.Hotspot, error) {
+	// Get player to find their current region
+	player, err := s.playerRepo.GetPlayerByID(playerID)
+	if err != nil {
+		return nil, err
+	}
+
+	// If player is not in any region, return empty list
+	if player.CurrentRegionID == nil {
+		return []model.Hotspot{}, nil
+	}
+
+	// Get controlled hotspots in the player's current region
+	return s.territoryRepo.GetControlledHotspotsByRegion(playerID, *player.CurrentRegionID)
+}
+
+// GetRecentActionsInCurrentRegion retrieves recent territory actions in the player's current region
+func (s *territoryService) GetRecentActionsInCurrentRegion(playerID string, limit int) ([]model.TerritoryAction, error) {
+	// Get player to find their current region
+	player, err := s.playerRepo.GetPlayerByID(playerID)
+	if err != nil {
+		return nil, err
+	}
+
+	// If player is not in any region, return empty list
+	if player.CurrentRegionID == nil {
+		return []model.TerritoryAction{}, nil
+	}
+
+	// Get recent actions in the player's current region
+	return s.territoryRepo.GetRecentActionsByPlayerAndRegion(playerID, *player.CurrentRegionID, limit)
+}
+
+// internal/service/territory.go (continued)
+
+// CollectAllHotspotIncomeInCurrentRegion collects pending income from all hotspots in the player's current region
+func (s *territoryService) CollectAllHotspotIncomeInCurrentRegion(playerID string) (*model.CollectAllResponse, error) {
+	// Get player to find their current region
+	player, err := s.playerRepo.GetPlayerByID(playerID)
+	if err != nil {
+		return nil, err
+	}
+
+	// If player is not in any region, return empty response
+	if player.CurrentRegionID == nil {
+		return &model.CollectAllResponse{
+			CollectedAmount: 0,
+			HotspotsCount:   0,
+			Message:         "You need to be in a region to collect income.",
+		}, nil
+	}
+
+	// Get controlled hotspots in the player's current region
+	hotspots, err := s.territoryRepo.GetControlledHotspotsByRegion(playerID, *player.CurrentRegionID)
+	if err != nil {
+		return nil, err
+	}
+
+	totalCollected := 0
+	collectedHotspots := 0
+
+	// Collect from each hotspot
+	for _, hotspot := range hotspots {
+		if hotspot.PendingCollection > 0 {
+			// Reset pending collection
+			collectedAmount := hotspot.PendingCollection
+			totalCollected += collectedAmount
+			collectedHotspots++
+
+			hotspot.PendingCollection = 0
+			hotspot.LastCollectionTime = func() *time.Time {
+				now := time.Now()
+				return &now
+			}()
+
+			// Update the hotspot
+			if err := s.territoryRepo.UpdateHotspot(&hotspot); err != nil {
+				s.logger.Error().Err(err).
+					Str("hotspotID", hotspot.ID).
+					Msg("Failed to update hotspot after collection")
+				// Continue with others even if one fails
+				continue
+			}
+		}
+	}
+
+	// Update player's money
+	if totalCollected > 0 {
+		if err := s.playerRepo.UpdatePlayerResource(playerID, "money", totalCollected); err != nil {
+			s.logger.Error().Err(err).
+				Str("playerID", playerID).
+				Str("resourceType", "money").
+				Int("amount", totalCollected).
+				Msg("Failed to update player money after collection")
+			return nil, errors.New("failed to update player resources")
+		}
+	}
+
+	// Get region name for message
+	region, err := s.territoryRepo.GetRegionByID(*player.CurrentRegionID)
+	var regionName string
+	if err == nil {
+		regionName = region.Name
+	} else {
+		regionName = "this region"
+	}
+
+	// Generate response message
+	var message string
+	if totalCollected > 0 {
+		message = fmt.Sprintf("Successfully collected $%s from %d businesses in %s.", formatMoney(totalCollected), collectedHotspots, regionName)
+	} else {
+		message = fmt.Sprintf("No resources available to collect in %s at this time.", regionName)
+	}
+
+	// Add notification to player if resources were collected
+	if totalCollected > 0 {
+		notification := &model.Notification{
+			PlayerID:  playerID,
+			Message:   message,
+			Type:      util.NotificationTypeCollection,
+			Timestamp: time.Now(),
+			Read:      false,
+		}
+		if err := s.playerRepo.AddNotification(notification); err != nil {
+			s.logger.Error().Err(err).Msg("Failed to add collection notification")
+		}
+	}
+
+	return &model.CollectAllResponse{
+		CollectedAmount: totalCollected,
+		HotspotsCount:   collectedHotspots,
+		Message:         message,
+	}, nil
+}
+
+// UpdateHotspotIncome now filters by region for better performance
+func (s *territoryService) UpdateHotspotIncome() error {
+	// Get all regions to update hotspots by region
+	regions, err := s.territoryRepo.GetAllRegions()
+	if err != nil {
+		return err
+	}
+
+	currentTime := time.Now()
+
+	// Process hotspots by region for better organization and performance
+	for _, region := range regions {
+		// Get all legal hotspots with controllers in this region
+		hotspots, err := s.territoryRepo.GetAllControlledLegalHotspotsByRegion(region.ID)
+		if err != nil {
+			s.logger.Error().Err(err).Str("regionID", region.ID).Msg("Failed to get controlled hotspots for region")
+			continue
+		}
+
+		// Process each hotspot in the region
+		for _, hotspot := range hotspots {
+			if hotspot.ControllerID == nil {
+				continue
+			}
+
+			playerID := *hotspot.ControllerID
+
+			// Handle income generation (same logic as before)
+			if hotspot.LastIncomeTime == nil {
+				if err := s.initializeHotspotIncomeTime(&hotspot); err != nil {
+					s.logger.Error().Err(err).
+						Str("hotspotID", hotspot.ID).
+						Msg("Failed to initialize hotspot income timing")
+				}
+				continue
+			}
+
+			// Calculate time since last income generation
+			timeSinceLastIncome := currentTime.Sub(*hotspot.LastIncomeTime)
+
+			// Only add income if at least one hour has passed
+			if timeSinceLastIncome >= time.Hour {
+				// Calculate number of full hours that have passed
+				fullHoursPassed := int(timeSinceLastIncome.Hours())
+
+				// Calculate new income (hourly rate * hours elapsed)
+				newIncome := hotspot.Income * fullHoursPassed
+
+				// Add new income to pending collection
+				hotspot.PendingCollection += newIncome
+
+				// Update last income time precisely
+				newLastIncomeTime := hotspot.LastIncomeTime.Add(time.Duration(fullHoursPassed) * time.Hour)
+				hotspot.LastIncomeTime = &newLastIncomeTime
+
+				// Calculate next income time
+				nextIncomeTime := newLastIncomeTime.Add(time.Hour)
+
+				// Update the hotspot in the database
+				if err := s.territoryRepo.UpdateHotspot(&hotspot); err != nil {
+					s.logger.Error().Err(err).
+						Str("hotspotID", hotspot.ID).
+						Msg("Failed to update hotspot after income generation")
+					continue
+				}
+
+				// Send SSE event with the updated information
+				s.sseService.SendEventToPlayer(playerID, "income_generated", map[string]interface{}{
+					"hotspot": map[string]interface{}{
+						"id":                hotspot.ID,
+						"name":              hotspot.Name,
+						"regionId":          region.ID,
+						"regionName":        region.Name,
+						"newIncome":         newIncome,
+						"pendingCollection": hotspot.PendingCollection,
+						"lastIncomeTime":    newLastIncomeTime,
+						"nextIncomeTime":    nextIncomeTime,
+					},
+					"timestamp": currentTime,
+				})
+
+				// If significant amount accumulated, send notification to player
+				if newIncome > 1000 {
+					message := fmt.Sprintf("$%s is ready for collection at %s in %s.", formatMoney(newIncome), hotspot.Name, region.Name)
+					if err := s.addNotification(playerID, message, util.NotificationTypeCollection); err != nil {
+						s.logger.Error().Err(err).Msg("Failed to add collection notification")
+					}
+				}
+			}
+		}
+	}
+
+	return nil
 }
 
 // TEMP!!!
@@ -848,6 +1107,7 @@ func (s *territoryService) CollectAllHotspotIncome(playerID string) (*model.Coll
 }
 
 // UpdateHotspotIncome calculates and updates income for all controlled hotspots
+/*
 func (s *territoryService) UpdateHotspotIncome() error {
 	// Get all legal hotspots with controllers
 	hotspots, err := s.territoryRepo.GetAllControlledLegalHotspots()
@@ -931,6 +1191,7 @@ func (s *territoryService) UpdateHotspotIncome() error {
 
 	return nil
 }
+*/
 
 // initializeHotspotIncomeTime sets up initial income timing for a newly controlled hotspot
 func (s *territoryService) initializeHotspotIncomeTime(hotspot *model.Hotspot) error {

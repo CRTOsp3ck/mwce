@@ -29,7 +29,8 @@ const ENDPOINTS = {
   CONTROLLED_HOTSPOTS: '/territory/hotspots/controlled',
   ACTIONS: '/territory/actions',
   COLLECT_HOTSPOT: '/territory/hotspots', // + /:id/collect
-  COLLECT_ALL: '/territory/hotspots/collect-all'
+  COLLECT_ALL: '/territory/hotspots/collect-all',
+  COLLECT_ALL_REGIONAL: '/territory/hotspots/collect-all-regional'
 };
 
 export default {
@@ -37,7 +38,7 @@ export default {
    * Get all regions
    */
   getRegions() {
-    return api.get<Region[]>(ENDPOINTS.REGIONS)
+    return api.get<Region[]>(ENDPOINTS.REGIONS);
   },
 
   /**
@@ -175,5 +176,12 @@ export default {
    */
   collectAllHotspotIncome() {
     return api.post<CollectAllResponse>(ENDPOINTS.COLLECT_ALL);
+  },
+
+  /**
+   * Collect income from all controlled hotspots in the current region
+   */
+  collectAllRegionalHotspotIncome() {
+    return api.post<CollectAllResponse>(ENDPOINTS.COLLECT_ALL_REGIONAL);
   }
 };

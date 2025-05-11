@@ -14,10 +14,20 @@ export interface PlayerProfile {
   respect: number;
   influence: number;
   heat: number;
+  currentRegionId: string;
+  lastTravelTime: string;
+
   controlledHotspots: number;
   totalHotspotCount: number;
   hourlyRevenue: number;
   pendingCollections: number;
+
+  currentRegionName: string;
+  regionalControlled: number;
+  regionalTotalHotspots: number;
+  regionalRevenue: number;
+  regionalPending: number;
+
   createdAt: string;
   lastActive: string;
 }

@@ -461,3 +461,25 @@ func (r *territoryRepository) UpdateHotspotLastIncomeTime(hotspotID string, last
 			"last_income_time": lastIncomeTime,
 		}).Error
 }
+
+// GetHotspotsByRegionAndController retrieves all hotspots in a region controlled by a specific player
+func (r *territoryRepository) GetHotspotsByRegionAndController(regionID, controllerID string) ([]model.Hotspot, error) {
+	var hotspots []model.Hotspot
+
+	// Complex query to join through the location hierarchy
+	err := r.db.GetDB().
+		Select("hotspots.*").
+		Table("hotspots").
+		Joins("JOIN cities ON cities.id = hotspots.city_id").
+		Joins("JOIN districts ON districts.id = cities.district_id").
+		Joins("JOIN regions ON regions.id = districts.region_id").
+		Where("regions.id = ?", regionID).
+		Where("hotspots.controller_id = ?", controllerID).
+		Find(&hotspots).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return hotspots, nil
+}

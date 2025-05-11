@@ -34,6 +34,13 @@ type Player struct {
 	ControlledHotspots int        `json:"controlledHotspots" gorm:"-"` // Calculated field, not stored in DB
 	HourlyRevenue      int        `json:"hourlyRevenue" gorm:"-"`      // Calculated field, not stored in DB
 	PendingCollections int        `json:"pendingCollections" gorm:"-"` // Calculated field, not stored in DB
+
+	// Location-based calculated fields
+	CurrentRegionName     string `json:"currentRegionName" gorm:"-"`     // Name of current region
+	RegionalControlled    int    `json:"regionalControlled" gorm:"-"`    // Hotspots controlled in current region
+	RegionalTotalHotspots int    `json:"regionalTotalHotspots" gorm:"-"` // Total hotspots in current region
+	RegionalRevenue       int    `json:"regionalRevenue" gorm:"-"`       // Revenue from current region
+	RegionalPending       int    `json:"regionalPending" gorm:"-"`       // Pending collections in current region
 }
 
 // BeforeCreate is a GORM hook to generate UUID before creating a new player

@@ -180,6 +180,7 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 				r.Post("/actions/{action}", territoryController.PerformAction)
 				r.Post("/hotspots/{id}/collect", territoryController.CollectHotspotIncome)
 				r.Post("/hotspots/collect-all", territoryController.CollectAllHotspotIncome)
+				r.Post("/hotspots/collect-all-regional", territoryController.CollectAllRegionalHotspotIncome)
 			})
 
 			// Operations routes
@@ -191,7 +192,6 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 				r.Post("/{id}/start", operationsController.StartOperation)
 				r.Post("/{id}/cancel", operationsController.CancelOperation)
 				r.Post("/{id}/collect", operationsController.CollectOperation)
-
 				r.Get("/refresh-info", operationsController.GetOperationsRefreshInfo)
 			})
 
