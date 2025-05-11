@@ -702,25 +702,502 @@ async function collectAll() {
       }
     }
 
+    // Empire Overview Card (enhanced)
     .overview-card {
-      &.secondary {
-        grid-column: span 1;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
 
-        .overview-stats {
+      &:hover {
+        transform: translateY(-5px);
+        box-shadow: $shadow-lg;
+      }
+
+      &:not(.secondary) {
+        background: linear-gradient(135deg, rgba(20, 20, 25, 0.95) 0%, rgba(15, 15, 20, 0.98) 100%);
+        border: 1px solid rgba($gold-color, 0.3);
+      }
+
+      &.secondary {
+        background: linear-gradient(135deg, rgba(20, 20, 25, 0.85) 0%, rgba(15, 15, 20, 0.88) 100%);
+        border: 1px solid rgba($info-color, 0.3);
+      }
+
+      .overview-stats {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: $spacing-md;
+
+        .stat-item {
+          flex: 1;
+          min-width: 120px;
+          padding: $spacing-sm;
+          background-color: rgba(0, 0, 0, 0.2);
+          border-radius: $border-radius-sm;
+          transition: all 0.3s ease;
+
+          &:hover {
+            background-color: rgba(0, 0, 0, 0.3);
+            transform: translateY(-2px);
+          }
+
+          .stat-label {
+            color: $text-secondary;
+            font-size: $font-size-sm;
+            margin-bottom: $spacing-xs;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+          }
+
           .stat-value {
             font-size: $font-size-lg;
+            font-weight: 600;
+
+            &.money {
+              @include gold-accent;
+              font-family: $font-family-heading;
+            }
+
+            &.income {
+              color: $success-color;
+              text-shadow: 0 0 5px rgba($success-color, 0.3);
+            }
+
+            &.territories {
+              color: $info-color;
+              text-shadow: 0 0 5px rgba($info-color, 0.3);
+            }
           }
         }
       }
     }
 
-    .operation-item {
-      .operation-region {
-        font-size: $font-size-xs;
-        color: $gold-color;
-        margin-top: $spacing-xs;
+    // Pending Collections Card (enhanced)
+    .collections-card {
+      background: linear-gradient(135deg, rgba(25, 20, 15, 0.95) 0%, rgba(20, 15, 10, 0.98) 100%);
+      border-left: 3px solid $secondary-color;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+      &:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba($secondary-color, 0.1);
+      }
+
+      .collections-content {
+        display: flex;
+        flex-direction: column;
+        gap: $spacing-md;
+
+        .total-pending {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: $spacing-md;
+          background-color: rgba(0, 0, 0, 0.2);
+          border-radius: $border-radius-md;
+          border: 1px solid rgba($secondary-color, 0.2);
+
+          .pending-label {
+            color: $text-secondary;
+            font-size: $font-size-sm;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+
+          .pending-value {
+            font-size: $font-size-xl;
+            font-weight: 700;
+            @include gold-accent;
+            position: relative;
+
+            &::before {
+              content: '';
+              position: absolute;
+              top: -3px;
+              left: -3px;
+              right: -3px;
+              bottom: -3px;
+              background: rgba($secondary-color, 0.1);
+              border-radius: $border-radius-sm;
+              z-index: -1;
+              animation: pulse 2s infinite;
+            }
+          }
+        }
+      }
+
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: $spacing-md;
+        padding: $spacing-lg 0;
+
+        p {
+          color: $text-secondary;
+          text-align: center;
+          font-style: italic;
+        }
       }
     }
+
+    // Resources Card (enhanced)
+    .resources-card {
+      background: linear-gradient(135deg, rgba(15, 15, 20, 0.95) 0%, rgba(20, 20, 25, 0.98) 100%);
+      border-left: 3px solid $info-color;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+      &:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba($info-color, 0.1);
+      }
+
+      .resources-grid {
+        display: flex;
+        flex-direction: column;
+        gap: $spacing-md;
+
+        .resource-item {
+          display: flex;
+          align-items: center;
+          gap: $spacing-md;
+          padding: $spacing-md;
+          background-color: rgba(0, 0, 0, 0.2);
+          border-radius: $border-radius-md;
+          transition: all 0.3s ease;
+          border: 1px solid rgba($info-color, 0.1);
+
+          &:hover {
+            background-color: rgba(0, 0, 0, 0.3);
+            border-color: rgba($info-color, 0.3);
+            transform: translateX(5px);
+          }
+
+          .resource-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background-color: rgba($info-color, 0.1);
+            border-radius: $border-radius-md;
+            font-size: 20px;
+            box-shadow: 0 0 10px rgba($info-color, 0.2);
+          }
+
+          .resource-details {
+            flex: 1;
+
+            .resource-name {
+              font-weight: 600;
+              margin-bottom: 2px;
+              color: $text-color;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              font-size: $font-size-sm;
+            }
+
+            .resource-value {
+              color: $info-color;
+              font-weight: 600;
+              font-size: $font-size-md;
+            }
+          }
+
+          .resource-actions {
+            .button-text {
+              position: relative;
+
+              &::after {
+                content: '';
+                position: absolute;
+                bottom: -2px;
+                left: 0;
+                width: 100%;
+                height: 1px;
+                background-color: currentColor;
+                transform: scaleX(0);
+                transform-origin: right;
+                transition: transform 0.3s ease;
+              }
+
+              &:hover::after {
+                transform: scaleX(1);
+                transform-origin: left;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Operations Card (enhanced)
+    .operations-card {
+      background: linear-gradient(135deg, rgba(20, 10, 15, 0.95) 0%, rgba(25, 15, 20, 0.98) 100%);
+      border-left: 3px solid $primary-color;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+      &:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba($primary-color, 0.1);
+      }
+
+      .operations-list {
+        display: flex;
+        flex-direction: column;
+        gap: $spacing-md;
+
+        .operation-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: $spacing-md;
+          background-color: rgba(0, 0, 0, 0.2);
+          border-radius: $border-radius-md;
+          transition: all 0.3s ease;
+          border: 1px solid rgba($primary-color, 0.1);
+
+          &:hover {
+            background-color: rgba(0, 0, 0, 0.3);
+            border-color: rgba($primary-color, 0.3);
+            transform: translateX(5px);
+          }
+
+          .operation-details {
+            flex: 1;
+
+            .operation-name {
+              font-weight: 600;
+              margin-bottom: 2px;
+              color: $text-color;
+            }
+
+            .operation-type {
+              color: $primary-color;
+              font-size: $font-size-sm;
+              font-weight: 600;
+              margin-bottom: 2px;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+            }
+
+            .operation-region {
+              color: $gold-color;
+              font-size: $font-size-xs;
+              font-style: italic;
+            }
+          }
+        }
+
+        .view-all-link {
+          text-align: center;
+          margin-top: $spacing-sm;
+
+          a {
+            color: $text-secondary;
+            font-size: $font-size-sm;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: relative;
+
+            &::after {
+              content: '';
+              position: absolute;
+              bottom: -2px;
+              left: 0;
+              width: 100%;
+              height: 1px;
+              background-color: currentColor;
+              transform: scaleX(0);
+              transform-origin: right;
+              transition: transform 0.3s ease;
+            }
+
+            &:hover {
+              color: $secondary-color;
+              text-decoration: none;
+
+              &::after {
+                transform: scaleX(1);
+                transform-origin: left;
+              }
+            }
+          }
+        }
+      }
+
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: $spacing-md;
+        padding: $spacing-lg 0;
+
+        p {
+          color: $text-secondary;
+          text-align: center;
+          font-style: italic;
+        }
+      }
+    }
+
+    // Territory Card (enhanced)
+    .territory-card {
+      background: linear-gradient(135deg, rgba(15, 15, 25, 0.95) 0%, rgba(10, 10, 20, 0.98) 100%);
+      border-left: 3px solid $info-color;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+      &:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba($info-color, 0.1);
+      }
+
+      .territory-stats {
+        margin-bottom: $spacing-lg;
+        padding: $spacing-md;
+        background-color: rgba(0, 0, 0, 0.2);
+        border-radius: $border-radius-md;
+        border: 1px solid rgba($info-color, 0.2);
+
+        .regional-control, .empire-control {
+          display: flex;
+          flex-direction: column;
+          gap: $spacing-sm;
+
+          .control-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: $spacing-xs $spacing-sm;
+            border-radius: $border-radius-sm;
+            background-color: rgba(0, 0, 0, 0.1);
+
+            &:hover {
+              background-color: rgba(0, 0, 0, 0.2);
+            }
+
+            .stat-label {
+              color: $text-secondary;
+              font-size: $font-size-sm;
+            }
+
+            .stat-value {
+              font-weight: 600;
+              color: $info-color;
+            }
+          }
+        }
+      }
+
+      .territory-actions {
+        text-align: center;
+      }
+    }
+
+    // Recent Actions Card (enhanced)
+    .recent-actions-card {
+      background: linear-gradient(135deg, rgba(25, 15, 15, 0.95) 0%, rgba(20, 10, 10, 0.98) 100%);
+      border-left: 3px solid $danger-color;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+      @include respond-to(md) {
+        grid-column: span 2;
+      }
+
+      &:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba($danger-color, 0.1);
+      }
+
+      .actions-list {
+        display: flex;
+        flex-direction: column;
+        gap: $spacing-md;
+
+        .action-item {
+          display: flex;
+          align-items: center;
+          gap: $spacing-md;
+          padding: $spacing-md;
+          background-color: rgba(0, 0, 0, 0.2);
+          border-radius: $border-radius-md;
+          transition: all 0.3s ease;
+          border: 1px solid rgba($danger-color, 0.1);
+
+          &:hover {
+            background-color: rgba(0, 0, 0, 0.3);
+            transform: translateX(5px);
+          }
+
+          &.success {
+            border-left: 3px solid $success-color;
+          }
+
+          &.failure {
+            border-left: 3px solid $danger-color;
+          }
+
+          .action-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background-color: rgba($danger-color, 0.1);
+            border-radius: 50%;
+            font-size: 20px;
+            box-shadow: 0 0 10px rgba($danger-color, 0.2);
+          }
+
+          .action-details {
+            flex: 1;
+
+            .action-type {
+              font-weight: 600;
+              color: $text-color;
+              margin-bottom: 2px;
+            }
+
+            .action-result {
+              color: $text-secondary;
+              font-size: $font-size-sm;
+              margin-bottom: 2px;
+            }
+
+            .action-time {
+              color: $text-secondary;
+              font-size: $font-size-xs;
+              font-style: italic;
+            }
+          }
+        }
+      }
+
+      .empty-state {
+        display: flex;
+        justify-content: center;
+        padding: $spacing-lg 0;
+
+        p {
+          color: $text-secondary;
+          text-align: center;
+          font-style: italic;
+        }
+      }
+    }
+  }
+
+  // Custom animations
+  @keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+  }
+
+  @keyframes glow {
+    0% { box-shadow: 0 0 5px rgba($secondary-color, 0.3); }
+    50% { box-shadow: 0 0 15px rgba($secondary-color, 0.5); }
+    100% { box-shadow: 0 0 5px rgba($secondary-color, 0.3); }
   }
 }
 </style>
