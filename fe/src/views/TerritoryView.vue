@@ -1007,7 +1007,7 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- Section Separator -->
-      <div class="section-separator"></div>
+      <!-- <div class="section-separator"></div> -->
 
       <!-- Current Region Hotspots Section -->
       <div v-if="currentRegionName" class="hotspots-section">
@@ -1140,6 +1140,15 @@ onBeforeUnmount(() => {
           </h4>
           <div class="region-status">
             {{ outOfRegionControlledHotspots.length }} businesses across other regions
+          </div>
+        </div>
+
+        <!-- Add the new hint notification here -->
+        <div class="region-hint">
+          <div class="hint-icon">✈️</div>
+          <div class="hint-content">
+            <p>You must travel to a region to collect income or manage businesses located there.</p>
+            <p class="hint-subtext">Use the Travel menu to change your location.</p>
           </div>
         </div>
 
@@ -1641,7 +1650,7 @@ onBeforeUnmount(() => {
                     <label>Crew</label>
                   </div>
                   <span class="resource-available">Current Allocation: {{ actionResources.crew }} / {{ availableCrew
-                  }}</span>
+                    }}</span>
                 </div>
 
                 <div class="control-actions">
@@ -3357,6 +3366,50 @@ onBeforeUnmount(() => {
 
     &.has-pending {
       animation: goldPulse 3s infinite;
+    }
+  }
+
+  /* Region Hint Notification Styles */
+  .region-hint {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    background: linear-gradient(to right, rgba($background-darker, 0.6), rgba($primary-color, 0.1));
+    border-left: 3px solid $warning-color;
+    padding: $spacing-md;
+    border-radius: $border-radius-md;
+    margin-bottom: $spacing-xl;
+
+    .hint-icon {
+      font-size: 24px;
+      color: $warning-color;
+    }
+
+    .hint-content {
+      flex: 1;
+
+      p {
+        margin: 0;
+        line-height: 1.4;
+      }
+
+      .hint-subtext {
+        font-size: $font-size-sm;
+        color: $text-secondary;
+        margin-top: $spacing-xs;
+        font-style: italic;
+      }
+    }
+
+    /* Add a subtle gold accent to match theme */
+    &:after {
+      content: "";
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      width: 100px;
+      height: 1px;
+      background: linear-gradient(to right, transparent, $secondary-color);
     }
   }
 }
