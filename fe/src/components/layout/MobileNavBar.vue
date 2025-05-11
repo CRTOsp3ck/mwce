@@ -1,15 +1,9 @@
-// src/components/layout/MobileNavBar.vue (Updated)
-
 <template>
   <div class="mobile-nav-bar">
     <div class="nav-items-container" ref="navContainer">
       <!-- Left scroll arrow -->
-      <button
-        class="scroll-arrow left-arrow"
-        :class="{ visible: canScrollLeft }"
-        @click="scrollLeft"
-        v-show="canScrollLeft"
-      >
+      <button class="scroll-arrow left-arrow" :class="{ visible: canScrollLeft }" @click="scrollLeft"
+        v-show="canScrollLeft">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M15 18l-6-6 6-6" />
         </svg>
@@ -18,16 +12,10 @@
       <!-- Navigation items with horizontal scroll -->
       <div class="nav-items-wrapper" ref="navItemsWrapper">
         <div class="nav-items" ref="navItems">
-          <div
-            v-for="item in allNavItems"
-            :key="item.id"
-            class="nav-item"
-            :class="{
-              active: isActive(item.path),
-              disabled: item.requiresRegion && !isInRegion
-            }"
-            @click="navigateTo(item)"
-          >
+          <div v-for="item in allNavItems" :key="item.id" class="nav-item" :class="{
+            active: isActive(item.path),
+            disabled: item.requiresRegion && !isInRegion
+          }" @click="navigateTo(item)">
             <span class="nav-icon">{{ item.icon }}</span>
             <span class="nav-label">{{ item.name }}</span>
           </div>
@@ -36,7 +24,7 @@
           <div class="nav-item stats-btn" @click="toggleStatsOverlay">
             <span class="nav-icon">
               👤
-              <span v-if="pendingCollections > 0" class="stats-badge"></span>
+              <span v-if="currentRegionPendingCollections > 0" class="stats-badge"></span>
             </span>
             <span class="nav-label">Stats</span>
           </div>
@@ -44,12 +32,8 @@
       </div>
 
       <!-- Right scroll arrow -->
-      <button
-        class="scroll-arrow right-arrow"
-        :class="{ visible: canScrollRight }"
-        @click="scrollRight"
-        v-show="canScrollRight"
-      >
+      <button class="scroll-arrow right-arrow" :class="{ visible: canScrollRight }" @click="scrollRight"
+        v-show="canScrollRight">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M9 18l6-6-6-6" />
         </svg>
@@ -142,16 +126,70 @@
             </div>
           </div>
 
-          <div v-if="pendingCollections > 0" class="sidebar-actions">
-            <button class="action-btn collect-all" @click="collectAllPending"
-              :disabled="pendingCollections <= 0 || isLoading">
+          <!-- Always show the button but keep it stateful -->
+          <div class="sidebar-actions">
+            <button class="action-btn collect-all" :class="{
+              'has-pending': isInRegion && currentRegionPendingCollections > 0,
+              'no-pending': isInRegion && currentRegionPendingCollections <= 0,
+              'no-region': !isInRegion
+            }" @click="collectAllPending"
+              :disabled="!isInRegion || currentRegionPendingCollections <= 0 || isLoading">
               <div style="display: flex; flex-direction: column; gap: 8px; align-items: center;">
                 <div class="icon">💼</div>
                 <div>Collect All</div>
-                <div>${{ formatNumber(pendingCollections) }}</div>
+                <div style="display: flex; flex-direction: column; gap: 2px;">
+                  <div v-if="!isInRegion" style="font-size: 0.8em; opacity: 0.8;">
+                    Travel to Region
+                  </div>
+                  <div v-else-if="currentRegionPendingCollections <= 0" style="font-size: 0.8em; opacity: 0.8;">
+                    No Income Available
+                  </div>
+                  <div v-else>
+                    <div>${{ formatNumber(currentRegionPendingCollections) }}</div>
+                    <div style="font-size: 0.8em; opacity: 0.8;">({{ currentRegion?.name }})</div>
+                  </div>
+                </div>
               </div>
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+  </transition>
+
+  <!-- Collection Result Modal -->
+  <transition name="fade">
+    <div v-if="showCollectionResultModal" class="modal-overlay">
+      <div class="modal-container collection-result-modal">
+        <div class="modal-header">
+          <h3>{{ collectionResult?.success ? 'Collection Successful' : 'Collection Failed' }}</h3>
+          <button class="close-btn" @click="closeCollectionModal">×</button>
+        </div>
+
+        <div class="modal-body">
+          <div v-if="collectionResult" class="collection-result"
+            :class="{ 'success': collectionResult.success, 'failure': !collectionResult.success }">
+            <div class="result-icon">
+              {{ collectionResult.success ? '✅' : '❌' }}
+            </div>
+
+            <div class="result-message">
+              {{ collectionResult.message }}
+            </div>
+
+            <div v-if="collectionResult.success && collectionResult.moneyGained" class="result-details">
+              <div class="result-item positive">
+                <span class="item-icon">💵</span>
+                <span class="item-value">+${{ formatNumber(collectionResult.moneyGained) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="primary-btn" @click="closeCollectionModal">
+            Continue
+          </button>
         </div>
       </div>
     </div>
@@ -165,6 +203,7 @@ import { usePlayerStore } from '@/stores/modules/player';
 import { useTerritoryStore } from '@/stores/modules/territory';
 import { useTravelStore } from '@/stores/modules/travel';
 import { navigationConfig } from '@/config/navigationConfig';
+import type { ActionResult } from '@/types/territory';
 
 const router = useRouter();
 const route = useRoute();
@@ -177,6 +216,10 @@ const allNavItems = computed(() => {
   return navigationConfig
     .sort((a, b) => (a.priority || 0) - (b.priority || 0));
 });
+
+// Collection modal states
+const showCollectionResultModal = ref(false);
+const collectionResult = ref<ActionResult | null>(null);
 
 // Stats overlay state
 const showStatsOverlay = ref(false);
@@ -216,7 +259,21 @@ const playerHeat = computed(() => playerStore.playerHeat);
 const controlledHotspots = computed(() => playerStore.profile?.controlledHotspots || 0);
 const totalHotspots = computed(() => playerStore.profile?.totalHotspotCount || 0);
 const hourlyRevenue = computed(() => playerStore.profile?.hourlyRevenue || 0);
-const pendingCollections = computed(() => playerStore.profile?.pendingCollections || 0);
+
+// Get current region controlled hotspots for collection
+const currentRegionControlledHotspots = computed(() => {
+  return territoryStore.currentRegionControlledHotspots;
+});
+
+// Get pending collections specifically from current region
+const currentRegionPendingCollections = computed(() => {
+  return currentRegionControlledHotspots.value.reduce((total, hotspot) => total + hotspot.pendingCollection, 0);
+});
+
+// Get collectable businesses count for current region
+const currentRegionCollectableBusinesses = computed(() => {
+  return currentRegionControlledHotspots.value.filter(h => h.pendingCollection > 0).length;
+});
 
 // Get loading state
 const isLoading = computed(() => playerStore.isLoading);
@@ -275,12 +332,42 @@ function scrollRight(): void {
   navItemsWrapper.value.scrollBy({ left: itemWidth * 3, behavior: 'smooth' });
 }
 
-// Collect all pending collections
+// Updated collect all to use regional collection with modal
 const collectAllPending = async () => {
-  if (pendingCollections.value > 0 && !isLoading.value) {
-    await territoryStore.collectAllHotspotIncome();
+  if (!isInRegion.value || currentRegionPendingCollections.value <= 0 || isLoading.value) return;
+
+  try {
+    const result = await territoryStore.collectAllHotspotIncomeInCurrentRegion();
+
+    if (result) {
+      // Show collection result modal
+      collectionResult.value = {
+        success: true,
+        moneyGained: result.collectionResult.collectedAmount,
+        message: result.gameMessage?.message ||
+          `Successfully collected $${formatNumber(result.collectionResult.collectedAmount)} from ${result.collectionResult.hotspotsCount} businesses in ${currentRegion.value?.name || 'this region'}.`
+      };
+
+      showCollectionResultModal.value = true;
+    }
+  } catch (error) {
+    console.error('Failed to collect all pending resources:', error);
+
+    // Show error modal
+    collectionResult.value = {
+      success: false,
+      message: 'Failed to collect resources. Please try again.'
+    };
+
+    showCollectionResultModal.value = true;
   }
 };
+
+// Close collection result modal
+function closeCollectionModal() {
+  showCollectionResultModal.value = false;
+  collectionResult.value = null;
+}
 
 // Helper function to format numbers
 function formatNumber(value: number): string {
@@ -384,18 +471,22 @@ watch([allNavItems], () => {
       overflow-x: auto;
       overflow-y: hidden;
       scroll-behavior: smooth;
-      scrollbar-width: none; /* Firefox */
-      -ms-overflow-style: none; /* IE and Edge */
+      scrollbar-width: none;
+      /* Firefox */
+      -ms-overflow-style: none;
+      /* IE and Edge */
 
       &::-webkit-scrollbar {
-        display: none; /* Chrome, Safari, and Opera */
+        display: none;
+        /* Chrome, Safari, and Opera */
       }
 
       .nav-items {
         display: flex;
         min-width: max-content;
         white-space: nowrap;
-        padding: 0 40px; /* Space for arrows */
+        padding: 0 40px;
+        /* Space for arrows */
 
         .nav-item {
           flex: 0 0 auto;
@@ -442,6 +533,7 @@ watch([allNavItems], () => {
                 height: 14px;
                 background-color: $secondary-color;
                 border-radius: 50%;
+                animation: pulse 2s infinite;
               }
             }
           }
@@ -466,7 +558,7 @@ watch([allNavItems], () => {
   }
 }
 
-// Player stats overlay styles remain the same as before
+// Player stats overlay styles
 .player-stats-overlay {
   position: fixed;
   top: 0;
@@ -484,7 +576,352 @@ watch([allNavItems], () => {
     background-color: rgba(0, 0, 0, 0.7);
   }
 
-  // ... rest of the stats overlay styles ...
+  .overlay-content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: $background-card;
+    border-top-left-radius: $border-radius-lg;
+    border-top-right-radius: $border-radius-lg;
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: $spacing-md;
+    border: 1px solid $border-color;
+    border-bottom: none;
+
+    .close-overlay {
+      position: absolute;
+      top: $spacing-md;
+      right: $spacing-md;
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: $text-secondary;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: $transition-base;
+
+      &:hover {
+        color: $text-color;
+        background-color: rgba($text-color, 0.1);
+      }
+    }
+
+    .overlay-header {
+      text-align: center;
+      margin-bottom: $spacing-lg;
+      padding-top: $spacing-lg;
+
+      h3 {
+        margin: 0;
+        @include gold-accent;
+      }
+
+      div {
+        color: $text-secondary;
+        font-size: $font-size-sm;
+        margin-top: $spacing-xs;
+      }
+    }
+
+    .player-attributes {
+      @include flex-column;
+      gap: $spacing-sm;
+      margin-bottom: $spacing-lg;
+
+      .attribute {
+        @include flex-between;
+        padding: $spacing-xs 0;
+
+        .attribute-label {
+          display: flex;
+          align-items: center;
+          gap: $spacing-sm;
+          color: $text-secondary;
+
+          .icon {
+            font-size: 20px;
+          }
+        }
+
+        .attribute-value {
+          font-weight: 600;
+        }
+      }
+    }
+
+    .player-stats {
+      @include flex-column;
+      gap: $spacing-md;
+      margin-bottom: $spacing-lg;
+
+      .stat {
+        .stat-label {
+          @include flex-between;
+          margin-bottom: $spacing-xs;
+          font-size: $font-size-sm;
+          color: $text-secondary;
+        }
+
+        .progress-bar {
+          height: 8px;
+          background-color: rgba(255, 255, 255, 0.1);
+          border-radius: 4px;
+          overflow: hidden;
+          margin-bottom: 4px;
+
+          .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+
+            &.respect {
+              background-color: $success-color;
+            }
+
+            &.influence {
+              background-color: $info-color;
+            }
+
+            &.heat {
+              background-color: $danger-color;
+            }
+          }
+        }
+
+        .stat-value {
+          text-align: right;
+          font-size: $font-size-sm;
+        }
+      }
+    }
+
+    .territory-control {
+      padding: $spacing-md 0;
+      border-top: 1px solid $border-color;
+
+      h4 {
+        margin-top: 0;
+        margin-bottom: $spacing-md;
+        color: $secondary-color;
+      }
+
+      .control-stats {
+        @include flex-column;
+        gap: $spacing-sm;
+
+        .control-stat {
+          @include flex-between;
+
+          .control-label {
+            font-size: $font-size-sm;
+            color: $text-secondary;
+          }
+
+          .control-value {
+            font-weight: 600;
+          }
+        }
+      }
+
+      .sidebar-actions {
+        margin-top: $spacing-md;
+        margin-bottom: $spacing-md;
+
+        .action-btn {
+          @include button-base;
+          width: 100%;
+          padding: $spacing-md;
+          position: relative;
+          transition: all 0.2s ease;
+
+          &.has-pending {
+            background-color: $secondary-color;
+            color: $background-color;
+
+            &:hover:not(:disabled) {
+              background-color: lighten($secondary-color, 5%);
+            }
+
+            .icon {
+              animation: pulse 2s infinite;
+            }
+          }
+
+          &.no-pending {
+            background-color: rgba($text-secondary, 0.2);
+            color: $text-secondary;
+            cursor: not-allowed;
+          }
+
+          &.no-region {
+            background-color: rgba($warning-color, 0.2);
+            color: $warning-color;
+            cursor: not-allowed;
+          }
+
+          .icon {
+            margin-right: $spacing-sm;
+          }
+
+          &:active:not(:disabled) {
+            background-color: darken($secondary-color, 5%);
+          }
+
+          &:disabled {
+            opacity: 0.8;
+
+            &:hover {
+              transform: none;
+              box-shadow: none;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Add styles for mobile modal
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-md;
+}
+
+.modal-container {
+  background-color: $background-card;
+  border-radius: $border-radius-md;
+  max-width: 90vw;
+  max-height: 80vh;
+  overflow-y: auto;
+  border: 1px solid $border-color;
+
+  .modal-header {
+    padding: $spacing-md;
+    border-bottom: 1px solid $border-color;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    h3 {
+      margin: 0;
+      @include gold-accent;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: $text-secondary;
+
+      &:hover {
+        color: $text-color;
+      }
+    }
+  }
+
+  .modal-body {
+    padding: $spacing-md;
+  }
+
+  .modal-footer {
+    padding: $spacing-md;
+    border-top: 1px solid $border-color;
+    display: flex;
+    justify-content: flex-end;
+
+    .primary-btn {
+      @include button-base;
+      background-color: $primary-color;
+      color: $text-color;
+      padding: $spacing-sm $spacing-md;
+
+      &:hover {
+        background-color: lighten($primary-color, 10%);
+      }
+    }
+  }
+}
+
+.collection-result-modal {
+  .collection-result {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: $spacing-md;
+    padding: $spacing-lg;
+    border-radius: $border-radius-md;
+
+    &.success {
+      background-color: rgba($success-color, 0.1);
+      border: 1px solid rgba($success-color, 0.2);
+    }
+
+    &.failure {
+      background-color: rgba($danger-color, 0.1);
+      border: 1px solid rgba($danger-color, 0.2);
+    }
+
+    .result-icon {
+      font-size: 48px;
+      margin-bottom: $spacing-sm;
+    }
+
+    .result-message {
+      font-size: $font-size-lg;
+      font-weight: 500;
+      margin-bottom: $spacing-md;
+      line-height: 1.4;
+    }
+
+    .result-details {
+      display: flex;
+      flex-direction: column;
+      gap: $spacing-sm;
+      width: 100%;
+
+      .result-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: $spacing-sm;
+        padding: $spacing-sm $spacing-md;
+        background-color: rgba($background-lighter, 0.5);
+        border-radius: $border-radius-sm;
+
+        &.positive {
+          color: $success-color;
+          border: 1px solid rgba($success-color, 0.2);
+        }
+
+        .item-icon {
+          font-size: 18px;
+        }
+
+        .item-value {
+          font-weight: 600;
+          font-size: $font-size-lg;
+        }
+      }
+    }
+  }
 }
 
 // Slide up animations
@@ -498,6 +935,7 @@ watch([allNavItems], () => {
   .overlay-content {
     transform: translateY(100%);
   }
+
   .overlay-backdrop {
     opacity: 0;
   }
@@ -508,9 +946,21 @@ watch([allNavItems], () => {
   .overlay-content {
     transform: translateY(0);
   }
+
   .overlay-backdrop {
     opacity: 1;
   }
+}
+
+// Fade transition for modal
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 // Enhance touch targets for mobile
@@ -530,6 +980,20 @@ watch([allNavItems], () => {
         background-color: rgba(255, 255, 255, 0.1);
       }
     }
+  }
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+
+  100% {
+    opacity: 1;
   }
 }
 </style>

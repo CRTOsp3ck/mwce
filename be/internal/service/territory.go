@@ -129,8 +129,6 @@ func (s *territoryService) GetRecentActionsInCurrentRegion(playerID string, limi
 	return s.territoryRepo.GetRecentActionsByPlayerAndRegion(playerID, *player.CurrentRegionID, limit)
 }
 
-// internal/service/territory.go (continued)
-
 // CollectAllHotspotIncomeInCurrentRegion collects pending income from all hotspots in the player's current region
 func (s *territoryService) CollectAllHotspotIncomeInCurrentRegion(playerID string) (*model.CollectAllResponse, error) {
 	// Get player to find their current region

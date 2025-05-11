@@ -91,7 +91,12 @@ export const useTerritoryStore = defineStore('territory', {
       const playerId = playerStore.profile?.id;
       const currentRegionId = playerStore.profile?.currentRegionId;
 
-      if (!currentRegionId || !playerId) {
+      if (!playerId) {
+        return [];
+      }
+
+      if (!currentRegionId) {
+        // If not in any region, return empty array
         return [];
       }
 
@@ -102,6 +107,31 @@ export const useTerritoryStore = defineStore('territory', {
       const cityIds = regionsCities.map(c => c.id);
 
       return state.hotspots.filter(h => cityIds.includes(h.cityId) && h.controller === playerId);
+    },
+
+    outOfRegionControlledHotspots: state => {
+      const playerStore = usePlayerStore();
+      const playerId = playerStore.profile?.id;
+      const currentRegionId = playerStore.profile?.currentRegionId;
+
+      if (!playerId) {
+        return [];
+      }
+
+      const allControlled = state.hotspots.filter(h => h.controller === playerId);
+
+      if (!currentRegionId) {
+        // If not in any region, all controlled hotspots are "out of region"
+        return allControlled;
+      }
+
+      // Get hotspots outside current region
+      const regionsDistricts = state.districts.filter(d => d.regionId === currentRegionId);
+      const districtIds = regionsDistricts.map(d => d.id);
+      const regionsCities = state.cities.filter(c => districtIds.includes(c.districtId));
+      const cityIds = regionsCities.map(c => c.id);
+
+      return allControlled.filter(h => !cityIds.includes(h.cityId));
     },
 
     controlledHotspots: state => {
@@ -219,7 +249,7 @@ export const useTerritoryStore = defineStore('territory', {
 
     hotspotsInCity: state => (cityId: string) => {
       return state.hotspots.filter(h => h.cityId === cityId);
-    }
+    },
   },
 
   actions: {

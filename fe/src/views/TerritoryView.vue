@@ -172,7 +172,7 @@ const sortedControlledHotspots = computed(() => {
 });
 
 const collectableBusinesses = computed(() => {
-  return controlledHotspots.value.filter(h => h.pendingCollection > 0);
+  return currentRegionControlledHotspots.value.filter(h => h.pendingCollection > 0);
 });
 
 const hasCollectableBusiness = computed(() => {
@@ -737,20 +737,68 @@ function closeResultModal() {
   territoryStore.updateFilteredHotspots();
 }
 
+const currentRegionControlledHotspots = computed(() => {
+  const playerStore = usePlayerStore();
+  const currentRegionId = playerStore.profile?.currentRegionId;
+  return territoryStore.currentRegionControlledHotspots;
+});
+
+const outOfRegionControlledHotspots = computed(() => {
+  return territoryStore.outOfRegionControlledHotspots;
+});
+
+const currentRegionName = computed(() => {
+  const playerStore = usePlayerStore();
+  return playerStore.profile?.currentRegionName || null;
+});
+
+const sortedCurrentRegionHotspots = computed(() => {
+  const result = [...currentRegionControlledHotspots.value];
+  return sortHotspots(result);
+});
+
+const sortedOutOfRegionHotspots = computed(() => {
+  const result = [...outOfRegionControlledHotspots.value];
+  return sortHotspots(result);
+});
+
+// Helper function to sort hotspots
+function sortHotspots(hotspots: Hotspot[]) {
+  switch (empireSortBy.value) {
+    case 'name':
+      return hotspots.sort((a, b) => a.name.localeCompare(b.name));
+    case 'income':
+      return hotspots.sort((a, b) => b.income - a.income);
+    case 'pending':
+      return hotspots.sort((a, b) => b.pendingCollection - a.pendingCollection);
+    case 'defense':
+      return hotspots.sort((a, b) => b.defenseStrength - a.defenseStrength);
+    case 'region':
+      return hotspots.sort((a, b) => {
+        const regionA = getHotspotLocation(a, false);
+        const regionB = getHotspotLocation(b, false);
+        return regionA.localeCompare(regionB);
+      });
+    default:
+      return hotspots;
+  }
+}
+
+// Update collectAllPending to only collect from current region
 async function collectAllPending() {
-  if (isCollecting.value || collectableBusinesses.value.length === 0) return;
+  if (isCollecting.value || currentRegionControlledHotspots.value.length === 0) return;
 
   isCollecting.value = true;
 
   try {
-    const result = await territoryStore.collectAllHotspotIncome();
+    const result = await territoryStore.collectAllHotspotIncomeInCurrentRegion();
 
     if (result) {
       // Show a success notification or message
       actionResult.value = {
         success: true,
         moneyGained: result.collectionResult.collectedAmount,
-        message: `Successfully collected $${formatNumber(result.collectionResult.collectedAmount)} from all your businesses.`
+        message: `Successfully collected $${formatNumber(result.collectionResult.collectedAmount)} from ${result.collectionResult.hotspotsCount} businesses in ${currentRegionName.value || 'this region'}.`
       };
 
       actionSuccess.value = true;
@@ -762,6 +810,8 @@ async function collectAllPending() {
     isCollecting.value = false;
   }
 }
+
+
 
 function resetFilters() {
   selectedRegionId.value = null;
@@ -948,9 +998,10 @@ onBeforeUnmount(() => {
 
         <div class="empire-actions">
           <BaseButton v-if="hasCollectableBusiness" @click="collectAllPending" :loading="isCollecting"
-            variant="secondary">
+            variant="secondary" :disabled="!currentRegionName">
             <span class="btn-icon">💼</span>
-            Collect All ({{ collectableBusinesses.length }})
+            {{ currentRegionName ? `Collect All in ${currentRegionName}` : 'Enter a Region to Collect' }}
+            {{ collectableBusinesses.length > 0 ? `(${collectableBusinesses.length})` : '' }}
           </BaseButton>
         </div>
       </div>
@@ -958,10 +1009,13 @@ onBeforeUnmount(() => {
       <!-- Section Separator -->
       <div class="section-separator"></div>
 
-      <!-- Controlled hotspots grid -->
-      <div class="hotspots-section">
+      <!-- Current Region Hotspots Section -->
+      <div v-if="currentRegionName" class="hotspots-section">
         <div class="section-header">
-          <h4>Your Businesses</h4>
+          <h4>
+            <span class="region-indicator">📍</span>
+            {{ currentRegionName }} (Current Region)
+          </h4>
 
           <div class="section-filters">
             <div class="filter-group">
@@ -977,10 +1031,17 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <div class="hotspots-grid empire-grid">
-          <div v-for="hotspot in sortedControlledHotspots" :key="hotspot.id" class="hotspot-card controlled"
-            :class="{ 'has-pending': hotspot.pendingCollection > 0 }" @click="openDetailModal(hotspot)">
-
+        <div v-if="currentRegionControlledHotspots.length === 0" class="empty-state">
+          <div class="empty-icon">🏙️</div>
+          <h4>No Businesses in {{ currentRegionName }}</h4>
+          <p>You don't control any businesses in this region yet. Expand your territory to start earning income from
+            this region.</p>
+          <BaseButton @click="navigateToTab('explore')">Explore Territory</BaseButton>
+        </div>
+        <div v-else class="hotspots-grid empire-grid">
+          <div v-for="hotspot in sortedCurrentRegionHotspots" :key="hotspot.id"
+            class="hotspot-card controlled current-region" :class="{ 'has-pending': hotspot.pendingCollection > 0 }"
+            @click="openDetailModal(hotspot)">
             <div class="card-badge" v-if="hotspot.pendingCollection > 0">
               <span class="badge-icon">💰</span>
               ${{ formatNumber(hotspot.pendingCollection) }}
@@ -1064,20 +1125,151 @@ onBeforeUnmount(() => {
               </BaseButton>
             </div>
           </div>
+        </div>
+      </div>
 
-          <div v-if="controlledHotspots.length === 0" class="empty-state">
-            <div class="empty-icon">🏙️</div>
-            <h4>No Controlled Businesses</h4>
-            <p>Your criminal empire needs a foundation. Start by taking over a business in the Explore tab.</p>
-            <BaseButton @click="activeTab = 'explore'">Explore Territory</BaseButton>
+      <!-- Section Divider with extra spacing -->
+      <!-- <div class="section-divider"></div> -->
+
+      <!-- Out of Region Hotspots Section -->
+      <div class="hotspots-section">
+        <div class="section-header">
+          <h4>
+            <span class="region-indicator">🌍</span>
+            Other Regions
+          </h4>
+          <div class="region-status">
+            {{ outOfRegionControlledHotspots.length }} businesses across other regions
+          </div>
+        </div>
+
+        <div class="hotspots-grid empire-grid">
+          <div v-for="hotspot in sortedOutOfRegionHotspots" :key="hotspot.id"
+            class="hotspot-card controlled out-of-region" :class="{ 'has-pending': hotspot.pendingCollection > 0 }"
+            @click="openDetailModal(hotspot)">
+            <!-- Location badge for out-of-region -->
+            <div class="card-badge location" v-if="!hotspot.pendingCollection">
+              <span class="badge-icon">📍</span>
+              {{ getHotspotLocation(hotspot).split(',')[0] }}
+            </div>
+
+            <!-- Pending badge -->
+            <div class="card-badge pending" v-if="hotspot.pendingCollection > 0">
+              <span class="badge-icon">💰</span>
+              ${{ formatNumber(hotspot.pendingCollection) }}
+            </div>
+
+            <div class="hotspot-header">
+              <div class="hotspot-title-area">
+                <h3>{{ hotspot.name }}</h3>
+                <div class="hotspot-type">{{ hotspot.type }} - {{ getHotspotLocation(hotspot) }}</div>
+              </div>
+              <div class="hotspot-info-icon" @mouseover.stop="showTooltip(hotspot, $event)"
+                @mouseleave.stop="hideTooltip">
+                <span class="info-icon">ℹ️</span>
+              </div>
+            </div>
+
+            <div class="hotspot-details">
+              <div class="detail-row">
+                <div class="detail-item">
+                  <span class="detail-label">Location:</span>
+                  <span class="detail-value">{{ getHotspotLocation(hotspot, true) }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Business:</span>
+                  <span class="detail-value">{{ hotspot.businessType }}</span>
+                </div>
+              </div>
+
+              <div class="detail-row">
+                <div class="detail-item">
+                  <span class="detail-label">Income:</span>
+                  <span class="detail-value">${{ formatNumber(hotspot.income) }}/hr</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Defense:</span>
+                  <span class="detail-value defense" :class="getDefenseClass(hotspot.defenseStrength)">
+                    {{ getDefenseLabel(hotspot.defenseStrength) }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="detail-row income-timer">
+                <div class="detail-item">
+                  <span class="detail-label">Next Income:</span>
+                  <span class="detail-value countdown">
+                    {{ formatTimeRemaining(hotspot.id) }}
+                  </span>
+                </div>
+                <div class="detail-item" v-if="hotspot.pendingCollection > 0">
+                  <span class="detail-label">Pending:</span>
+                  <span class="detail-value income">${{ formatNumber(hotspot.pendingCollection) }}</span>
+                </div>
+              </div>
+
+              <div class="detail-row defense-allocation">
+                <div class="resource-allocation">
+                  <div class="resource-item" v-if="hotspot.crew > 0">
+                    <span class="resource-icon">👥</span>
+                    <span class="resource-value">{{ hotspot.crew }}</span>
+                  </div>
+                  <div class="resource-item" v-if="hotspot.weapons > 0">
+                    <span class="resource-icon">🔫</span>
+                    <span class="resource-value">{{ hotspot.weapons }}</span>
+                  </div>
+                  <div class="resource-item" v-if="hotspot.vehicles > 0">
+                    <span class="resource-icon">🚗</span>
+                    <span class="resource-value">{{ hotspot.vehicles }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="hotspot-footer">
+              <BaseButton v-if="hotspot.pendingCollection > 0" variant="outline" small disabled
+                title="Travel to this region to collect">
+                <span style="opacity: 0.6;">Collect</span>
+                <span style="font-size: 0.9em; opacity: 0.7;">(Travel Required)</span>
+              </BaseButton>
+              <BaseButton variant="outline" small disabled title="Travel to this region to manage defense">
+                <span style="opacity: 0.6;">Defend</span>
+                <span style="font-size: 0.9em; opacity: 0.7;">(Travel Required)</span>
+              </BaseButton>
+            </div>
+          </div>
+
+          <!-- Better empty state for Other Regions -->
+          <div v-if="outOfRegionControlledHotspots.length === 0 && currentRegionControlledHotspots.length > 0"
+            class="empty-state">
+            <div class="empty-icon">🌍</div>
+            <h4>No Businesses in Other Regions</h4>
+            <p>All your controlled businesses are in {{ currentRegionName }}. Expand to other regions to grow your
+              criminal empire.</p>
+            <BaseButton @click="navigateToTab('explore')" variant="outline">
+              <span class="btn-icon">🗺️</span>
+              Explore Other Regions
+            </BaseButton>
+          </div>
+
+          <!-- Empty state when no businesses at all -->
+          <div
+            v-if="outOfRegionControlledHotspots.length === 0 && currentRegionControlledHotspots.length === 0 && !currentRegionName"
+            class="empty-state">
+            <div class="empty-icon">🗺️</div>
+            <h4>No Territory Control</h4>
+            <p>Your criminal empire needs a foundation. Travel to a region and start by taking over businesses to expand
+              your territory and generate income.</p>
+            <BaseButton @click="$router.push('/travel')" variant="outline">
+              <span class="btn-icon">✈️</span>
+              Start Your Journey
+            </BaseButton>
           </div>
         </div>
       </div>
 
       <!-- Section Separator -->
-      <div class="section-separator">
-        <!-- <span class="separator-text">Regional Influence</span> -->
-      </div>
+      <!-- <div class="section-separator"></div> -->
 
       <!-- Region distribution chart -->
       <div class="empire-regions-overview">
@@ -1449,7 +1641,7 @@ onBeforeUnmount(() => {
                     <label>Crew</label>
                   </div>
                   <span class="resource-available">Current Allocation: {{ actionResources.crew }} / {{ availableCrew
-                    }}</span>
+                  }}</span>
                 </div>
 
                 <div class="control-actions">
@@ -1886,7 +2078,7 @@ onBeforeUnmount(() => {
 
     .empire-header {
       @include flex-between;
-      margin-bottom: $spacing-lg;
+      // margin-bottom: $spacing-lg;
 
       // h3 {
       //   @include section-title;
@@ -1896,6 +2088,7 @@ onBeforeUnmount(() => {
     .empire-regions-overview {
       // @include card-dark;
       margin-bottom: $spacing-xl;
+      padding-top: $spacing-xl;
 
       .overview-header {
         margin-bottom: $spacing-lg;
@@ -1963,6 +2156,114 @@ onBeforeUnmount(() => {
           color: $text-secondary;
           padding: $spacing-xl;
         }
+      }
+    }
+
+    .section-header {
+      .region-indicator {
+        margin-right: $spacing-sm;
+        font-size: 1.2em;
+      }
+
+      .region-status {
+        color: $text-secondary;
+        font-size: $font-size-sm;
+      }
+    }
+
+    .hotspot-card {
+      &.current-region {
+        border-left: 4px solid $success-color;
+
+        &.has-pending {
+          box-shadow: 0 0 0 2px $success-color;
+        }
+      }
+
+      &.out-of-region {
+        border-left: 4px solid $warning-color;
+        opacity: 0.9;
+
+        .card-badge.location {
+          background-color: $warning-color;
+          color: $background-darker;
+
+          .badge-icon {
+            font-size: 12px;
+          }
+        }
+
+        .card-badge.pending {
+          background-color: $secondary-color;
+          color: $background-darker;
+        }
+
+        .hotspot-footer {
+          button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+          }
+        }
+      }
+    }
+
+    .section-divider {
+      height: 2px;
+      background: linear-gradient(90deg,
+          rgba($gold-color, 0) 0%,
+          rgba($gold-color, 0.3) 15%,
+          rgba($gold-color, 0.8) 50%,
+          rgba($gold-color, 0.3) 85%,
+          rgba($gold-color, 0) 100%);
+      margin: $spacing-xl * 1.5 0;
+      position: relative;
+
+      &::before {
+        content: "⭐";
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        background: $background-dark;
+        color: $gold-color;
+        padding: 0 $spacing-md;
+        font-size: 16px;
+      }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: $spacing-xl;
+      margin: $spacing-lg 0;
+      background: linear-gradient(135deg, rgba($background-lighter, 0.8) 0%, rgba($background-darker, 0.9) 100%);
+      border-radius: $border-radius-md;
+      border: 1px dashed rgba($border-color, 0.5);
+      min-height: 200px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+
+      .empty-icon {
+        font-size: 48px;
+        margin-bottom: $spacing-md;
+        opacity: 0.7;
+      }
+
+      h4 {
+        margin: 0 0 $spacing-sm 0;
+        @include gold-accent;
+      }
+
+      p {
+        color: $text-secondary;
+        margin-bottom: $spacing-md;
+        line-height: 1.6;
+        max-width: 80%;
+      }
+
+      .btn-icon {
+        margin-right: $spacing-xs;
       }
     }
   }
@@ -2984,7 +3285,8 @@ onBeforeUnmount(() => {
   .section-separator {
     position: relative;
     text-align: center;
-    margin: $spacing-xl;
+    // margin: $spacing-md;
+    margin-bottom: $spacing-xl;
     height: 20px;
 
     &:before {

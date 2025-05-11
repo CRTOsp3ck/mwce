@@ -1,14 +1,14 @@
-// src/components/layout/AppSidebar.vue (Updated to use centralized navigation)
-
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import BaseButton from '@/components/ui/BaseButton.vue';
 import BaseTooltip from '@/components/ui/BaseTooltip.vue';
+import BaseModal from '@/components/ui/BaseModal.vue';
 import { usePlayerStore } from '@/stores/modules/player';
 import { useTerritoryStore } from '@/stores/modules/territory';
 import { useTravelStore } from '@/stores/modules/travel';
 import { getSidebarNavItems } from '@/config/navigationConfig';
+import type { ActionResult } from '@/types/territory';
 
 const router = useRouter();
 const route = useRoute();
@@ -18,12 +18,35 @@ const territoryStore = useTerritoryStore();
 // Access the travel store
 const travelStore = useTravelStore();
 
+// Collection modal states
+const showCollectionResultModal = ref(false);
+const collectionResult = ref<ActionResult | null>(null);
+const isCollecting = ref(false);
+
 // Get navigation items from central config
 const menuItems = computed(() => getSidebarNavItems());
 
 // Check if the player is in a region
 const currentRegion = computed(() => travelStore.currentRegion);
 const isInRegion = computed(() => !!currentRegion.value);
+
+// Get current region controlled hotspots for collection
+const currentRegionControlledHotspots = computed(() => {
+  return territoryStore.currentRegionControlledHotspots;
+});
+
+// Get pending collections specifically from current region
+const currentRegionPendingCollections = computed(() => {
+  return currentRegionControlledHotspots.value.reduce((total, hotspot) => total + hotspot.pendingCollection, 0);
+});
+
+// Get collectable businesses count for current region
+const currentRegionCollectableBusinesses = computed(() => {
+  return currentRegionControlledHotspots.value.filter(h => h.pendingCollection > 0).length;
+});
+
+// Get all pending collections for display when not in a region
+const totalPendingCollections = computed(() => playerStore.profile?.pendingCollections || 0);
 
 // Load player data on component mount
 onMounted(async () => {
@@ -56,17 +79,14 @@ const playerHeat = computed(() => playerStore.playerHeat);
 const controlledHotspots = computed(() => playerStore.profile?.controlledHotspots || 0);
 const totalHotspots = computed(() => playerStore.profile?.totalHotspotCount || 0);
 const hourlyRevenue = computed(() => playerStore.profile?.hourlyRevenue || 0);
-const pendingCollections = computed(() => playerStore.profile?.pendingCollections || 0);
+
+// Use regional pending when in a region, otherwise use total
+const pendingCollections = computed(() => {
+  return isInRegion.value ? currentRegionPendingCollections.value : totalPendingCollections.value;
+});
 
 // Get loading state
 const isLoading = computed(() => playerStore.isLoading);
-
-// Collect all pending collections
-const collectAllPending = async () => {
-  if (pendingCollections.value > 0 && !isLoading.value) {
-    await territoryStore.collectAllHotspotIncome();
-  }
-};
 
 // Helper function to format numbers
 function formatNumber(value: number): string {
@@ -97,6 +117,56 @@ function navigateTo(item: any): void {
   } else {
     router.push(item.path);
   }
+}
+
+// Updated collect all with modal and regional support
+async function collectAllPending() {
+  if (pendingCollections.value <= 0 || isLoading.value) return;
+
+  isCollecting.value = true;
+
+  try {
+    let result;
+    const currentRegionName = travelStore.currentRegion?.name;
+
+    if (isInRegion.value) {
+      // Collect from current region
+      result = await territoryStore.collectAllHotspotIncomeInCurrentRegion();
+    } else {
+      // Collect from all territories
+      result = await territoryStore.collectAllHotspotIncome();
+    }
+
+    if (result) {
+      // Show collection result modal
+      collectionResult.value = {
+        success: true,
+        moneyGained: result.collectionResult.collectedAmount,
+        message: result.gameMessage?.message ||
+          `Successfully collected $${formatNumber(result.collectionResult.collectedAmount)} from ${result.collectionResult.hotspotsCount} businesses${currentRegionName ? ` in ${currentRegionName}` : ''}.`
+      };
+
+      showCollectionResultModal.value = true;
+    }
+  } catch (error) {
+    console.error('Failed to collect all pending resources:', error);
+
+    // Show error modal
+    collectionResult.value = {
+      success: false,
+      message: 'Failed to collect resources. Please try again.'
+    };
+
+    showCollectionResultModal.value = true;
+  } finally {
+    isCollecting.value = false;
+  }
+}
+
+// Close collection result modal
+function closeCollectionModal() {
+  showCollectionResultModal.value = false;
+  collectionResult.value = null;
 }
 </script>
 
@@ -184,47 +254,70 @@ function navigateTo(item: any): void {
       </div>
     </div>
 
-    <!-- Updated Navigation Menu with tooltips -->
     <nav class="sidebar-nav">
-      <BaseTooltip
-        v-for="item in menuItems"
-        :key="item.id"
-        :text="item.tooltip"
-        position="right"
-      >
-        <div
-          class="nav-item"
-          :class="{
-            active: isActive(item.path),
-            disabled: item.requiresRegion && !isInRegion
-          }"
-          @click="navigateTo(item)"
-        >
+      <BaseTooltip v-for="item in menuItems" :key="item.id" :text="item.tooltip" position="right">
+        <div class="nav-item" :class="{
+          active: isActive(item.path),
+          disabled: item.requiresRegion && !isInRegion
+        }" @click="navigateTo(item)">
           <span class="nav-icon">{{ item.icon }}</span>
           <span class="nav-label">{{ item.name }}</span>
-          <span
-            v-if="item.requiresRegion && !isInRegion"
-            class="region-required"
-            title="You need to travel to a region first"
-          >🌎</span>
+          <span v-if="item.requiresRegion && !isInRegion" class="region-required"
+            title="You need to travel to a region first">🌎</span>
         </div>
       </BaseTooltip>
     </nav>
 
     <div class="sidebar-actions">
-      <BaseTooltip text="Collect all pending income from your territories">
-        <button class="action-btn collect-all" @click="collectAllPending"
-          :disabled="pendingCollections <= 0 || isLoading">
+      <button class="action-btn collect-all" @click="collectAllPending"
+        :disabled="pendingCollections <= 0 || isLoading || isCollecting">
+        <BaseTooltip
+          :text="isInRegion ? `Collect all pending income from businesses in ${currentRegion?.name}` : 'Collect all pending income from your territories'">
           <div style="display: flex; flex-direction: column; gap: 8px; align-items: center;">
             <div class="icon">💼</div>
-            <div>Collect All</div>
+            <div>{{ isInRegion ? 'Collect All' : 'Collect All' }}</div>
             <div style="display: flex; flex-direction: column; gap: 2px;">
               <div>${{ formatNumber(pendingCollections) }}</div>
+              <div v-if="isInRegion" style="font-size: 0.8em; opacity: 0.8;">
+                ({{ currentRegion?.name }})
+              </div>
+              <div v-else-if="!isInRegion && controlledHotspots > 0" style="font-size: 0.8em; opacity: 0.8;">
+                (All Regions)
+              </div>
             </div>
           </div>
-        </button>
-      </BaseTooltip>
+        </BaseTooltip>
+      </button>
     </div>
+
+    <!-- Collection Result Modal -->
+    <BaseModal v-model="showCollectionResultModal"
+      :title="collectionResult?.success ? 'Collection Successful' : 'Collection Failed'"
+      class="collection-result-modal">
+      <div v-if="collectionResult" class="collection-result"
+        :class="{ 'success': collectionResult.success, 'failure': !collectionResult.success }">
+        <div class="result-icon">
+          {{ collectionResult.success ? '✅' : '❌' }}
+        </div>
+
+        <div class="result-message">
+          {{ collectionResult.message }}
+        </div>
+
+        <div v-if="collectionResult.success && collectionResult.moneyGained" class="result-details">
+          <div class="result-item positive">
+            <span class="item-icon">💵</span>
+            <span class="item-value">+${{ formatNumber(collectionResult.moneyGained) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <BaseButton variant="primary" @click="closeCollectionModal">
+          Continue
+        </BaseButton>
+      </template>
+    </BaseModal>
   </aside>
 </template>
 
@@ -446,23 +539,21 @@ function navigateTo(item: any): void {
       color: $background-color;
       padding: $spacing-md;
       position: relative;
+      transition: all 0.2s ease;
 
       .icon {
         margin-right: $spacing-sm;
       }
 
-      .amount {
-        position: absolute;
-        right: $spacing-md;
-        font-weight: bold;
-      }
-
-      &:hover {
+      &:hover:not(:disabled) {
         background-color: lighten($secondary-color, 5%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba($secondary-color, 0.3);
       }
 
-      &:active {
+      &:active:not(:disabled) {
         background-color: darken($secondary-color, 5%);
+        transform: translateY(0);
       }
 
       &:disabled {
@@ -471,6 +562,73 @@ function navigateTo(item: any): void {
 
         &:hover {
           background-color: $secondary-color;
+          transform: none;
+          box-shadow: none;
+        }
+      }
+    }
+  }
+}
+
+// Add styles for the collection result modal
+.collection-result-modal {
+  .collection-result {
+    @include flex-column;
+    align-items: center;
+    text-align: center;
+    gap: $spacing-md;
+    padding: $spacing-lg;
+    border-radius: $border-radius-md;
+
+    &.success {
+      background-color: rgba($success-color, 0.1);
+      border: 1px solid rgba($success-color, 0.2);
+    }
+
+    &.failure {
+      background-color: rgba($danger-color, 0.1);
+      border: 1px solid rgba($danger-color, 0.2);
+    }
+
+    .result-icon {
+      font-size: 48px;
+      margin-bottom: $spacing-sm;
+    }
+
+    .result-message {
+      font-size: $font-size-lg;
+      font-weight: 500;
+      margin-bottom: $spacing-md;
+      line-height: 1.4;
+    }
+
+    .result-details {
+      display: flex;
+      flex-direction: column;
+      gap: $spacing-sm;
+      width: 100%;
+
+      .result-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: $spacing-sm;
+        padding: $spacing-sm $spacing-md;
+        background-color: rgba($background-lighter, 0.5);
+        border-radius: $border-radius-sm;
+
+        &.positive {
+          color: $success-color;
+          border: 1px solid rgba($success-color, 0.2);
+        }
+
+        .item-icon {
+          font-size: 18px;
+        }
+
+        .item-value {
+          font-weight: 600;
+          font-size: $font-size-lg;
         }
       }
     }

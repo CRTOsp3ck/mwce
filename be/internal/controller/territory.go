@@ -423,6 +423,7 @@ func (c *TerritoryController) CollectAllHotspotIncome(w http.ResponseWriter, r *
 	}
 }
 
+// CollectAllRegionalHotspotIncome handles collecting income from all controlled hotspots in current region
 func (h *TerritoryController) CollectAllRegionalHotspotIncome(w http.ResponseWriter, r *http.Request) {
 	// Get player ID from context
 	playerID, ok := middleware.GetUserID(r.Context())
