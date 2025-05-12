@@ -273,7 +273,7 @@ async function collectAll() {
     <div class="page-header">
       <div class="page-title">
         <h2>{{ regionGreeting.greeting }}</h2>
-        <p class="welcome-message">{{ regionGreeting.description }}</p>
+        <p class="subtitle">{{ regionGreeting.description }}</p>
       </div>
 
       <!-- Quick travel indicator if in region -->
@@ -290,7 +290,7 @@ async function collectAll() {
 
     <div class="dashboard-grid">
       <!-- Regional Overview Card -->
-      <BaseCard v-if="isInRegion" title="Regional Control" class="regional-card" gold-border>
+      <BaseCard v-if="isInRegion" title="Regional Control" class="regional-card">
         <div class="regional-stats">
           <div class="stat-item">
             <div class="stat-label">Region</div>
@@ -310,17 +310,15 @@ async function collectAll() {
           <div class="progress-label">Regional Dominance</div>
           <div class="progress-bar">
             <div class="progress-fill" :style="{ width: `${regionalControlPercentage}%` }"
-                 :class="{ 'high-control': regionalControlPercentage > 60 }"></div>
+              :class="{ 'high-control': regionalControlPercentage > 60 }"></div>
           </div>
           <div class="progress-value">{{ regionalControlPercentage }}%</div>
         </div>
       </BaseCard>
 
-      <!-- Empire Overview Card (for when not in region or as secondary info) -->
-      <BaseCard :title="isInRegion ? 'Empire Overview' : 'Criminal Empire'"
-                class="overview-card"
-                :class="{ 'secondary': isInRegion }"
-                :gold-border="!isInRegion">
+      <!-- Empire Overview Card - Retaining original styling -->
+      <BaseCard :title="isInRegion ? 'Empire Overview' : 'Criminal Empire'" class="overview-card"
+        :class="{ 'secondary': isInRegion }" :gold-border="!isInRegion">
         <div class="overview-stats">
           <div class="stat-item">
             <div class="stat-label">Total Money</div>
@@ -340,7 +338,7 @@ async function collectAll() {
       <!-- Pending Collections Card -->
       <BaseCard title="Pending Collections" class="collections-card">
         <div v-if="(isInRegion && regionalControlled > 0) || (!isInRegion && totalControlled > 0)"
-             class="collections-content">
+          class="collections-content">
           <div class="total-pending">
             <div class="pending-label">
               {{ isInRegion ? 'Available in region:' : 'Available to collect:' }}
@@ -349,22 +347,21 @@ async function collectAll() {
               ${{ formatNumber(isInRegion ? regionalPending : totalPending) }}
             </div>
           </div>
-          <BaseButton variant="secondary"
-                      :disabled="(isInRegion ? regionalPending : totalPending) <= 0"
-                      @click="collectAll"
-                      :loading="isLoading">
+          <BaseButton variant="secondary" :disabled="(isInRegion ? regionalPending : totalPending) <= 0"
+            @click="collectAll" :loading="isLoading">
             {{ isInRegion ? 'Collect from Region' : 'Collect All' }}
           </BaseButton>
         </div>
         <div v-else class="empty-state">
-          <p>{{ isInRegion ? 'You don\'t control any businesses in this region yet.' : 'You don\'t control any businesses yet.' }}</p>
+          <div class="empty-icon">💼</div>
+          <p>{{ isInRegion ? 'You don\'t control any businesses in this region yet.' : 'You don\'t control anybusinesses yet.' }}</p>
           <BaseButton variant="outline" @click="goToTerritory">
             {{ isInRegion ? 'Expand in Region' : 'Expand Your Territory' }}
           </BaseButton>
         </div>
       </BaseCard>
 
-      <!-- Resources Card (unchanged) -->
+      <!-- Resources Card -->
       <BaseCard title="Resources" class="resources-card">
         <div class="resources-grid">
           <div class="resource-item">
@@ -407,8 +404,7 @@ async function collectAll() {
       </BaseCard>
 
       <!-- Location-Aware Operations Card -->
-      <BaseCard :title="isInRegion ? `Operations in ${currentRegion}` : 'Available Operations'"
-                class="operations-card">
+      <BaseCard :title="isInRegion ? `Operations in ${currentRegion}` : 'Available Operations'" class="operations-card">
         <div v-if="availableOperations.length > 0" class="operations-list">
           <div v-for="operation in availableOperations" :key="operation.id" class="operation-item">
             <div class="operation-details">
@@ -421,12 +417,13 @@ async function collectAll() {
             </BaseButton>
           </div>
           <div class="view-all-link">
-            <a @click.prevent="goToOperations()">
-              {{ isInRegion ? 'View all regional operations' : 'View all operations' }}
-            </a>
+            <BaseButton variant="secondary" small @click="goToOperations()">
+              View All
+            </BaseButton>
           </div>
         </div>
         <div v-else class="empty-state">
+          <div class="empty-icon">🔍</div>
           <p>{{ isInRegion ? 'No operations available in this region.' : 'No operations available right now.' }}</p>
           <BaseButton variant="outline" @click="goToOperations()">
             Check Operations
@@ -436,7 +433,7 @@ async function collectAll() {
 
       <!-- Location-Aware Territory Card -->
       <BaseCard :title="isInRegion ? `Territory Control in ${currentRegion}` : 'Territory Status'"
-                class="territory-card">
+        class="territory-card">
         <div class="territory-stats">
           <div v-if="isInRegion" class="regional-control">
             <div class="control-stat">
@@ -460,15 +457,14 @@ async function collectAll() {
           </div>
         </div>
         <div class="territory-actions">
-          <BaseButton variant="outline" @click="goToTerritory()">
+          <BaseButton variant="primary" @click="goToTerritory()">
             {{ isInRegion ? 'Manage Regional Territory' : 'Manage Territory' }}
           </BaseButton>
         </div>
       </BaseCard>
 
       <!-- Recent Actions Card -->
-      <BaseCard :title="isInRegion ? 'Recent Regional Activity' : 'Recent Activities'"
-                class="recent-actions-card">
+      <BaseCard :title="isInRegion ? 'Recent Regional Activity' : 'Recent Activities'" class="recent-actions-card">
         <div v-if="recentActions.length > 0" class="actions-list">
           <div v-for="action in recentActions" :key="action.id" class="action-item"
             :class="{ 'success': action.result && action.result.success, 'failure': action.result && !action.result.success }">
@@ -483,6 +479,7 @@ async function collectAll() {
           </div>
         </div>
         <div v-else class="empty-state">
+          <div class="empty-icon">📋</div>
           <p>{{ isInRegion ? 'No recent activities in this region.' : 'No recent activities yet.' }}</p>
         </div>
       </BaseCard>
@@ -492,6 +489,7 @@ async function collectAll() {
 
 <style lang="scss">
 .home-view {
+
   // Base atmosphere styling
   &.atmosphere-headquarters {
     .page-header {
@@ -575,9 +573,9 @@ async function collectAll() {
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
       }
 
-      .welcome-message {
+      .subtitle {
         color: $text-secondary;
-        font-size: $font-size-lg;
+        font-size: $font-size-md;
         line-height: 1.6;
         max-width: 80%;
       }
@@ -616,7 +614,7 @@ async function collectAll() {
   .dashboard-grid {
     display: grid;
     grid-template-columns: repeat(1, 1fr);
-    gap: $spacing-lg;
+    gap: $spacing-md;
 
     @include respond-to(md) {
       grid-template-columns: repeat(2, 1fr);
@@ -626,10 +624,56 @@ async function collectAll() {
       grid-template-columns: repeat(3, 1fr);
     }
 
+    // Common card styling
+    .base-card {
+      border-radius: $border-radius-md;
+      box-shadow: $shadow-md;
+      background-color: $background-card;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      overflow: hidden;
+
+      &:hover {
+        transform: translateY(-5px);
+        box-shadow: $shadow-lg;
+      }
+
+      .card-header {
+        padding-bottom: $spacing-md;
+        margin-bottom: $spacing-md;
+        border-bottom: 1px solid $border-color;
+
+        h3 {
+          margin-bottom: 0;
+        }
+      }
+
+      .empty-state {
+        @include flex-column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: $spacing-xl 0;
+        gap: $spacing-md;
+
+        .empty-icon {
+          font-size: 36px;
+          margin-bottom: $spacing-sm;
+          opacity: 0.8;
+        }
+
+        p {
+          color: $text-secondary;
+          margin-bottom: $spacing-md;
+        }
+      }
+    }
+
+    // Regional Overview Card
     .regional-card {
       grid-column: 1 / -1;
       background: linear-gradient(135deg, rgba(15, 20, 30, 0.95) 0%, rgba(10, 15, 25, 0.98) 100%);
       border: 1px solid rgba($gold-color, 0.2);
+      @include gold-border;
 
       .regional-stats {
         display: flex;
@@ -702,7 +746,7 @@ async function collectAll() {
       }
     }
 
-    // Empire Overview Card (enhanced)
+    // Empire Overview Card - Keeping the original styling
     .overview-card {
       transition: transform 0.3s ease, box-shadow 0.3s ease;
 
@@ -771,16 +815,10 @@ async function collectAll() {
       }
     }
 
-    // Pending Collections Card (enhanced)
+    // Pending Collections Card
     .collections-card {
-      background: linear-gradient(135deg, rgba(25, 20, 15, 0.95) 0%, rgba(20, 15, 10, 0.98) 100%);
+      background-color: $background-card;
       border-left: 3px solid $secondary-color;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-
-      &:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 20px rgba($secondary-color, 0.1);
-      }
 
       .collections-content {
         display: flex;
@@ -792,15 +830,22 @@ async function collectAll() {
           justify-content: space-between;
           align-items: center;
           padding: $spacing-md;
-          background-color: rgba(0, 0, 0, 0.2);
+          background-color: rgba($background-lighter, 0.1);
           border-radius: $border-radius-md;
-          border: 1px solid rgba($secondary-color, 0.2);
+          border: 1px solid rgba($secondary-color, 0.3);
+          transition: all 0.3s ease;
+
+          &:hover {
+            background-color: rgba($background-lighter, 0.2);
+            border-color: rgba($secondary-color, 0.5);
+          }
 
           .pending-label {
             color: $text-secondary;
-            font-size: $font-size-sm;
+            font-size: $font-size-xs;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            font-weight: 500;
           }
 
           .pending-value {
@@ -809,47 +854,25 @@ async function collectAll() {
             @include gold-accent;
             position: relative;
 
-            &::before {
+            &::after {
               content: '';
               position: absolute;
-              top: -3px;
-              left: -3px;
-              right: -3px;
-              bottom: -3px;
-              background: rgba($secondary-color, 0.1);
-              border-radius: $border-radius-sm;
-              z-index: -1;
+              bottom: -2px;
+              left: 0;
+              width: 100%;
+              height: 2px;
+              background: linear-gradient(to right, transparent, $secondary-color, transparent);
               animation: pulse 2s infinite;
             }
           }
         }
       }
-
-      .empty-state {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: $spacing-md;
-        padding: $spacing-lg 0;
-
-        p {
-          color: $text-secondary;
-          text-align: center;
-          font-style: italic;
-        }
-      }
     }
 
-    // Resources Card (enhanced)
+    // Resources Card
     .resources-card {
-      background: linear-gradient(135deg, rgba(15, 15, 20, 0.95) 0%, rgba(20, 20, 25, 0.98) 100%);
+      background-color: $background-card;
       border-left: 3px solid $info-color;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-
-      &:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 20px rgba($info-color, 0.1);
-      }
 
       .resources-grid {
         display: flex;
@@ -861,13 +884,13 @@ async function collectAll() {
           align-items: center;
           gap: $spacing-md;
           padding: $spacing-md;
-          background-color: rgba(0, 0, 0, 0.2);
+          background-color: rgba($background-lighter, 0.1);
           border-radius: $border-radius-md;
           transition: all 0.3s ease;
           border: 1px solid rgba($info-color, 0.1);
 
           &:hover {
-            background-color: rgba(0, 0, 0, 0.3);
+            background-color: rgba($background-lighter, 0.2);
             border-color: rgba($info-color, 0.3);
             transform: translateX(5px);
           }
@@ -876,8 +899,8 @@ async function collectAll() {
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             background-color: rgba($info-color, 0.1);
             border-radius: $border-radius-md;
             font-size: 20px;
@@ -891,7 +914,7 @@ async function collectAll() {
               font-weight: 600;
               margin-bottom: 2px;
               color: $text-color;
-              text-transform: uppercase;
+              // text-transform: uppercase;
               letter-spacing: 0.5px;
               font-size: $font-size-sm;
             }
@@ -899,7 +922,7 @@ async function collectAll() {
             .resource-value {
               color: $info-color;
               font-weight: 600;
-              font-size: $font-size-md;
+              font-size: $font-size-sm;
             }
           }
 
@@ -930,16 +953,10 @@ async function collectAll() {
       }
     }
 
-    // Operations Card (enhanced)
+    // Operations Card
     .operations-card {
-      background: linear-gradient(135deg, rgba(20, 10, 15, 0.95) 0%, rgba(25, 15, 20, 0.98) 100%);
+      background-color: $background-card;
       border-left: 3px solid $primary-color;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-
-      &:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 20px rgba($primary-color, 0.1);
-      }
 
       .operations-list {
         display: flex;
@@ -951,13 +968,13 @@ async function collectAll() {
           justify-content: space-between;
           align-items: center;
           padding: $spacing-md;
-          background-color: rgba(0, 0, 0, 0.2);
+          background-color: rgba($background-lighter, 0.1);
           border-radius: $border-radius-md;
           transition: all 0.3s ease;
           border: 1px solid rgba($primary-color, 0.1);
 
           &:hover {
-            background-color: rgba(0, 0, 0, 0.3);
+            background-color: rgba($background-lighter, 0.2);
             border-color: rgba($primary-color, 0.3);
             transform: translateX(5px);
           }
@@ -972,94 +989,39 @@ async function collectAll() {
             }
 
             .operation-type {
-              color: $primary-color;
+              color: $text-secondary;
               font-size: $font-size-sm;
-              font-weight: 600;
               margin-bottom: 2px;
-              text-transform: uppercase;
-              letter-spacing: 0.5px;
             }
 
             .operation-region {
               color: $gold-color;
               font-size: $font-size-xs;
-              font-style: italic;
+              display: flex;
+              align-items: center;
+              gap: $spacing-xs;
             }
           }
         }
 
         .view-all-link {
-          text-align: center;
-          margin-top: $spacing-sm;
-
-          a {
-            color: $text-secondary;
-            font-size: $font-size-sm;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            position: relative;
-
-            &::after {
-              content: '';
-              position: absolute;
-              bottom: -2px;
-              left: 0;
-              width: 100%;
-              height: 1px;
-              background-color: currentColor;
-              transform: scaleX(0);
-              transform-origin: right;
-              transition: transform 0.3s ease;
-            }
-
-            &:hover {
-              color: $secondary-color;
-              text-decoration: none;
-
-              &::after {
-                transform: scaleX(1);
-                transform-origin: left;
-              }
-            }
-          }
-        }
-      }
-
-      .empty-state {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: $spacing-md;
-        padding: $spacing-lg 0;
-
-        p {
-          color: $text-secondary;
-          text-align: center;
-          font-style: italic;
+          display: flex;
+          justify-content: center;
+          margin-top: $spacing-md;
         }
       }
     }
 
-    // Territory Card (enhanced)
+    // Territory Card
     .territory-card {
-      background: linear-gradient(135deg, rgba(15, 15, 25, 0.95) 0%, rgba(10, 10, 20, 0.98) 100%);
-      border-left: 3px solid $info-color;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-
-      &:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 20px rgba($info-color, 0.1);
-      }
+      background-color: $background-card;
+      border-left: 3px solid $success-color;
 
       .territory-stats {
         margin-bottom: $spacing-lg;
-        padding: $spacing-md;
-        background-color: rgba(0, 0, 0, 0.2);
-        border-radius: $border-radius-md;
-        border: 1px solid rgba($info-color, 0.2);
 
-        .regional-control, .empire-control {
+        .regional-control,
+        .empire-control {
           display: flex;
           flex-direction: column;
           gap: $spacing-sm;
@@ -1068,45 +1030,49 @@ async function collectAll() {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: $spacing-xs $spacing-sm;
-            border-radius: $border-radius-sm;
-            background-color: rgba(0, 0, 0, 0.1);
+            padding: $spacing-md;
+            background-color: rgba($background-lighter, 0.1);
+            border-radius: $border-radius-md;
+            border: 1px solid rgba($success-color, 0.1);
+            transition: all 0.3s ease;
 
             &:hover {
-              background-color: rgba(0, 0, 0, 0.2);
+              background-color: rgba($background-lighter, 0.2);
+              border-color: rgba($success-color, 0.3);
+              transform: translateX(5px);
             }
 
             .stat-label {
               color: $text-secondary;
-              font-size: $font-size-sm;
+              font-weight: 500;
             }
 
             .stat-value {
               font-weight: 600;
-              color: $info-color;
+              color: $success-color;
+              background-color: rgba($success-color, 0.1);
+              padding: $spacing-xs $spacing-sm;
+              border-radius: $border-radius-sm;
             }
           }
         }
       }
 
       .territory-actions {
-        text-align: center;
+        display: flex;
+        justify-content: center;
+        padding-top: $spacing-md;
+        border-top: 1px dashed rgba($border-color, 0.5);
       }
     }
 
-    // Recent Actions Card (enhanced)
+    // Recent Actions Card
     .recent-actions-card {
-      background: linear-gradient(135deg, rgba(25, 15, 15, 0.95) 0%, rgba(20, 10, 10, 0.98) 100%);
-      border-left: 3px solid $danger-color;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      background-color: $background-card;
+      border-left: 3px solid $warning-color;
 
       @include respond-to(md) {
         grid-column: span 2;
-      }
-
-      &:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 20px rgba($danger-color, 0.1);
       }
 
       .actions-list {
@@ -1116,16 +1082,17 @@ async function collectAll() {
 
         .action-item {
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           gap: $spacing-md;
           padding: $spacing-md;
-          background-color: rgba(0, 0, 0, 0.2);
+          background-color: rgba($background-lighter, 0.1);
           border-radius: $border-radius-md;
           transition: all 0.3s ease;
-          border: 1px solid rgba($danger-color, 0.1);
+          border: 1px solid rgba($warning-color, 0.1);
 
           &:hover {
-            background-color: rgba(0, 0, 0, 0.3);
+            background-color: rgba($background-lighter, 0.2);
+            border-color: rgba($warning-color, 0.3);
             transform: translateX(5px);
           }
 
@@ -1141,12 +1108,12 @@ async function collectAll() {
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 40px;
-            height: 40px;
-            background-color: rgba($danger-color, 0.1);
-            border-radius: 50%;
-            font-size: 20px;
-            box-shadow: 0 0 10px rgba($danger-color, 0.2);
+            min-width: 36px;
+            height: 36px;
+            font-size: 18px;
+            background-color: rgba($warning-color, 0.1);
+            border-radius: $border-radius-md;
+            box-shadow: 0 0 10px rgba($warning-color, 0.2);
           }
 
           .action-details {
@@ -1154,14 +1121,16 @@ async function collectAll() {
 
             .action-type {
               font-weight: 600;
-              color: $text-color;
-              margin-bottom: 2px;
+              margin-bottom: $spacing-xs;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              font-size: $font-size-sm;
             }
 
             .action-result {
-              color: $text-secondary;
-              font-size: $font-size-sm;
-              margin-bottom: 2px;
+              color: $text-color;
+              margin-bottom: $spacing-xs;
+              line-height: 1.4;
             }
 
             .action-time {
@@ -1172,32 +1141,36 @@ async function collectAll() {
           }
         }
       }
-
-      .empty-state {
-        display: flex;
-        justify-content: center;
-        padding: $spacing-lg 0;
-
-        p {
-          color: $text-secondary;
-          text-align: center;
-          font-style: italic;
-        }
-      }
     }
   }
 
-  // Custom animations
+  // Animations
   @keyframes pulse {
-    0% { opacity: 0.6; }
-    50% { opacity: 1; }
-    100% { opacity: 0.6; }
+    0% {
+      opacity: 0.6;
+    }
+
+    50% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0.6;
+    }
   }
 
   @keyframes glow {
-    0% { box-shadow: 0 0 5px rgba($secondary-color, 0.3); }
-    50% { box-shadow: 0 0 15px rgba($secondary-color, 0.5); }
-    100% { box-shadow: 0 0 5px rgba($secondary-color, 0.3); }
+    0% {
+      box-shadow: 0 0 5px rgba($secondary-color, 0.3);
+    }
+
+    50% {
+      box-shadow: 0 0 15px rgba($secondary-color, 0.5);
+    }
+
+    100% {
+      box-shadow: 0 0 5px rgba($secondary-color, 0.3);
+    }
   }
 }
 </style>
