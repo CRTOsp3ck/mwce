@@ -7,6 +7,8 @@ basic_operations:
   - name: "Car Theft Ring"
     description: "Steal luxury vehicles from a wealthy neighborhood for resale."
     type: "carjacking"
+    regions: ["north", "east", "southeast", "northeast"]  # Available in these regions
+    availability_duration: 60  # In minutes
     resources:
       crew: 2
       weapons: 1
@@ -27,6 +29,8 @@ basic_operations:
   - name: "Highway Interception"
     description: "Intercept and hijack a vehicle transport on the highway."
     type: "carjacking"
+    regions: ["north", "south", "east", "west"]  # Available in all regions
+    availability_duration: 60  # In minutes
     resources:
       crew: 3
       weapons: 2
@@ -47,6 +51,8 @@ basic_operations:
   - name: "Local Smuggling"
     description: "Move contraband across city lines avoiding checkpoints."
     type: "goods_smuggling"
+    regions: ["south", "east", "west", "southeast", "southwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 2
       weapons: 1
@@ -67,6 +73,8 @@ basic_operations:
   - name: "Cross-Border Run"
     description: "Transport goods across state lines with fake documentation."
     type: "goods_smuggling"
+    regions: ["south", "east", "west", "southwest", "northeast", "northwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 3
       weapons: 2
@@ -87,6 +95,8 @@ basic_operations:
   - name: "Street Corner Takeover"
     description: "Establish a presence in a new neighborhood for drug sales."
     type: "drug_trafficking"
+    regions: ["east", "west", "southeast", "southwest", "northeast", "northwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 3
       weapons: 3
@@ -107,6 +117,8 @@ basic_operations:
   - name: "Corrupt the Beat Cop"
     description: "Bribe a patrol officer to look the other way during your operations."
     type: "official_bribing"
+    regions: ["north", "south", "east", "west", "southeast", "southwest", "northeast", "northwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 1
       weapons: 0
@@ -125,6 +137,8 @@ basic_operations:
   - name: "Traffic Court Fix"
     description: "Pay off a court clerk to dismiss charges against your crew members."
     type: "official_bribing"
+    regions: ["north", "northeast"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 1
       weapons: 0
@@ -143,6 +157,8 @@ basic_operations:
   - name: "Rival Surveillance"
     description: "Gather intelligence on a rival family's operations."
     type: "intelligence_gathering"
+    regions: ["north", "south", "east", "west", "southeast", "southwest", "northeast", "northwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 2
       weapons: 1
@@ -162,6 +178,8 @@ basic_operations:
   - name: "Police Scanner Network"
     description: "Set up a network of police scanners to monitor law enforcement activity."
     type: "intelligence_gathering"
+    regions: ["north", "south", "southeast", "southwest", "northeast", "northwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 2
       weapons: 0
@@ -181,6 +199,8 @@ basic_operations:
   - name: "Street Recruitment"
     description: "Recruit new members from local street gangs."
     type: "crew_recruitment"
+    regions: ["east", "west", "southeast", "southwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 1
       weapons: 1
@@ -199,6 +219,8 @@ basic_operations:
   - name: "Prison Break"
     description: "Break out valuable crew members from a minimum-security holding facility."
     type: "crew_recruitment"
+    regions: ["north", "south", "east", "west"]
+    availability_duration: 90  # Longer availability due to complexity
     resources:
       crew: 4
       weapons: 3
@@ -220,6 +242,8 @@ basic_operations:
   - name: "Warehouse Heist"
     description: "Break into a commercial warehouse and steal valuable merchandise."
     type: "carjacking"
+    regions: ["south", "east", "west", "northeast", "northwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 4
       weapons: 3
@@ -239,6 +263,8 @@ basic_operations:
   - name: "Protection Racket"
     description: "Convince local businesses to pay for your 'protection services'."
     type: "goods_smuggling"
+    regions: ["north", "south", "east", "west", "southeast", "southwest", "northeast", "northwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 3
       weapons: 2
@@ -257,6 +283,8 @@ basic_operations:
   - name: "Street Racing Circuit"
     description: "Organize illegal street races and skim profits from betting."
     type: "drug_trafficking"
+    regions: ["north", "east", "west", "northeast", "northwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 2
       weapons: 1
@@ -276,6 +304,8 @@ basic_operations:
   - name: "Vintage Car Collection"
     description: "Target a collector's garage storing rare vintage automobiles."
     type: "carjacking"
+    regions: ["north", "east", "northeast", "northwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 3
       weapons: 1
@@ -295,6 +325,8 @@ basic_operations:
   - name: "Motor Show Heist"
     description: "Infiltrate an automobile exhibition and steal a prototype car."
     type: "carjacking"
+    regions: ["north", "east", "northeast"]
+    availability_duration: 90  # Longer availability for special events
     resources:
       crew: 4
       weapons: 2
@@ -314,6 +346,8 @@ basic_operations:
   - name: "High-End Dealership Raid"
     description: "Break into a luxury car dealership after hours."
     type: "carjacking"
+    regions: ["north", "east", "northeast", "northwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 3
       weapons: 2
@@ -333,6 +367,8 @@ basic_operations:
   - name: "Shipping Container Theft"
     description: "Intercept and steal a shipping container full of electronics."
     type: "goods_smuggling"
+    regions: ["south", "east", "southeast", "southwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 4
       weapons: 2
@@ -352,6 +388,8 @@ basic_operations:
   - name: "Art Gallery Job"
     description: "Steal valuable artwork from a private gallery."
     type: "goods_smuggling"
+    regions: ["north", "east", "southeast", "northeast"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 3
       weapons: 1
@@ -371,6 +409,8 @@ basic_operations:
   - name: "Jewelry Store Heist"
     description: "Rob a high-end jewelry store during business hours."
     type: "goods_smuggling"
+    regions: ["north", "east", "northeast"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 5
       weapons: 4
@@ -389,6 +429,8 @@ basic_operations:
   - name: "High Roller Loan Shark"
     description: "Offer loans to casino high rollers and collect with interest."
     type: "drug_trafficking"
+    regions: ["north", "east", "west", "northwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 2
       weapons: 2
@@ -409,6 +451,8 @@ basic_operations:
   - name: "Nightclub Distribution"
     description: "Set up a distribution network through popular nightclubs."
     type: "drug_trafficking"
+    regions: ["north", "east", "southeast", "northeast", "northwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 4
       weapons: 2
@@ -428,6 +472,8 @@ basic_operations:
   - name: "College Campus Network"
     description: "Establish a drug distribution network on a college campus."
     type: "drug_trafficking"
+    regions: ["northeast"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 3
       weapons: 1
@@ -447,6 +493,8 @@ basic_operations:
   - name: "Bribe Building Inspector"
     description: "Bribe city officials to overlook code violations in your properties."
     type: "official_bribing"
+    regions: ["north", "south", "east", "west", "southeast", "southwest", "northeast", "northwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 1
       weapons: 0
@@ -464,6 +512,8 @@ basic_operations:
   - name: "Fix Parking Tickets"
     description: "Pay off clerks to make parking violations disappear."
     type: "official_bribing"
+    regions: ["north", "south", "east", "west", "southeast", "southwest", "northeast", "northwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 1
       weapons: 0
@@ -481,6 +531,8 @@ basic_operations:
   - name: "Control Health Inspector"
     description: "Pay off health inspectors to target rival businesses."
     type: "official_bribing"
+    regions: ["north", "south", "east", "west"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 1
       weapons: 0
@@ -498,6 +550,8 @@ basic_operations:
   - name: "City Hall Mole"
     description: "Place an informant in city hall to gather valuable intel."
     type: "intelligence_gathering"
+    regions: ["north"]
+    availability_duration: 90  # Longer availability due to significance
     resources:
       crew: 1
       weapons: 0
@@ -516,6 +570,8 @@ basic_operations:
   - name: "Wiretap Operation"
     description: "Install wiretaps on rival gang's phone lines."
     type: "intelligence_gathering"
+    regions: ["north", "south", "east", "west", "southeast", "southwest", "northeast", "northwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 3
       weapons: 1
@@ -534,6 +590,8 @@ basic_operations:
   - name: "Corrupt Clerk"
     description: "Bribe a clerk to access police files on your organization."
     type: "intelligence_gathering"
+    regions: ["north", "northeast"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 1
       weapons: 0
@@ -551,6 +609,8 @@ basic_operations:
   - name: "Gang Territory Takeover"
     description: "Force a small local gang to join your crew."
     type: "crew_recruitment"
+    regions: ["east", "west", "southeast", "southwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 4
       weapons: 3
@@ -569,6 +629,8 @@ basic_operations:
   - name: "Boxing Gym Recruitment"
     description: "Recruit fighters from a local boxing gym."
     type: "crew_recruitment"
+    regions: ["east", "west", "southeast", "southwest", "northeast", "northwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 2
       weapons: 1
@@ -586,6 +648,8 @@ basic_operations:
   - name: "Protection Racket Expansion"
     description: "Expand your protection racket to a new neighborhood."
     type: "goods_smuggling"
+    regions: ["north", "south", "east", "west", "southeast", "southwest", "northeast", "northwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 4
       weapons: 3
@@ -605,6 +669,8 @@ basic_operations:
   - name: "High-Stakes Poker Game"
     description: "Host an illegal high-stakes poker game and skim profits."
     type: "drug_trafficking"
+    regions: ["north", "east", "west", "northwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 3
       weapons: 2
@@ -623,6 +689,8 @@ basic_operations:
   - name: "Underground Fighting Ring"
     description: "Establish an underground fighting ring for gambling profits."
     type: "drug_trafficking"
+    regions: ["east", "west", "southeast", "southwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 5
       weapons: 2
@@ -641,6 +709,8 @@ basic_operations:
   - name: "Dock Worker Intimidation"
     description: "Intimidate dock workers to look the other way during smuggling operations."
     type: "official_bribing"
+    regions: ["south"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 4
       weapons: 3
@@ -659,6 +729,8 @@ basic_operations:
   - name: "Racing Circuit Fixed Match"
     description: "Fix the outcome of street races to make large betting gains."
     type: "official_bribing"
+    regions: ["north", "east", "west", "northwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 2
       weapons: 1
@@ -677,6 +749,8 @@ basic_operations:
   - name: "Strip Club Acquisition"
     description: "Take over a strip club through intimidation tactics."
     type: "goods_smuggling"
+    regions: ["north", "south", "east", "west", "southeast"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 5
       weapons: 4
@@ -696,6 +770,8 @@ basic_operations:
   - name: "Social Media Blackmail"
     description: "Acquire compromising photos of influential people for blackmail."
     type: "intelligence_gathering"
+    regions: ["north", "east", "northeast", "northwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 2
       weapons: 0
@@ -713,6 +789,8 @@ basic_operations:
   - name: "Auto Repair Chop Shop"
     description: "Establish a chop shop under the cover of a legitimate auto repair business."
     type: "carjacking"
+    regions: ["west", "southwest", "northwest"]
+    availability_duration: 90  # Longer availability for business setup
     resources:
       crew: 4
       weapons: 1
@@ -732,6 +810,8 @@ basic_operations:
   - name: "Bank Insider Recruitment"
     description: "Recruit a bank employee to provide information on high-value targets."
     type: "crew_recruitment"
+    regions: ["north", "northeast"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 1
       weapons: 0
@@ -749,6 +829,8 @@ basic_operations:
   - name: "Construction Site Extortion"
     description: "Extort money from a construction company by threatening delays."
     type: "goods_smuggling"
+    regions: ["southwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 4
       weapons: 3
@@ -767,6 +849,8 @@ basic_operations:
   - name: "Illegal Street Rave"
     description: "Organize an unauthorized rave in an abandoned warehouse."
     type: "drug_trafficking"
+    regions: ["east", "west", "southeast", "southwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 5
       weapons: 1
@@ -785,6 +869,8 @@ basic_operations:
   - name: "Sports Betting Ring"
     description: "Set up an illegal sports betting operation in local bars."
     type: "drug_trafficking"
+    regions: ["north", "south", "east", "west", "southeast", "southwest", "northeast", "northwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 3
       weapons: 1
@@ -803,6 +889,8 @@ basic_operations:
   - name: "Illegal Arms Deal"
     description: "Broker a deal between arms dealers and local gangs."
     type: "goods_smuggling"
+    regions: ["south", "east", "west", "southeast", "southwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 4
       weapons: 3
@@ -822,6 +910,8 @@ basic_operations:
   - name: "Counterfeiting Operation"
     description: "Set up a small counterfeiting operation for fake IDs and currency."
     type: "goods_smuggling"
+    regions: ["east", "southeast", "northeast"]
+    availability_duration: 90  # Longer availability for setup
     resources:
       crew: 3
       weapons: 1
@@ -840,6 +930,8 @@ basic_operations:
   - name: "Illegal Casino Night"
     description: "Host an underground casino night for wealthy clients."
     type: "goods_smuggling"
+    regions: ["north", "east", "west", "northwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 4
       weapons: 2
@@ -858,6 +950,8 @@ basic_operations:
   - name: "Motorcycle Theft Ring"
     description: "Target and steal high-end motorcycles for resale."
     type: "carjacking"
+    regions: ["north", "south", "east", "west", "southeast", "southwest", "northeast", "northwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 3
       weapons: 1
@@ -877,6 +971,8 @@ basic_operations:
   - name: "Yacht Party Recruitment"
     description: "Host a luxurious yacht party to recruit wealthy investors for your operations."
     type: "crew_recruitment"
+    regions: ["north", "south", "northwest"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 2
       weapons: 0
@@ -894,6 +990,8 @@ basic_operations:
   - name: "Private Eye Blackmail"
     description: "Hire a private investigator to gather dirt on a public official."
     type: "intelligence_gathering"
+    regions: ["north", "northeast"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 1
       weapons: 0
@@ -911,6 +1009,8 @@ basic_operations:
   - name: "Union Infiltration"
     description: "Place your people in key positions within labor unions."
     type: "crew_recruitment"
+    regions: ["south", "southwest", "northwest"]
+    availability_duration: 90  # Longer availability for complex operation
     resources:
       crew: 3
       weapons: 1
@@ -929,6 +1029,8 @@ basic_operations:
   - name: "Medical Supply Hijack"
     description: "Intercept and steal a shipment of valuable medical supplies."
     type: "goods_smuggling"
+    regions: ["northeast"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 5
       weapons: 3
@@ -948,6 +1050,8 @@ basic_operations:
   - name: "Corrupt College Dean"
     description: "Blackmail a college dean to admit students with fake credentials."
     type: "official_bribing"
+    regions: ["northeast"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 2
       weapons: 0
@@ -965,6 +1069,8 @@ basic_operations:
   - name: "Lawyer Blackmail"
     description: "Acquire compromising information to blackmail a prominent attorney."
     type: "intelligence_gathering"
+    regions: ["north", "northeast"]
+    availability_duration: 60  # In minutes
     resources:
       crew: 2
       weapons: 1
@@ -986,6 +1092,8 @@ special_operations:
     description: "Hit an armored car during a cash transfer from a major bank."
     type: "carjacking"
     is_special: true
+    regions: ["north", "east", "northeast", "northwest"]
+    availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 30
       max_heat: 50
@@ -1012,6 +1120,8 @@ special_operations:
     description: "Break into the vault of a major casino during peak hours."
     type: "carjacking"
     is_special: true
+    regions: ["north", "east", "northwest"]
+    availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 40
       max_heat: 40
@@ -1038,6 +1148,8 @@ special_operations:
     description: "Establish a global network for high-value contraband."
     type: "goods_smuggling"
     is_special: true
+    regions: ["south", "east", "southeast", "southwest"]
+    availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 35
       max_heat: 45
@@ -1064,6 +1176,8 @@ special_operations:
     description: "Seize control of a major drug production facility from rivals."
     type: "drug_trafficking"
     is_special: true
+    regions: ["east", "west", "southeast", "southwest"]
+    availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 40
       max_heat: 50
@@ -1090,6 +1204,8 @@ special_operations:
     description: "Bribe a high-ranking police official to provide protection for all your operations."
     type: "official_bribing"
     is_special: true
+    regions: ["north", "south", "east", "west", "southeast", "southwest", "northeast", "northwest"]
+    availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 50
       max_heat: 40
@@ -1115,6 +1231,8 @@ special_operations:
     description: "Gather compromising information on a local judge to control court outcomes."
     type: "intelligence_gathering"
     is_special: true
+    regions: ["north", "northeast"]
+    availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 45
       max_heat: 45
@@ -1140,6 +1258,8 @@ special_operations:
     description: "Place spies within a rival family to gather vital intelligence."
     type: "intelligence_gathering"
     is_special: true
+    regions: ["north", "south", "east", "west", "southeast", "southwest", "northeast", "northwest"]
+    availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 35
       max_heat: 35
@@ -1163,6 +1283,8 @@ special_operations:
     description: "Form an alliance with prison gangs to recruit experienced criminals upon release."
     type: "crew_recruitment"
     is_special: true
+    regions: ["north", "south", "east", "west"]
+    availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 30
       max_heat: 60
@@ -1187,6 +1309,8 @@ special_operations:
     description: "Place an undercover operative within the Federal Reserve."
     type: "intelligence_gathering"
     is_special: true
+    regions: ["north", "northeast"]
+    availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 60
       max_heat: 30
@@ -1211,6 +1335,8 @@ special_operations:
     description: "Secretly fund and control a mayoral campaign."
     type: "official_bribing"
     is_special: true
+    regions: ["north", "northeast"]
+    availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 50
       max_heat: 40
@@ -1234,6 +1360,8 @@ special_operations:
     description: "Establish a network of corrupt officials throughout the port authority."
     type: "official_bribing"
     is_special: true
+    regions: ["south"]
+    availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 45
       max_heat: 45
@@ -1258,6 +1386,8 @@ special_operations:
     description: "Manipulate the bidding process for a major stadium construction project."
     type: "official_bribing"
     is_special: true
+    regions: ["southwest"]
+    availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 55
       max_heat: 35
@@ -1282,6 +1412,8 @@ special_operations:
     description: "Orchestrate a breakout from a maximum-security prison for valuable crew members."
     type: "crew_recruitment"
     is_special: true
+    regions: ["north", "south", "east", "west"]
+    availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 50
       max_heat: 40
@@ -1307,6 +1439,8 @@ special_operations:
     description: "Break into a military base and steal advanced weapons."
     type: "goods_smuggling"
     is_special: true
+    regions: ["south", "east", "west", "southwest", "northwest"]
+    availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 55
       max_heat: 30
@@ -1332,6 +1466,8 @@ special_operations:
     description: "Steal priceless artwork from a major museum for a wealthy collector."
     type: "goods_smuggling"
     is_special: true
+    regions: ["north", "east", "northeast"]
+    availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 45
       max_heat: 35
@@ -1357,6 +1493,8 @@ special_operations:
     description: "Infiltrate a major corporation to steal trade secrets."
     type: "intelligence_gathering"
     is_special: true
+    regions: ["north", "northeast", "northwest"]
+    availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 40
       max_heat: 30

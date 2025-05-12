@@ -49,6 +49,9 @@ const playerTitle = computed(() => playerStore.playerTitle);
 const availableOperations = computed(() => operationsStore.availableOperations);
 const inProgressOperations = computed(() => operationsStore.inProgressOperations);
 const completedOperations = computed(() => operationsStore.completedOperations);
+const alreadyInProgressOperations = computed(() => {
+  return operationsStore.inProgressOperationIds;
+});
 
 const filteredOperations = computed(() => {
   let result = [...availableOperations.value];
@@ -322,6 +325,11 @@ function meetsMinimumTitle(requiredTitle: string): boolean {
 }
 
 function canStartOperation(operation: Operation): boolean {
+  // First check if the operation is already in progress
+  if (operationsStore.isOperationInProgress(operation.id)) {
+    return false;
+  }
+
   // Check if player has enough resources
   if (operation.resources.crew > playerCrew.value) return false;
   if (operation.resources.weapons > playerWeapons.value) return false;
@@ -359,6 +367,11 @@ function getEstimatedCompletion(operationAttempt: OperationAttempt): string {
 }
 
 function getOperationWarning(operation: Operation): string {
+  // First check if the operation is already in progress
+  if (operationsStore.isOperationInProgress(operation.id)) {
+    return 'This operation is already in progress';
+  }
+
   if (operation.resources.crew > playerCrew.value) {
     return 'Not enough crew';
   }

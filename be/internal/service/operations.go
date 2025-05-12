@@ -96,9 +96,20 @@ func (s *operationsService) GetAvailableOperations(playerID string, validOnly bo
 		return nil, err
 	}
 
-	// If player is not in any region, return empty list
+	// If player is not in any region, return global operations only (no region ID)
 	if player.CurrentRegionID == nil {
-		return []model.Operation{}, nil
+		var globalOps []model.Operation
+		query := s.operationsRepo.GetDB().Where("is_active = ?", true).Where("region_id IS NULL")
+
+		if validOnly {
+			query = query.Where("available_until > ?", time.Now())
+		}
+
+		if err := query.Find(&globalOps).Error; err != nil {
+			return nil, err
+		}
+
+		return s.filterOperationsByPlayerAttempts(globalOps, playerID)
 	}
 
 	// Get operations for the player's current region and global operations
@@ -109,15 +120,23 @@ func (s *operationsService) GetAvailableOperations(playerID string, validOnly bo
 		query = query.Where("available_until > ?", time.Now())
 	}
 
-	// Filter by region - include global operations (region_id IS NULL) and region-specific operations
-	query = query.Where("region_id IS NULL OR region_id = ?", *player.CurrentRegionID)
+	// Filter by current region - either global (region_id IS NULL), specific to current region,
+	// or multi-region operations that include the current region
+	query = query.Where("region_id IS NULL OR region_id = ? OR ? = ANY(region_ids)",
+		*player.CurrentRegionID, *player.CurrentRegionID)
 
 	if err := query.Find(&operations).Error; err != nil {
 		return nil, err
 	}
 
-	// Filter operations based on requirements
-	var availableOperations []model.Operation
+	// Filter operations based on player's in-progress attempts and requirements
+	return s.filterOperationsByPlayerAttempts(s.filterOperationsByRequirements(operations, player), playerID)
+}
+
+// New helper function to filter operations based on player requirements
+func (s *operationsService) filterOperationsByRequirements(operations []model.Operation, player *model.Player) []model.Operation {
+	var filteredOps []model.Operation
+
 	for _, op := range operations {
 		// For special operations, check requirements
 		if op.IsSpecial {
@@ -133,17 +152,44 @@ func (s *operationsService) GetAvailableOperations(playerID string, validOnly bo
 
 			// Check title
 			if op.Requirements.MinTitle != "" {
-				// Skip if player title doesn't meet the requirement
 				if !meetsMinimumTitle(player.Title, op.Requirements.MinTitle) {
 					continue
 				}
 			}
 		}
 
-		availableOperations = append(availableOperations, op)
+		filteredOps = append(filteredOps, op)
 	}
 
-	return availableOperations, nil
+	return filteredOps
+}
+
+// New helper function to filter out operations that the player already has in progress
+func (s *operationsService) filterOperationsByPlayerAttempts(operations []model.Operation, playerID string) ([]model.Operation, error) {
+	// Get player's in-progress operations
+	inProgressOps, err := s.operationsRepo.GetCurrentOperations(playerID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a map of operation IDs that are already in progress
+	inProgressOpMap := make(map[string]model.OperationAttempt)
+	for _, op := range inProgressOps {
+		inProgressOpMap[op.OperationID] = op
+	}
+
+	// Filter out operations that the player already has in progress
+	var filteredOps []model.Operation
+	for _, op := range operations {
+		if _, exists := inProgressOpMap[op.ID]; !exists {
+			filteredOps = append(filteredOps, op)
+		} else {
+			// If operation is in progress, add it to PlayerAttempts field but don't include in available list
+			op.PlayerAttempts = append(op.PlayerAttempts, inProgressOpMap[op.ID])
+		}
+	}
+
+	return filteredOps, nil
 }
 
 // GetOperationByID retrieves an operation by ID
@@ -173,6 +219,18 @@ func (s *operationsService) StartOperation(playerID, operationID string, resourc
 	now := time.Now()
 	if operation.AvailableUntil.Before(now) {
 		return nil, errors.New("operation is no longer available")
+	}
+
+	// Check if the player already has this operation in progress
+	inProgressOps, err := s.operationsRepo.GetCurrentOperations(playerID)
+	if err != nil {
+		return nil, errors.New("failed to check in-progress operations")
+	}
+
+	for _, op := range inProgressOps {
+		if op.OperationID == operationID {
+			return nil, errors.New("you already have this operation in progress")
+		}
 	}
 
 	// Check if there's enough time remaining to complete the operation
@@ -782,31 +840,144 @@ func (s *operationsService) CheckAndCompleteOperations() error {
 	return nil
 }
 
-// RefreshDailyOperations refreshes the daily operations - NOW REGION-AWARE
+// RefreshDailyOperations refreshes operations from YAML pool with region support
 func (s *operationsService) RefreshDailyOperations() error {
-	// Get all regions
+	// Load operations from YAML
+	operationsData, err := loadOperationsFromYAML()
+	if err != nil {
+		return fmt.Errorf("failed to load operations data: %w", err)
+	}
+
+	// Get all regions for multi-region support
 	var regions []model.Region
 	if err := s.operationsRepo.GetDB().Find(&regions).Error; err != nil {
 		return err
 	}
 
-	// Refresh operations for each region
+	// Create a map of region IDs to region objects for easy lookup
+	regionMap := make(map[string]model.Region)
 	for _, region := range regions {
-		err := s.refreshOperationsForRegion(&region.ID)
-		if err != nil {
-			s.logger.Error().Err(err).Str("regionID", region.ID).Msg("Failed to refresh operations for region")
-			// Continue with other regions even if one fails
+		regionMap[region.ID] = region
+	}
+
+	// Mark expired operations as inactive
+	if err := s.operationsRepo.GetDB().
+		Model(&model.Operation{}).
+		Where("available_until < ?", time.Now()).
+		Update("is_active", false).Error; err != nil {
+		return fmt.Errorf("failed to mark expired operations as inactive: %w", err)
+	}
+
+	// For existing operations that are still valid, ensure they remain active
+	if err := s.operationsRepo.GetDB().
+		Model(&model.Operation{}).
+		Where("available_until >= ?", time.Now()).
+		Update("is_active", true).Error; err != nil {
+		return fmt.Errorf("failed to ensure valid operations remain active: %w", err)
+	}
+
+	// Create global and region-specific operations from the YAML pool
+	now := time.Now()
+
+	// Refresh basic operations
+	for _, template := range operationsData.BasicOperations {
+		// Skip if we've already reached the daily operations count
+		var currentCount int64
+		if err := s.operationsRepo.GetDB().
+			Model(&model.Operation{}).
+			Where("is_special = ? AND is_active = ?", false, true).
+			Count(&currentCount).Error; err != nil {
+			return fmt.Errorf("failed to count active basic operations: %w", err)
+		}
+
+		if int(currentCount) >= s.gameConfig.DailyOperationsCount {
+			break
+		}
+
+		// Determine availability duration (in minutes)
+		availabilityDuration := template.AvailabilityDuration
+		if availabilityDuration <= 0 {
+			availabilityDuration = s.gameConfig.OperationsRefreshInterval // Default to refresh interval
+		}
+
+		availableUntil := now.Add(time.Duration(availabilityDuration) * time.Minute)
+
+		// Create operation
+		operation := model.Operation{
+			ID:                   uuid.New().String(),
+			Name:                 template.Name,
+			Description:          template.Description,
+			Type:                 template.Type,
+			IsSpecial:            template.IsSpecial,
+			IsActive:             true,
+			RegionIDs:            template.Regions, // Use regions from YAML
+			Requirements:         template.Requirements,
+			Resources:            template.Resources,
+			Rewards:              template.Rewards,
+			Risks:                template.Risks,
+			Duration:             template.Duration,
+			AvailabilityDuration: availabilityDuration,
+			SuccessRate:          template.SuccessRate,
+			AvailableUntil:       availableUntil,
+			CreatedAt:            now,
+			UpdatedAt:            now,
+		}
+
+		if err := s.operationsRepo.CreateOperation(&operation); err != nil {
+			return err
 		}
 	}
 
-	// Also refresh global operations (not tied to any region)
-	err := s.refreshOperationsForRegion(nil)
-	if err != nil {
-		s.logger.Error().Err(err).Msg("Failed to refresh global operations")
+	// Refresh special operations
+	for _, template := range operationsData.SpecialOperations {
+		// Skip if we've already reached the special operations count
+		var currentCount int64
+		if err := s.operationsRepo.GetDB().
+			Model(&model.Operation{}).
+			Where("is_special = ? AND is_active = ?", true, true).
+			Count(&currentCount).Error; err != nil {
+			return fmt.Errorf("failed to count active special operations: %w", err)
+		}
+
+		if int(currentCount) >= s.gameConfig.SpecialOperationsCount {
+			break
+		}
+
+		// Determine availability duration (in minutes)
+		availabilityDuration := template.AvailabilityDuration
+		if availabilityDuration <= 0 {
+			availabilityDuration = s.gameConfig.OperationsRefreshInterval // Default to refresh interval
+		}
+
+		availableUntil := now.Add(time.Duration(availabilityDuration) * time.Minute)
+
+		// Create operation
+		operation := model.Operation{
+			ID:                   uuid.New().String(),
+			Name:                 template.Name,
+			Description:          template.Description,
+			Type:                 template.Type,
+			IsSpecial:            template.IsSpecial,
+			IsActive:             true,
+			RegionIDs:            template.Regions, // Use regions from YAML
+			Requirements:         template.Requirements,
+			Resources:            template.Resources,
+			Rewards:              template.Rewards,
+			Risks:                template.Risks,
+			Duration:             template.Duration,
+			AvailabilityDuration: availabilityDuration,
+			SuccessRate:          template.SuccessRate,
+			AvailableUntil:       availableUntil,
+			CreatedAt:            now,
+			UpdatedAt:            now,
+		}
+
+		if err := s.operationsRepo.CreateOperation(&operation); err != nil {
+			return err
+		}
 	}
 
-	// After all regions are updated, send SSE notification
-	now := time.Now()
+	// Update last refresh time
 	s.refreshMutex.Lock()
 	s.lastRefreshTime = now
 	s.refreshMutex.Unlock()
@@ -833,232 +1004,6 @@ func (s *operationsService) RefreshDailyOperations() error {
 	})
 
 	return nil
-}
-
-// refreshOperationsForRegion handles operation refresh for a specific region or global operations
-func (s *operationsService) refreshOperationsForRegion(regionID *string) error {
-	// Mark expired operations as inactive for this region
-	query := s.operationsRepo.GetDB().Model(&model.Operation{}).Where("available_until < ?", time.Now())
-
-	if regionID != nil {
-		query = query.Where("region_id = ?", *regionID)
-	} else {
-		query = query.Where("region_id IS NULL")
-	}
-
-	if err := query.Update("is_active", false).Error; err != nil {
-		return fmt.Errorf("failed to mark expired operations as inactive: %w", err)
-	}
-
-	// Count existing active operations by type for this region
-	var basicOperationsCount, specialOperationsCount int64
-
-	basicQuery := s.operationsRepo.GetDB().Model(&model.Operation{}).
-		Where("is_special = ? AND is_active = ?", false, true)
-	specialQuery := s.operationsRepo.GetDB().Model(&model.Operation{}).
-		Where("is_special = ? AND is_active = ?", true, true)
-
-	if regionID != nil {
-		basicQuery = basicQuery.Where("region_id = ?", *regionID)
-		specialQuery = specialQuery.Where("region_id = ?", *regionID)
-	} else {
-		basicQuery = basicQuery.Where("region_id IS NULL")
-		specialQuery = specialQuery.Where("region_id IS NULL")
-	}
-
-	if err := basicQuery.Count(&basicOperationsCount).Error; err != nil {
-		return fmt.Errorf("failed to count active basic operations: %w", err)
-	}
-
-	if err := specialQuery.Count(&specialOperationsCount).Error; err != nil {
-		return fmt.Errorf("failed to count active special operations: %w", err)
-	}
-
-	// Calculate how many operations we need for this region
-	basicNeeded := s.gameConfig.DailyOperationsCount - int(basicOperationsCount)
-	specialNeeded := s.gameConfig.SpecialOperationsCount - int(specialOperationsCount)
-
-	now := time.Now()
-	availableUntil := now.Add(45 * time.Minute) // Should be configurable
-
-	// Generate basic operations if needed
-	if basicNeeded > 0 {
-		for i := 0; i < basicNeeded; i++ {
-			operation := model.Operation{
-				ID:             uuid.New().String(),
-				Name:           fmt.Sprintf("Regional Operation %s", uuid.New().String()[:8]),
-				Description:    s.getRegionSpecificDescription(regionID, false),
-				Type:           s.getRandomOperationType(),
-				IsSpecial:      false,
-				IsActive:       true,
-				RegionID:       regionID,
-				Requirements:   model.OperationRequirements{},
-				Resources:      s.generateRandomResources(false),
-				Rewards:        s.generateRandomRewards(false, regionID),
-				Risks:          s.generateRandomRisks(false),
-				Duration:       1800 + rand.Intn(3600), // 30 minutes to 90 minutes
-				SuccessRate:    60 + rand.Intn(20),
-				AvailableUntil: availableUntil,
-				CreatedAt:      now,
-				UpdatedAt:      now,
-			}
-
-			if err := s.operationsRepo.CreateOperation(&operation); err != nil {
-				return err
-			}
-		}
-	}
-
-	// Generate special operations if needed
-	if specialNeeded > 0 {
-		for i := 0; i < specialNeeded; i++ {
-			operation := model.Operation{
-				ID:             uuid.New().String(),
-				Name:           fmt.Sprintf("Elite Regional Operation %s", uuid.New().String()[:8]),
-				Description:    s.getRegionSpecificDescription(regionID, true),
-				Type:           s.getRandomOperationType(),
-				IsSpecial:      true,
-				IsActive:       true,
-				RegionID:       regionID,
-				Requirements:   s.generateRandomRequirements(true),
-				Resources:      s.generateRandomResources(true),
-				Rewards:        s.generateRandomRewards(true, regionID),
-				Risks:          s.generateRandomRisks(true),
-				Duration:       3600 + rand.Intn(14400), // 1 hour to 5 hours
-				SuccessRate:    45 + rand.Intn(20),
-				AvailableUntil: availableUntil,
-				CreatedAt:      now,
-				UpdatedAt:      now,
-			}
-
-			if err := s.operationsRepo.CreateOperation(&operation); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
-// Helper functions for region-specific content
-func (s *operationsService) getRegionSpecificDescription(regionID *string, isSpecial bool) string {
-	// This would typically be based on region data, but for now we'll use placeholders
-	if regionID == nil {
-		if isSpecial {
-			return "A high-profile operation that can be conducted from headquarters."
-		}
-		return "A standard operation available from your main base of operations."
-	}
-
-	// You would fetch region data and customize descriptions based on region characteristics
-	if isSpecial {
-		return "A specialized operation tailored to this region's unique criminal landscape."
-	}
-	return "A local operation taking advantage of regional opportunities."
-}
-
-// Helper function to generate region-specific rewards
-func (s *operationsService) generateRandomRewards(isSpecial bool, regionID *string) model.OperationRewards {
-	// Base rewards
-	var rewards model.OperationRewards
-
-	if isSpecial {
-		rewards = model.OperationRewards{
-			Money:     5000 + rand.Intn(15000),
-			Respect:   10 + rand.Intn(20),
-			Influence: 5 + rand.Intn(15),
-		}
-	} else {
-		rewards = model.OperationRewards{
-			Money:   1000 + rand.Intn(3000),
-			Respect: 3 + rand.Intn(7),
-		}
-	}
-
-	// Modify rewards based on region (you would customize this based on actual region data)
-	if regionID != nil {
-		// For example, some regions might offer more money, others more influence
-		// This is where you'd add region-specific modifiers
-		rewards.Money = int(float64(rewards.Money) * (0.8 + rand.Float64()*0.4)) // ±20% variation
-	}
-
-	return rewards
-}
-
-// Helper function to generate random requirements
-func (s *operationsService) generateRandomRequirements(isSpecial bool) model.OperationRequirements {
-	requirements := model.OperationRequirements{}
-	requirements.MinTitle = s.getRandomMinimumTitle()
-
-	if isSpecial {
-		requirements.MinInfluence = 20 + rand.Intn(30)
-		requirements.MaxHeat = 40 + rand.Intn(30)
-		requirements.MinTitle = s.getRandomMinimumTitle()
-	}
-
-	return requirements
-
-}
-
-// getRandomMinimumTitle generates a random minimum title for special operations
-func (s *operationsService) getRandomMinimumTitle() string {
-	titles := []string{
-		util.PlayerTitleSoldier,
-		util.PlayerTitleCapo,
-		util.PlayerTitleUnderboss,
-		util.PlayerTitleConsigliere,
-		util.PlayerTitleBoss,
-		util.PlayerTitleGodfather,
-	}
-	return titles[rand.Intn(len(titles))]
-}
-
-// Helper function to generate random resources
-func (s *operationsService) generateRandomResources(isSpecial bool) model.OperationResources {
-	if isSpecial {
-		return model.OperationResources{
-			Crew:     3 + rand.Intn(4),
-			Weapons:  2 + rand.Intn(4),
-			Vehicles: 1 + rand.Intn(3),
-		}
-	}
-
-	return model.OperationResources{
-		Crew:     rand.Intn(3) + 1,
-		Weapons:  rand.Intn(2) + 1,
-		Vehicles: rand.Intn(2) + 1,
-	}
-}
-
-// getRandomOperationType generates a random operation type
-func (s *operationsService) getRandomOperationType() string {
-	operationTypes := []string{
-		util.OperationTypeCarjacking,
-		util.OperationTypeGoodsSmuggling,
-		util.OperationTypeDrugTrafficking,
-		util.OperationTypeOfficialBribing,
-		util.OperationTypeIntelligence,
-		util.OperationTypeCrewRecruitment,
-	}
-	return operationTypes[rand.Intn(len(operationTypes))]
-}
-
-// Helper function to generate random risks
-func (s *operationsService) generateRandomRisks(isSpecial bool) model.OperationRisks {
-	if isSpecial {
-		return model.OperationRisks{
-			CrewLoss:     1 + rand.Intn(3),
-			WeaponsLoss:  1 + rand.Intn(3),
-			VehiclesLoss: rand.Intn(2),
-			HeatIncrease: 15 + rand.Intn(35),
-		}
-	}
-
-	return model.OperationRisks{
-		CrewLoss:     rand.Intn(2) + 1,
-		WeaponsLoss:  rand.Intn(2) + 1,
-		HeatIncrease: 5 + rand.Intn(15),
-	}
 }
 
 // calculateSuccessChance calculates the success chance for an operation

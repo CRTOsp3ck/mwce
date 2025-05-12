@@ -1,4 +1,4 @@
-package repository
+package service
 
 import (
 	"fmt"
@@ -16,16 +16,18 @@ type OperationsData struct {
 
 // OperationTemplate represents an operation template in the operations structure
 type OperationTemplate struct {
-	Name         string                      `yaml:"name"`
-	Description  string                      `yaml:"description"`
-	Type         string                      `yaml:"type"`
-	IsSpecial    bool                        `yaml:"is_special"`
-	Requirements model.OperationRequirements `yaml:"requirements"`
-	Resources    model.OperationResources    `yaml:"resources"`
-	Rewards      model.OperationRewards      `yaml:"rewards"`
-	Risks        model.OperationRisks        `yaml:"risks"`
-	Duration     int                         `yaml:"duration"`
-	SuccessRate  int                         `yaml:"success_rate"`
+	Name                 string                      `yaml:"name"`
+	Description          string                      `yaml:"description"`
+	Type                 string                      `yaml:"type"`
+	IsSpecial            bool                        `yaml:"is_special"`
+	Regions              []string                    `yaml:"regions,omitempty"`               // New field for region support
+	AvailabilityDuration int                         `yaml:"availability_duration,omitempty"` // New field for expiration
+	Requirements         model.OperationRequirements `yaml:"requirements"`
+	Resources            model.OperationResources    `yaml:"resources"`
+	Rewards              model.OperationRewards      `yaml:"rewards"`
+	Risks                model.OperationRisks        `yaml:"risks"`
+	Duration             int                         `yaml:"duration"`
+	SuccessRate          int                         `yaml:"success_rate"`
 }
 
 // loadOperationsFromYAML reads operations data from the configured YAML file

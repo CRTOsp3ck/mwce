@@ -6,27 +6,31 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
 // Operation represents an operation that can be performed by the player
 type Operation struct {
-	ID             string                `json:"id" gorm:"type:uuid;primary_key"`
-	Name           string                `json:"name" gorm:"not null"`
-	Description    string                `json:"description" gorm:"not null"`
-	Type           string                `json:"type" gorm:"not null"` // carjacking, goods_smuggling, etc.
-	IsSpecial      bool                  `json:"isSpecial" gorm:"not null;default:false"`
-	IsActive       bool                  `json:"isActive" gorm:"not null;default:true"`
-	RegionID       *string               `json:"regionId" gorm:"type:uuid;references:regions.id"` // New field for region-specific operations
-	Requirements   OperationRequirements `json:"requirements" gorm:"embedded"`
-	Resources      OperationResources    `json:"resources" gorm:"embedded"`
-	Rewards        OperationRewards      `json:"rewards" gorm:"embedded"`
-	Risks          OperationRisks        `json:"risks" gorm:"embedded"`
-	Duration       int                   `json:"duration" gorm:"not null"`    // in seconds
-	SuccessRate    int                   `json:"successRate" gorm:"not null"` // percentage
-	AvailableUntil time.Time             `json:"availableUntil" gorm:"not null"`
-	CreatedAt      time.Time             `json:"-" gorm:"not null"`
-	UpdatedAt      time.Time             `json:"-" gorm:"not null"`
+	ID                   string                `json:"id" gorm:"type:uuid;primary_key"`
+	Name                 string                `json:"name" gorm:"not null"`
+	Description          string                `json:"description" gorm:"not null"`
+	Type                 string                `json:"type" gorm:"not null"` // carjacking, goods_smuggling, etc.
+	IsSpecial            bool                  `json:"isSpecial" gorm:"not null;default:false"`
+	IsActive             bool                  `json:"isActive" gorm:"not null;default:true"`
+	// RegionID             *string               `json:"regionId" gorm:"type:uuid;references:regions.id"` // For region-specific operations
+	RegionIDs            pq.StringArray        `json:"regionIds" gorm:"type:text[]"`                    // For multi-region operations
+	Requirements         OperationRequirements `json:"requirements" gorm:"embedded"`
+	Resources            OperationResources    `json:"resources" gorm:"embedded"`
+	Rewards              OperationRewards      `json:"rewards" gorm:"embedded"`
+	Risks                OperationRisks        `json:"risks" gorm:"embedded"`
+	Duration             int                   `json:"duration" gorm:"not null"`              // in seconds
+	AvailabilityDuration int                   `json:"availabilityDuration" gorm:"default:0"` // in minutes, 0 means no expiration
+	SuccessRate          int                   `json:"successRate" gorm:"not null"`           // percentage
+	AvailableUntil       time.Time             `json:"availableUntil" gorm:"not null"`
+	CreatedAt            time.Time             `json:"-" gorm:"not null"`
+	UpdatedAt            time.Time             `json:"-" gorm:"not null"`
+	PlayerAttempts       []OperationAttempt    `json:"playerAttempts,omitempty" gorm:"-"`
 }
 
 // BeforeCreate is a GORM hook to generate UUID before creating a new operation

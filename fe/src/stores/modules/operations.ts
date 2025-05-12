@@ -25,6 +25,7 @@ interface OperationsState {
   timerRefreshCounter: number;
   incomeTimerInterval: number | null;
   refreshInfo: OperationsRefreshInfo | null;
+  inProgressOperationIds: string[];
 }
 
 export const useOperationsStore = defineStore('operations', {
@@ -39,9 +40,14 @@ export const useOperationsStore = defineStore('operations', {
     timerRefreshCounter: 0,
     incomeTimerInterval: null,
     refreshInfo: null,
+    inProgressOperationIds: []
   }),
 
   getters: {
+    isOperationInProgress: (state) => (operationId: string): boolean => {
+      return state.inProgressOperationIds.includes(operationId);
+    },
+
     timeUntilNextOperationsRefresh: (state): string => {
       const _ = state.timerRefreshCounter;
 
@@ -303,6 +309,9 @@ export const useOperationsStore = defineStore('operations', {
         if (currentResponse.success && currentResponse.data) {
           this.currentOperations = currentResponse.data;
 
+          // Update the inProgressOperationIds
+          this.inProgressOperationIds = currentResponse.data.map(op => op.operationId);
+
           // Fetch details for any operations not in cache
           for (const attempt of currentResponse.data) {
             if (!this.operationsCache[attempt.operationId]) {
@@ -310,7 +319,6 @@ export const useOperationsStore = defineStore('operations', {
             }
           }
         }
-
         // Get completed operations
         const completedResponse = await operationsService.getCompletedOperations();
         if (completedResponse.success && completedResponse.data) {
