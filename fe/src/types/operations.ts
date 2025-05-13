@@ -6,7 +6,7 @@ export interface Operation {
   description: string;
   type: OperationType;
   isSpecial: boolean;
-  regionId: string;
+  regionIds: string[];
   requirements: OperationRequirements;
   resources: OperationResources;
   rewards: OperationRewards;

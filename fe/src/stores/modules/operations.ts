@@ -82,16 +82,20 @@ export const useOperationsStore = defineStore('operations', {
       const currentRegionId = playerStore.profile?.currentRegionId;
 
       if (!currentRegionId) {
-        // If not in any region, show only global operations (no regionId)
-        return state.availableOperations.filter(o => !o.regionId);
+        // If not in any region, show only global operations (empty regionIds)
+        return state.availableOperations.filter(o => !o.regionIds || o.regionIds.length === 0);
       }
 
-      // If in a region, show both regional and global operations
-      return state.availableOperations.filter(o => !o.regionId || o.regionId === currentRegionId);
+      // If in a region, show both global operations and those that include the current region
+      return state.availableOperations.filter(o =>
+        !o.regionIds ||
+        o.regionIds.length === 0 ||
+        o.regionIds.includes(currentRegionId)
+      );
     },
 
     globalOperations: (state) => {
-      return state.availableOperations.filter(o => !o.regionId);
+      return state.availableOperations.filter(o => !o.regionIds || o.regionIds.length === 0);
     },
 
     regionalBasicOperations: (state) => {
@@ -99,10 +103,18 @@ export const useOperationsStore = defineStore('operations', {
       const currentRegionId = playerStore.profile?.currentRegionId;
 
       if (!currentRegionId) {
-        return state.availableOperations.filter(o => !o.isSpecial && !o.regionId);
+        return state.availableOperations.filter(o =>
+          !o.isSpecial && (!o.regionIds || o.regionIds.length === 0)
+        );
       }
 
-      return state.availableOperations.filter(o => !o.isSpecial && (!o.regionId || o.regionId === currentRegionId));
+      return state.availableOperations.filter(o =>
+        !o.isSpecial && (
+          !o.regionIds ||
+          o.regionIds.length === 0 ||
+          o.regionIds.includes(currentRegionId)
+        )
+      );
     },
 
     regionalSpecialOperations: (state) => {
@@ -110,10 +122,18 @@ export const useOperationsStore = defineStore('operations', {
       const currentRegionId = playerStore.profile?.currentRegionId;
 
       if (!currentRegionId) {
-        return state.availableOperations.filter(o => o.isSpecial && !o.regionId);
+        return state.availableOperations.filter(o =>
+          o.isSpecial && (!o.regionIds || o.regionIds.length === 0)
+        );
       }
 
-      return state.availableOperations.filter(o => o.isSpecial && (!o.regionId || o.regionId === currentRegionId));
+      return state.availableOperations.filter(o =>
+        o.isSpecial && (
+          !o.regionIds ||
+          o.regionIds.length === 0 ||
+          o.regionIds.includes(currentRegionId)
+        )
+      );
     },
 
     basicOperations: (state) => {
@@ -193,10 +213,14 @@ export const useOperationsStore = defineStore('operations', {
       if (!operation) return undefined;
 
       // Add region name if available
-      if (operation.regionId) {
-        // Get region name from territory store (you'll need to import it)
+      if (operation.regionIds && operation.regionIds.length > 0) {
+        // Get territory store for regions
         const territoryStore = useTerritoryStore();
-        const region = territoryStore.regions.find(r => r.id === operation.regionId);
+
+        // Get the first region name (could be improved to show multiple regions)
+        const regionId = operation.regionIds[0];
+        const region = territoryStore.regions.find(r => r.id === regionId);
+
         return {
           ...operation,
           regionName: region?.name
@@ -240,10 +264,14 @@ export const useOperationsStore = defineStore('operations', {
 
       // Log regional context
       if (currentRegionId) {
-        const regionalOps = operations.filter(o => !o.regionId || o.regionId === currentRegionId);
+        const regionalOps = operations.filter(o =>
+          !o.regionIds ||
+          o.regionIds.length === 0 ||
+          o.regionIds.includes(currentRegionId)
+        );
         console.log(`Operations refreshed for region ${currentRegionId}: ${regionalOps.length} operations available`);
       } else {
-        const globalOps = operations.filter(o => !o.regionId);
+        const globalOps = operations.filter(o => !o.regionIds || o.regionIds.length === 0);
         console.log(`Global operations refreshed: ${globalOps.length} operations available`);
       }
     },
@@ -262,15 +290,19 @@ export const useOperationsStore = defineStore('operations', {
             this.operationsCache[operation.id] = operation;
           });
 
-          // Log regional context
+          // Log regional context with updated regionIds filter
           const playerStore = usePlayerStore();
           const currentRegionId = playerStore.profile?.currentRegionId;
 
           if (currentRegionId) {
-            const regionalOps = response.data.filter(o => !o.regionId || o.regionId === currentRegionId);
+            const regionalOps = response.data.filter(o =>
+              !o.regionIds ||
+              o.regionIds.length === 0 ||
+              o.regionIds.includes(currentRegionId)
+            );
             console.log(`Fetched ${regionalOps.length} operations for current region`);
           } else {
-            const globalOps = response.data.filter(o => !o.regionId);
+            const globalOps = response.data.filter(o => !o.regionIds || o.regionIds.length === 0);
             console.log(`Fetched ${globalOps.length} global operations`);
           }
         } else {

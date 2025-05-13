@@ -104,8 +104,17 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 	playerService := service.NewPlayerService(playerRepo, *cfg.Game, logger)
 	authService := service.NewAuthService(playerRepo, playerService, cfg.JWT, logger)
 	sseService := service.NewSSEService(logger)
+	// -- If no regions, seed territory data --
 	territoryService := service.NewTerritoryService(territoryRepo, playerRepo, sseService, *cfg.Game, logger)
-	operationsService := service.NewOperationsService(operationsRepo, playerRepo, playerService, sseService, *cfg.Game, logger)
+	regions, err := territoryService.GetAllRegions()
+	if err != nil {
+		logger.Warn().Err(err)
+		return nil, err
+	}
+	if regions == nil || len(regions) <= 0 {
+		service.RunTerritorySeeder("../../configs/app.yaml", "../../configs/territory.yaml")
+	}
+	operationsService := service.NewOperationsService(operationsRepo, territoryRepo, playerRepo, playerService, sseService, *cfg.Game, logger)
 	marketService := service.NewMarketService(marketRepo, playerRepo, playerService, cfg.Game, logger)
 	travelService := service.NewTravelService(playerRepo, territoryRepo, sseService, *cfg.Game, logger)
 	campaignService := service.NewCampaignService(campaignRepo, playerRepo, playerService, operationsService, territoryService, sseService, logger)

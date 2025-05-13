@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"mwce-be/internal/util"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -40,6 +41,7 @@ type OperationsService interface {
 
 type operationsService struct {
 	operationsRepo repository.OperationsRepository
+	territoryRepo  repository.TerritoryRepository
 	playerRepo     repository.PlayerRepository
 	playerService  PlayerService
 	sseService     SSEService
@@ -53,6 +55,7 @@ type operationsService struct {
 // NewOperationsService creates a new operations service
 func NewOperationsService(
 	operationsRepo repository.OperationsRepository,
+	territoryRepo repository.TerritoryRepository,
 	playerRepo repository.PlayerRepository,
 	playerService PlayerService,
 	sseService SSEService,
@@ -61,6 +64,7 @@ func NewOperationsService(
 ) OperationsService {
 	return &operationsService{
 		operationsRepo:  operationsRepo,
+		territoryRepo:   territoryRepo,
 		playerRepo:      playerRepo,
 		playerService:   playerService,
 		sseService:      sseService,
@@ -96,10 +100,11 @@ func (s *operationsService) GetAvailableOperations(playerID string, validOnly bo
 		return nil, err
 	}
 
-	// If player is not in any region, return global operations only (no region ID)
+	// If player is not in any region, return global operations only (empty region_ids)
 	if player.CurrentRegionID == nil {
 		var globalOps []model.Operation
-		query := s.operationsRepo.GetDB().Where("is_active = ?", true).Where("region_id IS NULL")
+		query := s.operationsRepo.GetDB().Where("is_active = ?", true).
+			Where("array_length(region_ids, 1) IS NULL")
 
 		if validOnly {
 			query = query.Where("available_until > ?", time.Now())
@@ -120,17 +125,18 @@ func (s *operationsService) GetAvailableOperations(playerID string, validOnly bo
 		query = query.Where("available_until > ?", time.Now())
 	}
 
-	// Filter by current region - either global (region_id IS NULL), specific to current region,
-	// or multi-region operations that include the current region
-	query = query.Where("region_id IS NULL OR region_id = ? OR ? = ANY(region_ids)",
-		*player.CurrentRegionID, *player.CurrentRegionID)
+	// Filter by current region - either global (empty region_ids) or includes current region
+	query = query.Where("array_length(region_ids, 1) IS NULL OR ? = ANY(region_ids)",
+		*player.CurrentRegionID)
 
 	if err := query.Find(&operations).Error; err != nil {
 		return nil, err
 	}
 
+	return operations, nil
+
 	// Filter operations based on player's in-progress attempts and requirements
-	return s.filterOperationsByPlayerAttempts(s.filterOperationsByRequirements(operations, player), playerID)
+	// return s.filterOperationsByPlayerAttempts(s.filterOperationsByRequirements(operations, player), playerID)
 }
 
 // New helper function to filter operations based on player requirements
@@ -902,7 +908,34 @@ func (s *operationsService) RefreshDailyOperations() error {
 
 		availableUntil := now.Add(time.Duration(availabilityDuration) * time.Minute)
 
-		// Create operation
+		// **NOTE: Steps 1 and 2 should be outside of this loop for efficiency but,
+		// fuck it lets keep it like this for readability**
+
+		// Convert template regions into region ids
+		// 1. Get the list of regions
+		regionsList, err := s.territoryRepo.GetAllRegions()
+		if err != nil {
+			return err
+		}
+
+		// 2. Create a map of the region names and their ids (lowercased is key, value is id)
+		regionNameToID := make(map[string]string)
+		for _, region := range regionsList {
+			regionNameToID[strings.ToLower(region.Name)] = region.ID
+		}
+
+		// 3. Create a slice to store the relevant ids for this operation
+		var regionIDs []string
+
+		// 4. Loop through the template.Regions (values in here will be the key)
+		for _, regionName := range template.Regions {
+			// 5. If the element in the looped template.Regions is present in the map's key, store it in the slice
+			if regionID, exists := regionNameToID[strings.ToLower(regionName)]; exists {
+				regionIDs = append(regionIDs, regionID)
+			}
+		}
+
+		// 6. Assign the slice to the operation's RegionIDs below
 		operation := model.Operation{
 			ID:                   uuid.New().String(),
 			Name:                 template.Name,
@@ -910,7 +943,7 @@ func (s *operationsService) RefreshDailyOperations() error {
 			Type:                 template.Type,
 			IsSpecial:            template.IsSpecial,
 			IsActive:             true,
-			RegionIDs:            template.Regions, // Use regions from YAML
+			RegionIDs:            regionIDs, // Use regions from YAML
 			Requirements:         template.Requirements,
 			Resources:            template.Resources,
 			Rewards:              template.Rewards,
@@ -951,6 +984,33 @@ func (s *operationsService) RefreshDailyOperations() error {
 
 		availableUntil := now.Add(time.Duration(availabilityDuration) * time.Minute)
 
+		// **NOTE: Steps 1 and 2 should be outside of this loop for efficiency but,
+		// fuck it lets keep it like this for readability**
+
+		// Convert template regions into region ids
+		// 1. Get the list of regions
+		regionsList, err := s.territoryRepo.GetAllRegions()
+		if err != nil {
+			return err
+		}
+
+		// 2. Create a map of the region names and their ids (lowercased is key, value is id)
+		regionNameToID := make(map[string]string)
+		for _, region := range regionsList {
+			regionNameToID[strings.ToLower(region.Name)] = region.ID
+		}
+
+		// 3. Create a slice to store the relevant ids for this operation
+		var regionIDs []string
+
+		// 4. Loop through the template.Regions (values in here will be the key)
+		for _, regionName := range template.Regions {
+			// 5. If the element in the looped template.Regions is present in the map's key, store it in the slice
+			if regionID, exists := regionNameToID[strings.ToLower(regionName)]; exists {
+				regionIDs = append(regionIDs, regionID)
+			}
+		}
+
 		// Create operation
 		operation := model.Operation{
 			ID:                   uuid.New().String(),
@@ -959,7 +1019,7 @@ func (s *operationsService) RefreshDailyOperations() error {
 			Type:                 template.Type,
 			IsSpecial:            template.IsSpecial,
 			IsActive:             true,
-			RegionIDs:            template.Regions, // Use regions from YAML
+			RegionIDs:            regionIDs,
 			Requirements:         template.Requirements,
 			Resources:            template.Resources,
 			Rewards:              template.Rewards,
