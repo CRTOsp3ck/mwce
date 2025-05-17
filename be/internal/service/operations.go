@@ -1042,26 +1042,43 @@ func (s *operationsService) RefreshDailyOperations() error {
 	s.lastRefreshTime = now
 	s.refreshMutex.Unlock()
 
-	// Get all active operations for SSE notification
-	var allOperations []model.Operation
-	if err := s.operationsRepo.GetDB().
-		Where("is_active = ? AND available_until > ?", true, time.Now()).
-		Find(&allOperations).Error; err != nil {
-		s.logger.Error().Err(err).Msg("Failed to fetch operations for SSE notification")
-		return nil // Don't fail the refresh just because we couldn't send notification
-	}
-
+	// Calculate next refresh time for the refresh info
 	nextRefreshTime := now.Add(time.Duration(s.gameConfig.OperationsRefreshInterval) * time.Minute)
 
-	s.sseService.SendEventToAll("operations_refreshed", map[string]interface{}{
-		"operations": allOperations,
-		"timestamp":  now.Format(time.RFC3339),
-		"refreshInfo": map[string]interface{}{
-			"refreshInterval": s.gameConfig.OperationsRefreshInterval,
-			"lastRefreshTime": now.Format(time.RFC3339),
-			"nextRefreshTime": nextRefreshTime.Format(time.RFC3339),
-		},
-	})
+	// Create the refresh info once - this is common for all players
+	refreshInfo := map[string]interface{}{
+		"refreshInterval": s.gameConfig.OperationsRefreshInterval,
+		"lastRefreshTime": now.Format(time.RFC3339),
+		"nextRefreshTime": nextRefreshTime.Format(time.RFC3339),
+	}
+
+	// Get all connected player IDs
+	playerIDs := s.sseService.GetConnectedPlayerIDs()
+
+	// If no players are connected, log and return
+	if len(playerIDs) == 0 {
+		s.logger.Info().Msg("No connected players to notify about operations refresh")
+		return nil
+	}
+
+	s.logger.Info().Int("playerCount", len(playerIDs)).Msg("Sending operations refresh to connected players")
+
+	// Send personalized operations to each connected player
+	for _, playerID := range playerIDs {
+		// Get filtered operations for this specific player
+		filteredOps, err := s.GetAvailableOperations(playerID, true)
+		if err != nil {
+			s.logger.Error().Err(err).Str("playerID", playerID).Msg("Failed to get filtered operations for player")
+			continue
+		}
+
+		// Send personalized operations to this player
+		s.sseService.SendEventToPlayer(playerID, "operations_refreshed", map[string]interface{}{
+			"operations":  filteredOps,
+			"timestamp":   now.Format(time.RFC3339),
+			"refreshInfo": refreshInfo,
+		})
+	}
 
 	return nil
 }

@@ -18,6 +18,7 @@ type SSEService interface {
 	HandleConnection(w http.ResponseWriter, r *http.Request)
 	SendEventToPlayer(playerID string, eventType string, data interface{})
 	SendEventToAll(eventType string, data interface{})
+	GetConnectedPlayerIDs() []string
 	Close()
 }
 
@@ -34,6 +35,17 @@ func NewSSEService(logger zerolog.Logger) SSEService {
 		clientsMutex: sync.RWMutex{},
 		logger:       logger,
 	}
+}
+
+func (s *sseService) GetConnectedPlayerIDs() []string {
+	s.clientsMutex.RLock()
+	defer s.clientsMutex.RUnlock()
+
+	playerIDs := make([]string, 0, len(s.clients))
+	for playerID := range s.clients {
+		playerIDs = append(playerIDs, playerID)
+	}
+	return playerIDs
 }
 
 // HandleConnection establishes an SSE connection for a player
