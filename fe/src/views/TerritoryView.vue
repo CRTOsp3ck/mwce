@@ -1046,6 +1046,12 @@ onBeforeUnmount(() => {
               <span class="badge-icon">💰</span>
               ${{ formatNumber(hotspot.pendingCollection) }}
             </div>
+            <div class="card-badge" v-else>
+              <!-- <span class="badge-icon">🚀</span> -->
+              <!-- <span class="badge-icon">🤑</span> -->
+              <span class="badge-icon">💸</span>
+              Waiting for income
+            </div>
 
             <div class="hotspot-header">
               <div class="hotspot-title-area">
@@ -1059,7 +1065,7 @@ onBeforeUnmount(() => {
             </div>
 
             <div class="hotspot-details">
-              <div class="detail-row">
+              <!-- <div class="detail-row"> -->
                 <div class="detail-item">
                   <span class="detail-label">Location:</span>
                   <span class="detail-value">{{ getHotspotLocation(hotspot) }}</span>
@@ -1068,9 +1074,9 @@ onBeforeUnmount(() => {
                   <span class="detail-label">Business:</span>
                   <span class="detail-value">{{ hotspot.businessType }}</span>
                 </div>
-              </div>
+              <!-- </div> -->
 
-              <div class="detail-row">
+              <!-- <div class="detail-row"> -->
                 <div class="detail-item">
                   <span class="detail-label">Income:</span>
                   <span class="detail-value">${{ formatNumber(hotspot.income) }}/hr</span>
@@ -1081,10 +1087,10 @@ onBeforeUnmount(() => {
                     {{ getDefenseLabel(hotspot.defenseStrength) }}
                   </span>
                 </div>
-              </div>
+              <!-- </div> -->
 
               <!-- Updated next income display using store getters -->
-              <div class="detail-row income-timer">
+              <div class="income-timer">
                 <div class="detail-item">
                   <span class="detail-label">Next Income:</span>
                   <span class="detail-value countdown" :class="{ 'soon': isIncomeSoon(hotspot.id) }">
@@ -1180,7 +1186,7 @@ onBeforeUnmount(() => {
             </div>
 
             <div class="hotspot-details">
-              <div class="detail-row">
+              <!-- <div class="detail-row"> -->
                 <div class="detail-item">
                   <span class="detail-label">Location:</span>
                   <span class="detail-value">{{ getHotspotLocation(hotspot, true) }}</span>
@@ -1189,9 +1195,9 @@ onBeforeUnmount(() => {
                   <span class="detail-label">Business:</span>
                   <span class="detail-value">{{ hotspot.businessType }}</span>
                 </div>
-              </div>
+              <!-- </div> -->
 
-              <div class="detail-row">
+              <!-- <div class="detail-row"> -->
                 <div class="detail-item">
                   <span class="detail-label">Income:</span>
                   <span class="detail-value">${{ formatNumber(hotspot.income) }}/hr</span>
@@ -1202,9 +1208,9 @@ onBeforeUnmount(() => {
                     {{ getDefenseLabel(hotspot.defenseStrength) }}
                   </span>
                 </div>
-              </div>
+              <!-- </div> -->
 
-              <div class="detail-row income-timer">
+              <div class="income-timer">
                 <div class="detail-item">
                   <span class="detail-label">Next Income:</span>
                   <span class="detail-value countdown">
@@ -2676,7 +2682,8 @@ onBeforeUnmount(() => {
     }
 
     @include respond-to(lg) {
-      grid-template-columns: repeat(4, 1fr);
+      // grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
     }
 
     .hotspot-card {
@@ -2689,9 +2696,9 @@ onBeforeUnmount(() => {
       border: 1px solid rgba($border-color, 0.5);
 
       /* Removed the original hover effect as it's replaced by the golden glow */
-      &:hover {
-        transform: translateY(-5px);
-      }
+      // &:hover {
+      //   transform: translateY(-5px);
+      // }
 
       .hotspot-header {
         margin-bottom: $spacing-md;
