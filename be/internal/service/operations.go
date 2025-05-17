@@ -133,10 +133,10 @@ func (s *operationsService) GetAvailableOperations(playerID string, validOnly bo
 		return nil, err
 	}
 
-	return operations, nil
+	// return operations, nil
 
 	// Filter operations based on player's in-progress attempts and requirements
-	// return s.filterOperationsByPlayerAttempts(s.filterOperationsByRequirements(operations, player), playerID)
+	return s.filterOperationsByPlayerAttempts(s.filterOperationsByRequirements(operations, player), playerID)
 }
 
 // New helper function to filter operations based on player requirements

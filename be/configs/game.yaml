@@ -8,7 +8,8 @@ territory_structure_file: "./configs/territory.yaml"
 operations_file: "./configs/operations.yaml"
 daily_operations_count: 10
 special_operations_count: 5
-operations_refresh_interval: 60 # in minutes
+# operations_refresh_interval: 60 # in minutes
+operations_refresh_interval: 1 # in minutes
 market_price_update_interval: 60 # in minutes
 resource_limit:
   initial_respect: 10
