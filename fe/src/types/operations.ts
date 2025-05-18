@@ -14,6 +14,8 @@ export interface Operation {
   duration: number; // in seconds
   successRate: number; // base success rate percentage
   availableUntil: string;
+  isLocked: boolean; // Indicates if operation is locked due to requirements
+  lockReason: string; // Reason why operation is locked
   playerAttempts?: OperationAttempt[];
 }
 

@@ -139,32 +139,40 @@ func (s *operationsService) GetAvailableOperations(playerID string, validOnly bo
 	return s.filterOperationsByPlayerAttempts(s.filterOperationsByRequirements(operations, player), playerID)
 }
 
-// New helper function to filter operations based on player requirements
+// New helper function to filter operations and mark them as locked if they don't meet requirements
 func (s *operationsService) filterOperationsByRequirements(operations []model.Operation, player *model.Player) []model.Operation {
 	var filteredOps []model.Operation
 
 	for _, op := range operations {
-		// For special operations, check requirements
+		opCopy := op // Create a copy to avoid modifying the original
+
+		// For special operations, check requirements and mark as locked if needed
 		if op.IsSpecial {
+			opCopy.IsLocked = false // Default to not locked
+
 			// Check influence
 			if op.Requirements.MinInfluence > 0 && player.Influence < op.Requirements.MinInfluence {
-				continue
+				opCopy.IsLocked = true
+				opCopy.LockReason = fmt.Sprintf("Requires %d influence (you have %d)",
+					op.Requirements.MinInfluence, player.Influence)
 			}
 
 			// Check heat
 			if op.Requirements.MaxHeat > 0 && player.Heat > op.Requirements.MaxHeat {
-				continue
+				opCopy.IsLocked = true
+				opCopy.LockReason = fmt.Sprintf("Heat too high (max %d, you have %d)",
+					op.Requirements.MaxHeat, player.Heat)
 			}
 
 			// Check title
-			if op.Requirements.MinTitle != "" {
-				if !meetsMinimumTitle(player.Title, op.Requirements.MinTitle) {
-					continue
-				}
+			if op.Requirements.MinTitle != "" && !meetsMinimumTitle(player.Title, op.Requirements.MinTitle) {
+				opCopy.IsLocked = true
+				opCopy.LockReason = fmt.Sprintf("Requires %s rank (you are %s)",
+					op.Requirements.MinTitle, player.Title)
 			}
 		}
 
-		filteredOps = append(filteredOps, op)
+		filteredOps = append(filteredOps, opCopy)
 	}
 
 	return filteredOps
@@ -227,6 +235,30 @@ func (s *operationsService) StartOperation(playerID, operationID string, resourc
 		return nil, errors.New("operation is no longer available")
 	}
 
+	// Get the player
+	player, err := s.playerRepo.GetPlayerByID(playerID)
+	if err != nil {
+		return nil, errors.New("player not found")
+	}
+
+	// Check if the operation would be locked for this player
+	if operation.IsSpecial {
+		if operation.Requirements.MinInfluence > 0 && player.Influence < operation.Requirements.MinInfluence {
+			return nil, fmt.Errorf("insufficient influence for this operation (requires %d, you have %d)",
+				operation.Requirements.MinInfluence, player.Influence)
+		}
+
+		if operation.Requirements.MaxHeat > 0 && player.Heat > operation.Requirements.MaxHeat {
+			return nil, fmt.Errorf("heat level too high for this operation (max %d, you have %d)",
+				operation.Requirements.MaxHeat, player.Heat)
+		}
+
+		if operation.Requirements.MinTitle != "" && !meetsMinimumTitle(player.Title, operation.Requirements.MinTitle) {
+			return nil, fmt.Errorf("your title rank is too low for this operation (requires %s, you are %s)",
+				operation.Requirements.MinTitle, player.Title)
+		}
+	}
+
 	// Check if the player already has this operation in progress
 	inProgressOps, err := s.operationsRepo.GetCurrentOperations(playerID)
 	if err != nil {
@@ -243,12 +275,6 @@ func (s *operationsService) StartOperation(playerID, operationID string, resourc
 	timeRemaining := operation.AvailableUntil.Sub(now).Seconds()
 	if timeRemaining < float64(operation.Duration) {
 		return nil, errors.New("insufficient time remaining to complete this operation")
-	}
-
-	// Get the player
-	player, err := s.playerRepo.GetPlayerByID(playerID)
-	if err != nil {
-		return nil, errors.New("player not found")
 	}
 
 	// Check if the player meets the requirements for special operations

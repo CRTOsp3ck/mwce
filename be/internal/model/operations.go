@@ -18,8 +18,9 @@ type Operation struct {
 	Type                 string                `json:"type" gorm:"not null"` // carjacking, goods_smuggling, etc.
 	IsSpecial            bool                  `json:"isSpecial" gorm:"not null;default:false"`
 	IsActive             bool                  `json:"isActive" gorm:"not null;default:true"`
-	// RegionID             *string               `json:"regionId" gorm:"type:uuid;references:regions.id"` // For region-specific operations
-	RegionIDs            pq.StringArray        `json:"regionIds" gorm:"type:text[]"`                    // For multi-region operations
+	IsLocked             bool                  `json:"isLocked" gorm:"-"`             // Not stored in DB, calculated on retrieval
+	LockReason           string                `json:"lockReason,omitempty" gorm:"-"` // Reason why it's locked
+	RegionIDs            pq.StringArray        `json:"regionIds" gorm:"type:text[]"`  // For multi-region operations
 	Requirements         OperationRequirements `json:"requirements" gorm:"embedded"`
 	Resources            OperationResources    `json:"resources" gorm:"embedded"`
 	Rewards              OperationRewards      `json:"rewards" gorm:"embedded"`
