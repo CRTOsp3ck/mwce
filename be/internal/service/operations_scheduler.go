@@ -1,14 +1,17 @@
 package service
 
 import (
-	"fmt"
 	"time"
 )
 
 // StartPeriodicOperationsRefresh starts a goroutine to periodically refresh operations
 func (s *operationsService) StartPeriodicOperationsRefresh() {
 	refreshInterval := time.Duration(s.gameConfig.OperationsRefreshInterval) * time.Minute
-	fmt.Println("Refresh interval: ", refreshInterval)
+
+	// Give buffer to make sure new operations creation gets triggered
+	refreshInterval += time.Second
+
+	// fmt.Println("Refresh interval: ", refreshInterval)
 	// if refreshInterval < 1*time.Minute {
 	// 	refreshInterval = 1 * time.Minute // Minimum 1 minute refresh interval
 	// }

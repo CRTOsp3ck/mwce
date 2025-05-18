@@ -245,17 +245,15 @@ export const useOperationsStore = defineStore('operations', {
 
     // Handle operations refreshed - now properly handles regional operations
     handleOperationsRefreshed(operations: Operation[], refreshInfo?: OperationsRefreshInfo) {
-      // Filter operations based on current region
-      const playerStore = usePlayerStore();
-      const currentRegionId = playerStore.profile?.currentRegionId;
-
       // Store all operations but display them filtered by region
-      this.availableOperations = operations;
+      this.availableOperations = operations || []; // Ensure it's at least an empty array
 
       // Update cache with new operations
-      operations.forEach(operation => {
-        this.operationsCache[operation.id] = operation;
-      });
+      if (operations && Array.isArray(operations)) {
+        operations.forEach(operation => {
+          this.operationsCache[operation.id] = operation;
+        });
+      }
 
       // Update refresh information if provided
       if (refreshInfo) {
@@ -263,15 +261,18 @@ export const useOperationsStore = defineStore('operations', {
       }
 
       // Log regional context
+      const playerStore = usePlayerStore();
+      const currentRegionId = playerStore.profile?.currentRegionId;
+
       if (currentRegionId) {
-        const regionalOps = operations.filter(o =>
+        const regionalOps = this.availableOperations.filter(o =>
           !o.regionIds ||
           o.regionIds.length === 0 ||
           o.regionIds.includes(currentRegionId)
         );
         console.log(`Operations refreshed for region ${currentRegionId}: ${regionalOps.length} operations available`);
       } else {
-        const globalOps = operations.filter(o => !o.regionIds || o.regionIds.length === 0);
+        const globalOps = this.availableOperations.filter(o => !o.regionIds || o.regionIds.length === 0);
         console.log(`Global operations refreshed: ${globalOps.length} operations available`);
       }
     },

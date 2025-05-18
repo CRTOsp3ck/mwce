@@ -54,6 +54,8 @@ const alreadyInProgressOperations = computed(() => {
 });
 
 const filteredOperations = computed(() => {
+  if (!availableOperations.value) return [];
+
   let result = [...availableOperations.value];
 
   // Apply type filter
