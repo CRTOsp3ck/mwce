@@ -70,7 +70,7 @@ const maxCrew = computed(() => playerStore.profile?.maxCrew || 0);
 const maxWeapons = computed(() => playerStore.profile?.maxWeapons || 0);
 const maxVehicles = computed(() => playerStore.profile?.maxVehicles || 0);
 
-// Get player stats from player store
+// Get player stat values
 const playerRespect = computed(() => playerStore.playerRespect);
 const playerInfluence = computed(() => playerStore.playerInfluence);
 const playerHeat = computed(() => playerStore.playerHeat);
@@ -168,6 +168,56 @@ function closeCollectionModal() {
   showCollectionResultModal.value = false;
   collectionResult.value = null;
 }
+
+// Function to get status level based on absolute values
+function getStatusLevel(value: number, type: 'respect' | 'influence' | 'heat'): string {
+  // These thresholds would be adjusted based on your game design
+  if (type === 'heat') {
+    // Heat is bad, so higher values mean more dangerous status
+    if (value >= 800) return 'critical';
+    if (value >= 600) return 'high';
+    if (value >= 300) return 'moderate';
+    if (value >= 100) return 'low';
+    return 'minimal';
+  } else {
+    // Respect and influence are good, so higher values mean better status
+    if (value >= 800) return 'legendary';
+    if (value >= 600) return 'elite';
+    if (value >= 300) return 'established';
+    if (value >= 100) return 'rising';
+    return 'newcomer';
+  }
+}
+
+// Function to get the number of status pips to display (out of 5)
+function getStatusPips(value: number, type: 'respect' | 'influence' | 'heat'): number {
+  // Maps status levels to a number of pips (0-5)
+  const statusLevel = getStatusLevel(value, type);
+
+  if (type === 'heat') {
+    switch(statusLevel) {
+      case 'critical': return 5;
+      case 'high': return 4;
+      case 'moderate': return 3;
+      case 'low': return 2;
+      default: return 1; // minimal
+    }
+  } else {
+    switch(statusLevel) {
+      case 'legendary': return 5;
+      case 'elite': return 4;
+      case 'established': return 3;
+      case 'rising': return 2;
+      default: return 1; // newcomer
+    }
+  }
+}
+
+// Function to generate an array of status indicators
+function generateStatusIndicators(value: number, type: 'respect' | 'influence' | 'heat'): number[] {
+  const pips = getStatusPips(value, type);
+  return Array.from({ length: 5 }, (_, index) => index < pips ? 1 : 0);
+}
 </script>
 
 <template>
@@ -215,28 +265,57 @@ function closeCollectionModal() {
     </div>
 
     <div class="player-stats">
+      <!-- Respect with diamond ranking -->
       <div class="stat">
-        <div class="stat-label">Respect</div>
-        <div class="progress-bar">
-          <div class="progress-fill respect" :style="{ width: `${playerRespect}%` }"></div>
+        <div class="stat-header">
+          <span class="stat-name">Respect</span>
+          <span class="stat-value">{{ playerRespect }}</span>
         </div>
-        <div class="stat-value">{{ playerRespect }}%</div>
+        <div class="stat-indicator respect" :class="getStatusLevel(playerRespect, 'respect')">
+          <div class="status-diamonds">
+            <div v-for="(active, index) in generateStatusIndicators(playerRespect, 'respect')"
+                 :key="index"
+                 class="diamond"
+                 :class="{ active: active === 1 }"></div>
+          </div>
+          <div class="status-level">{{ getStatusLevel(playerRespect, 'respect') }}</div>
+        </div>
       </div>
 
+      <!-- Influence with diamond ranking -->
       <div class="stat">
-        <div class="stat-label">Influence</div>
-        <div class="progress-bar">
-          <div class="progress-fill influence" :style="{ width: `${playerInfluence}%` }"></div>
+        <div class="stat-header">
+          <span class="stat-name">Influence</span>
+          <span class="stat-value">{{ playerInfluence }}</span>
         </div>
-        <div class="stat-value">{{ playerInfluence }}%</div>
+        <div class="stat-indicator influence" :class="getStatusLevel(playerInfluence, 'influence')">
+          <div class="status-diamonds">
+            <div v-for="(active, index) in generateStatusIndicators(playerInfluence, 'influence')"
+                 :key="index"
+                 class="diamond"
+                 :class="{ active: active === 1 }"></div>
+          </div>
+          <div class="status-level">{{ getStatusLevel(playerInfluence, 'influence') }}</div>
+        </div>
       </div>
 
+      <!-- Heat with flame indicators -->
       <div class="stat">
-        <div class="stat-label">Heat</div>
-        <div class="progress-bar">
-          <div class="progress-fill heat" :style="{ width: `${playerHeat}%` }"></div>
+        <div class="stat-header">
+          <span class="stat-name">Heat</span>
+          <span class="stat-value">{{ playerHeat }}</span>
         </div>
-        <div class="stat-value">{{ playerHeat }}%</div>
+        <div class="stat-indicator heat" :class="getStatusLevel(playerHeat, 'heat')">
+          <div class="status-flames">
+            <div v-for="(active, index) in generateStatusIndicators(playerHeat, 'heat')"
+                 :key="index"
+                 class="flame"
+                 :class="{ active: active === 1 }">
+              <div class="flame-inner"></div>
+            </div>
+          </div>
+          <div class="status-level">{{ getStatusLevel(playerHeat, 'heat') }}</div>
+        </div>
       </div>
     </div>
 
@@ -398,42 +477,224 @@ function closeCollectionModal() {
     gap: $spacing-md;
 
     .stat {
-      .stat-label {
+      .stat-header {
         @include flex-between;
         margin-bottom: $spacing-xs;
-        font-size: $font-size-sm;
-        color: $text-secondary;
-      }
 
-      .progress-bar {
-        height: 8px;
-        background-color: rgba(255, 255, 255, 0.1);
-        border-radius: 4px;
-        overflow: hidden;
-        margin-bottom: 4px;
+        .stat-name {
+          font-size: $font-size-sm;
+          color: $text-secondary;
+        }
 
-        .progress-fill {
-          height: 100%;
-          border-radius: 4px;
-          transition: width 0.3s ease;
-
-          &.respect {
-            background-color: $success-color;
-          }
-
-          &.influence {
-            background-color: $info-color;
-          }
-
-          &.heat {
-            background-color: $danger-color;
-          }
+        .stat-value {
+          font-weight: 600;
+          color: $text-color;
         }
       }
 
-      .stat-value {
-        text-align: right;
-        font-size: $font-size-sm;
+      .stat-indicator {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        // padding: 0 32px;
+
+        .status-diamonds {
+          display: flex;
+          gap: 4px;
+          // justify-content: space-between;
+
+          .diamond {
+            width: 16px;
+            height: 16px;
+            background-color: rgba($text-secondary, 0.2);
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+            transition: all 0.3s ease;
+            position: relative;
+
+            &.active {
+              background-color: $text-color;
+            }
+          }
+        }
+
+        .status-flames {
+          display: flex;
+          gap: 4px;
+          // justify-content: space-between;
+
+          .flame {
+            width: 16px;
+            height: 16px;
+            position: relative;
+            background-color: rgba($text-secondary, 0.2);
+            clip-path: polygon(50% 0%, 80% 30%, 100% 60%, 80% 100%, 20% 100%, 0% 60%, 20% 30%);
+            transition: all 0.3s ease;
+
+            .flame-inner {
+              position: absolute;
+              top: 3px;
+              left: 3px;
+              right: 3px;
+              bottom: 3px;
+              background-color: $background-lighter;
+              clip-path: polygon(50% 10%, 75% 35%, 90% 60%, 75% 90%, 25% 90%, 10% 60%, 25% 35%);
+              transition: all 0.3s ease;
+            }
+
+            &.active {
+              background-color: $danger-color;
+
+              .flame-inner {
+                background-color: lighten($danger-color, 15%);
+              }
+
+              &:nth-child(5) {
+                animation: flicker 2s infinite alternate;
+              }
+
+              &:nth-child(4) {
+                animation: flicker 3s 0.3s infinite alternate;
+              }
+
+              &:nth-child(3) {
+                animation: flicker 2.5s 0.6s infinite alternate;
+              }
+
+              &:nth-child(2) {
+                animation: flicker 2.7s 0.9s infinite alternate;
+              }
+
+              &:nth-child(1) {
+                animation: flicker 3.2s 1.2s infinite alternate;
+              }
+            }
+          }
+        }
+
+        .status-level {
+          text-align: right;
+          font-size: 10px;
+          text-transform: uppercase;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+          color: $text-secondary;
+        }
+
+        // Respect indicator styling
+        &.respect {
+          .status-diamonds .diamond.active {
+            background-color: $success-color;
+          }
+
+          &.legendary {
+            .status-diamonds .diamond.active {
+              background-color: $success-color;
+              box-shadow: 0 0 5px $success-color;
+              animation: pulse 2s infinite alternate;
+            }
+
+            .status-level {
+              color: $success-color;
+              text-shadow: 0 0 5px rgba($success-color, 0.5);
+            }
+          }
+
+          &.elite {
+            .status-diamonds .diamond.active {
+              background-color: lighten($success-color, 10%);
+            }
+
+            .status-level {
+              color: lighten($success-color, 10%);
+            }
+          }
+
+          &.established {
+            .status-diamonds .diamond.active {
+              background-color: lighten($success-color, 20%);
+            }
+
+            .status-level {
+              color: $text-color;
+            }
+          }
+        }
+
+        // Influence indicator styling
+        &.influence {
+          .status-diamonds .diamond.active {
+            background-color: $info-color;
+          }
+
+          &.legendary {
+            .status-diamonds .diamond.active {
+              background-color: $info-color;
+              box-shadow: 0 0 5px $info-color;
+              animation: pulse 2s infinite alternate;
+            }
+
+            .status-level {
+              color: $info-color;
+              text-shadow: 0 0 5px rgba($info-color, 0.5);
+            }
+          }
+
+          &.elite {
+            .status-diamonds .diamond.active {
+              background-color: lighten($info-color, 10%);
+            }
+
+            .status-level {
+              color: lighten($info-color, 10%);
+            }
+          }
+
+          &.established {
+            .status-diamonds .diamond.active {
+              background-color: lighten($info-color, 20%);
+            }
+
+            .status-level {
+              color: $text-color;
+            }
+          }
+        }
+
+        // Heat indicator styling
+        &.heat {
+          &.critical {
+            .status-flames .flame.active {
+              background-color: $danger-color;
+              box-shadow: 0 0 5px $danger-color;
+            }
+
+            .status-level {
+              color: $danger-color;
+              text-shadow: 0 0 5px rgba($danger-color, 0.5);
+              animation: pulse 1.5s infinite;
+            }
+          }
+
+          &.high {
+            .status-flames .flame.active {
+              background-color: lighten($danger-color, 10%);
+            }
+
+            .status-level {
+              color: lighten($danger-color, 10%);
+            }
+          }
+
+          &.moderate {
+            .status-flames .flame.active {
+              background-color: lighten($danger-color, 20%);
+            }
+
+            .status-level {
+              color: $text-color;
+            }
+          }
+        }
       }
     }
   }
@@ -632,6 +893,27 @@ function closeCollectionModal() {
         }
       }
     }
+  }
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes flicker {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
   }
 }
 </style>

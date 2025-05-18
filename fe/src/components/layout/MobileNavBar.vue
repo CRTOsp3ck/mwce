@@ -1,201 +1,3 @@
-<template>
-  <div class="mobile-nav-bar">
-    <div class="nav-items-container" ref="navContainer">
-      <!-- Left scroll arrow -->
-      <button class="scroll-arrow left-arrow" :class="{ visible: canScrollLeft }" @click="scrollLeft"
-        v-show="canScrollLeft">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M15 18l-6-6 6-6" />
-        </svg>
-      </button>
-
-      <!-- Navigation items with horizontal scroll -->
-      <div class="nav-items-wrapper" ref="navItemsWrapper">
-        <div class="nav-items" ref="navItems">
-          <div v-for="item in allNavItems" :key="item.id" class="nav-item" :class="{
-            active: isActive(item.path),
-            disabled: item.requiresRegion && !isInRegion
-          }" @click="navigateTo(item)">
-            <span class="nav-icon">{{ item.icon }}</span>
-            <span class="nav-label">{{ item.name }}</span>
-          </div>
-
-          <!-- Stats button -->
-          <div class="nav-item stats-btn" @click="toggleStatsOverlay">
-            <span class="nav-icon">
-              👤
-              <span v-if="currentRegionPendingCollections > 0" class="stats-badge"></span>
-            </span>
-            <span class="nav-label">Stats</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Right scroll arrow -->
-      <button class="scroll-arrow right-arrow" :class="{ visible: canScrollRight }" @click="scrollRight"
-        v-show="canScrollRight">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M9 18l6-6-6-6" />
-        </svg>
-      </button>
-    </div>
-  </div>
-
-  <!-- Player Stats Overlay -->
-  <transition name="slide-up">
-    <div v-if="showStatsOverlay" class="player-stats-overlay">
-      <div class="overlay-backdrop" @click="showStatsOverlay = false"></div>
-      <div class="overlay-content">
-        <button class="close-overlay" @click="showStatsOverlay = false">×</button>
-
-        <div class="overlay-header">
-          <h3>{{ playerName }}</h3>
-          <div>{{ playerTitle }}</div>
-        </div>
-
-        <div class="player-attributes">
-          <div class="attribute">
-            <div class="attribute-label">
-              <span class="icon">💰</span>
-              <span>Money</span>
-            </div>
-            <div class="attribute-value">${{ formatNumber(playerMoney) }}</div>
-          </div>
-
-          <div class="attribute">
-            <div class="attribute-label">
-              <span class="icon">👥</span>
-              <span>Crew</span>
-            </div>
-            <div class="attribute-value">{{ playerCrew }} / {{ maxCrew }}</div>
-          </div>
-
-          <div class="attribute">
-            <div class="attribute-label">
-              <span class="icon">🔫</span>
-              <span>Weapons</span>
-            </div>
-            <div class="attribute-value">{{ playerWeapons }} / {{ maxWeapons }}</div>
-          </div>
-
-          <div class="attribute">
-            <div class="attribute-label">
-              <span class="icon">🚗</span>
-              <span>Vehicles</span>
-            </div>
-            <div class="attribute-value">{{ playerVehicles }} / {{ maxVehicles }}</div>
-          </div>
-        </div>
-
-        <div class="player-stats">
-          <div class="stat">
-            <div class="stat-label">Respect</div>
-            <div class="progress-bar">
-              <div class="progress-fill respect" :style="{ width: `${playerRespect}%` }"></div>
-            </div>
-            <div class="stat-value">{{ playerRespect }}%</div>
-          </div>
-
-          <div class="stat">
-            <div class="stat-label">Influence</div>
-            <div class="progress-bar">
-              <div class="progress-fill influence" :style="{ width: `${playerInfluence}%` }"></div>
-            </div>
-            <div class="stat-value">{{ playerInfluence }}%</div>
-          </div>
-
-          <div class="stat">
-            <div class="stat-label">Heat</div>
-            <div class="progress-bar">
-              <div class="progress-fill heat" :style="{ width: `${playerHeat}%` }"></div>
-            </div>
-            <div class="stat-value">{{ playerHeat }}%</div>
-          </div>
-        </div>
-
-        <div class="territory-control">
-          <h4>Territory Control</h4>
-          <div class="control-stats">
-            <div class="control-stat">
-              <div class="control-label">Hotspots Controlled</div>
-              <div class="control-value">{{ controlledHotspots }} / {{ totalHotspots }}</div>
-            </div>
-            <div class="control-stat">
-              <div class="control-label">Revenue per Hour</div>
-              <div class="control-value">${{ formatNumber(hourlyRevenue) }}</div>
-            </div>
-          </div>
-
-          <!-- Always show the button but keep it stateful -->
-          <div class="sidebar-actions">
-            <button class="action-btn collect-all" :class="{
-              'has-pending': isInRegion && currentRegionPendingCollections > 0,
-              'no-pending': isInRegion && currentRegionPendingCollections <= 0,
-              'no-region': !isInRegion
-            }" @click="collectAllPending"
-              :disabled="!isInRegion || currentRegionPendingCollections <= 0 || isLoading">
-              <div style="display: flex; flex-direction: column; gap: 8px; align-items: center;">
-                <div class="icon">💼</div>
-                <div>Collect All</div>
-                <div style="display: flex; flex-direction: column; gap: 2px;">
-                  <div v-if="!isInRegion" style="font-size: 0.8em; opacity: 0.8;">
-                    Travel to Region
-                  </div>
-                  <div v-else-if="currentRegionPendingCollections <= 0" style="font-size: 0.8em; opacity: 0.8;">
-                    No Income Available
-                  </div>
-                  <div v-else>
-                    <div>${{ formatNumber(currentRegionPendingCollections) }}</div>
-                    <div style="font-size: 0.8em; opacity: 0.8;">({{ currentRegion?.name }})</div>
-                  </div>
-                </div>
-              </div>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </transition>
-
-  <!-- Collection Result Modal -->
-  <transition name="fade">
-    <div v-if="showCollectionResultModal" class="modal-overlay">
-      <div class="modal-container collection-result-modal">
-        <div class="modal-header">
-          <h3>{{ collectionResult?.success ? 'Collection Successful' : 'Collection Failed' }}</h3>
-          <button class="close-btn" @click="closeCollectionModal">×</button>
-        </div>
-
-        <div class="modal-body">
-          <div v-if="collectionResult" class="collection-result"
-            :class="{ 'success': collectionResult.success, 'failure': !collectionResult.success }">
-            <div class="result-icon">
-              {{ collectionResult.success ? '✅' : '❌' }}
-            </div>
-
-            <div class="result-message">
-              {{ collectionResult.message }}
-            </div>
-
-            <div v-if="collectionResult.success && collectionResult.moneyGained" class="result-details">
-              <div class="result-item positive">
-                <span class="item-icon">💵</span>
-                <span class="item-value">+${{ formatNumber(collectionResult.moneyGained) }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <button class="primary-btn" @click="closeCollectionModal">
-            Continue
-          </button>
-        </div>
-      </div>
-    </div>
-  </transition>
-</template>
-
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
@@ -379,6 +181,56 @@ function formatNumber(value: number): string {
   return value.toString();
 }
 
+// Function to get status level based on absolute values
+function getStatusLevel(value: number, type: 'respect' | 'influence' | 'heat'): string {
+  // These thresholds would be adjusted based on your game design
+  if (type === 'heat') {
+    // Heat is bad, so higher values mean more dangerous status
+    if (value >= 800) return 'critical';
+    if (value >= 600) return 'high';
+    if (value >= 300) return 'moderate';
+    if (value >= 100) return 'low';
+    return 'minimal';
+  } else {
+    // Respect and influence are good, so higher values mean better status
+    if (value >= 800) return 'legendary';
+    if (value >= 600) return 'elite';
+    if (value >= 300) return 'established';
+    if (value >= 100) return 'rising';
+    return 'newcomer';
+  }
+}
+
+// Function to get the number of status pips to display (out of 5)
+function getStatusPips(value: number, type: 'respect' | 'influence' | 'heat'): number {
+  // Maps status levels to a number of pips (0-5)
+  const statusLevel = getStatusLevel(value, type);
+
+  if (type === 'heat') {
+    switch(statusLevel) {
+      case 'critical': return 5;
+      case 'high': return 4;
+      case 'moderate': return 3;
+      case 'low': return 2;
+      default: return 1; // minimal
+    }
+  } else {
+    switch(statusLevel) {
+      case 'legendary': return 5;
+      case 'elite': return 4;
+      case 'established': return 3;
+      case 'rising': return 2;
+      default: return 1; // newcomer
+    }
+  }
+}
+
+// Function to generate an array of status indicators
+function generateStatusIndicators(value: number, type: 'respect' | 'influence' | 'heat'): number[] {
+  const pips = getStatusPips(value, type);
+  return Array.from({ length: 5 }, (_, index) => index < pips ? 1 : 0);
+}
+
 // Lifecycle hooks
 onMounted(() => {
   if (navItemsWrapper.value) {
@@ -401,6 +253,233 @@ watch([allNavItems], () => {
   setTimeout(updateScrollArrows, 200);
 });
 </script>
+
+<template>
+  <div class="mobile-nav-bar">
+    <div class="nav-items-container" ref="navContainer">
+      <!-- Left scroll arrow -->
+      <button class="scroll-arrow left-arrow" :class="{ visible: canScrollLeft }" @click="scrollLeft"
+        v-show="canScrollLeft">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15 18l-6-6 6-6" />
+        </svg>
+      </button>
+
+      <!-- Navigation items with horizontal scroll -->
+      <div class="nav-items-wrapper" ref="navItemsWrapper">
+        <div class="nav-items" ref="navItems">
+          <div v-for="item in allNavItems" :key="item.id" class="nav-item" :class="{
+            active: isActive(item.path),
+            disabled: item.requiresRegion && !isInRegion
+          }" @click="navigateTo(item)">
+            <span class="nav-icon">{{ item.icon }}</span>
+            <span class="nav-label">{{ item.name }}</span>
+          </div>
+
+          <!-- Stats button -->
+          <div class="nav-item stats-btn" @click="toggleStatsOverlay">
+            <span class="nav-icon">
+              👤
+              <span v-if="currentRegionPendingCollections > 0" class="stats-badge"></span>
+            </span>
+            <span class="nav-label">Stats</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right scroll arrow -->
+      <button class="scroll-arrow right-arrow" :class="{ visible: canScrollRight }" @click="scrollRight"
+        v-show="canScrollRight">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 18l6-6-6-6" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Player Stats Overlay -->
+  <transition name="slide-up">
+    <div v-if="showStatsOverlay" class="player-stats-overlay">
+      <div class="overlay-backdrop" @click="showStatsOverlay = false"></div>
+      <div class="overlay-content">
+        <button class="close-overlay" @click="showStatsOverlay = false">×</button>
+
+        <div class="overlay-header">
+          <h3>{{ playerName }}</h3>
+          <div>{{ playerTitle }}</div>
+        </div>
+
+        <div class="player-attributes">
+          <div class="attribute">
+            <div class="attribute-label">
+              <span class="icon">💰</span>
+              <span>Money</span>
+            </div>
+            <div class="attribute-value">${{ formatNumber(playerMoney) }}</div>
+          </div>
+
+          <div class="attribute">
+            <div class="attribute-label">
+              <span class="icon">👥</span>
+              <span>Crew</span>
+            </div>
+            <div class="attribute-value">{{ playerCrew }} / {{ maxCrew }}</div>
+          </div>
+
+          <div class="attribute">
+            <div class="attribute-label">
+              <span class="icon">🔫</span>
+              <span>Weapons</span>
+            </div>
+            <div class="attribute-value">{{ playerWeapons }} / {{ maxWeapons }}</div>
+          </div>
+
+          <div class="attribute">
+            <div class="attribute-label">
+              <span class="icon">🚗</span>
+              <span>Vehicles</span>
+            </div>
+            <div class="attribute-value">{{ playerVehicles }} / {{ maxVehicles }}</div>
+          </div>
+        </div>
+
+        <div class="player-stats">
+          <!-- Respect with diamond ranking -->
+          <div class="stat">
+            <div class="stat-header">
+              <span class="stat-name">Respect</span>
+              <span class="stat-value">{{ playerRespect }}</span>
+            </div>
+            <div class="stat-indicator respect" :class="getStatusLevel(playerRespect, 'respect')">
+              <div class="status-diamonds">
+                <div v-for="(active, index) in generateStatusIndicators(playerRespect, 'respect')"
+                     :key="index"
+                     class="diamond"
+                     :class="{ active: active === 1 }"></div>
+              </div>
+              <div class="status-level">{{ getStatusLevel(playerRespect, 'respect') }}</div>
+            </div>
+          </div>
+
+          <!-- Influence with diamond ranking -->
+          <div class="stat">
+            <div class="stat-header">
+              <span class="stat-name">Influence</span>
+              <span class="stat-value">{{ playerInfluence }}</span>
+            </div>
+            <div class="stat-indicator influence" :class="getStatusLevel(playerInfluence, 'influence')">
+              <div class="status-diamonds">
+                <div v-for="(active, index) in generateStatusIndicators(playerInfluence, 'influence')"
+                     :key="index"
+                     class="diamond"
+                     :class="{ active: active === 1 }"></div>
+              </div>
+              <div class="status-level">{{ getStatusLevel(playerInfluence, 'influence') }}</div>
+            </div>
+          </div>
+
+          <!-- Heat with flame indicators -->
+          <div class="stat">
+            <div class="stat-header">
+              <span class="stat-name">Heat</span>
+              <span class="stat-value">{{ playerHeat }}</span>
+            </div>
+            <div class="stat-indicator heat" :class="getStatusLevel(playerHeat, 'heat')">
+              <div class="status-flames">
+                <div v-for="(active, index) in generateStatusIndicators(playerHeat, 'heat')"
+                     :key="index"
+                     class="flame"
+                     :class="{ active: active === 1 }">
+                  <div class="flame-inner"></div>
+                </div>
+              </div>
+              <div class="status-level">{{ getStatusLevel(playerHeat, 'heat') }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="territory-control">
+          <h4>Territory Control</h4>
+          <div class="control-stats">
+            <div class="control-stat">
+              <div class="control-label">Hotspots Controlled</div>
+              <div class="control-value">{{ controlledHotspots }} / {{ totalHotspots }}</div>
+            </div>
+            <div class="control-stat">
+              <div class="control-label">Revenue per Hour</div>
+              <div class="control-value">${{ formatNumber(hourlyRevenue) }}</div>
+            </div>
+          </div>
+
+          <!-- Always show the button but keep it stateful -->
+          <div class="sidebar-actions">
+            <button class="action-btn collect-all" :class="{
+              'has-pending': isInRegion && currentRegionPendingCollections > 0,
+              'no-pending': isInRegion && currentRegionPendingCollections <= 0,
+              'no-region': !isInRegion
+            }" @click="collectAllPending"
+              :disabled="!isInRegion || currentRegionPendingCollections <= 0 || isLoading">
+              <div style="display: flex; flex-direction: column; gap: 8px; align-items: center;">
+                <div class="icon">💼</div>
+                <div>Collect All</div>
+                <div style="display: flex; flex-direction: column; gap: 2px;">
+                  <div v-if="!isInRegion" style="font-size: 0.8em; opacity: 0.8;">
+                    Travel to Region
+                  </div>
+                  <div v-else-if="currentRegionPendingCollections <= 0" style="font-size: 0.8em; opacity: 0.8;">
+                    No Income Available
+                  </div>
+                  <div v-else>
+                    <div>${{ formatNumber(currentRegionPendingCollections) }}</div>
+                    <div style="font-size: 0.8em; opacity: 0.8;">({{ currentRegion?.name }})</div>
+                  </div>
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </transition>
+
+  <!-- Collection Result Modal -->
+  <transition name="fade">
+    <div v-if="showCollectionResultModal" class="modal-overlay">
+      <div class="modal-container collection-result-modal">
+        <div class="modal-header">
+          <h3>{{ collectionResult?.success ? 'Collection Successful' : 'Collection Failed' }}</h3>
+          <button class="close-btn" @click="closeCollectionModal">×</button>
+        </div>
+
+        <div class="modal-body">
+          <div v-if="collectionResult" class="collection-result"
+            :class="{ 'success': collectionResult.success, 'failure': !collectionResult.success }">
+            <div class="result-icon">
+              {{ collectionResult.success ? '✅' : '❌' }}
+            </div>
+
+            <div class="result-message">
+              {{ collectionResult.message }}
+            </div>
+
+            <div v-if="collectionResult.success && collectionResult.moneyGained" class="result-details">
+              <div class="result-item positive">
+                <span class="item-icon">💵</span>
+                <span class="item-value">+${{ formatNumber(collectionResult.moneyGained) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="primary-btn" @click="closeCollectionModal">
+            Continue
+          </button>
+        </div>
+      </div>
+    </div>
+  </transition>
+</template>
 
 <style lang="scss">
 // Styles for the mobile navbar
@@ -662,42 +741,223 @@ watch([allNavItems], () => {
       margin-bottom: $spacing-lg;
 
       .stat {
-        .stat-label {
+        .stat-header {
           @include flex-between;
           margin-bottom: $spacing-xs;
-          font-size: $font-size-sm;
-          color: $text-secondary;
-        }
 
-        .progress-bar {
-          height: 8px;
-          background-color: rgba(255, 255, 255, 0.1);
-          border-radius: 4px;
-          overflow: hidden;
-          margin-bottom: 4px;
+          .stat-name {
+            font-size: $font-size-sm;
+            color: $text-secondary;
+          }
 
-          .progress-fill {
-            height: 100%;
-            border-radius: 4px;
-            transition: width 0.3s ease;
-
-            &.respect {
-              background-color: $success-color;
-            }
-
-            &.influence {
-              background-color: $info-color;
-            }
-
-            &.heat {
-              background-color: $danger-color;
-            }
+          .stat-value {
+            font-weight: 600;
+            color: $text-color;
           }
         }
 
-        .stat-value {
-          text-align: right;
-          font-size: $font-size-sm;
+        .stat-indicator {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+
+          .status-diamonds {
+            display: flex;
+            gap: 4px;
+            // justify-content: space-between;
+
+            .diamond {
+              width: 16px;
+              height: 16px;
+              background-color: rgba($text-secondary, 0.2);
+              clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+              transition: all 0.3s ease;
+              position: relative;
+
+              &.active {
+                background-color: $text-color;
+              }
+            }
+          }
+
+          .status-flames {
+            display: flex;
+            gap: 4px;
+            // justify-content: space-between;
+
+            .flame {
+              width: 16px;
+              height: 16px;
+              position: relative;
+              background-color: rgba($text-secondary, 0.2);
+              clip-path: polygon(50% 0%, 80% 30%, 100% 60%, 80% 100%, 20% 100%, 0% 60%, 20% 30%);
+              transition: all 0.3s ease;
+
+              .flame-inner {
+                position: absolute;
+                top: 3px;
+                left: 3px;
+                right: 3px;
+                bottom: 3px;
+                background-color: $background-lighter;
+                clip-path: polygon(50% 10%, 75% 35%, 90% 60%, 75% 90%, 25% 90%, 10% 60%, 25% 35%);
+                transition: all 0.3s ease;
+              }
+
+              &.active {
+                background-color: $danger-color;
+
+                .flame-inner {
+                  background-color: lighten($danger-color, 15%);
+                }
+
+                &:nth-child(5) {
+                  animation: flicker 2s infinite alternate;
+                }
+
+                &:nth-child(4) {
+                  animation: flicker 3s 0.3s infinite alternate;
+                }
+
+                &:nth-child(3) {
+                  animation: flicker 2.5s 0.6s infinite alternate;
+                }
+
+                &:nth-child(2) {
+                  animation: flicker 2.7s 0.9s infinite alternate;
+                }
+
+                &:nth-child(1) {
+                  animation: flicker 3.2s 1.2s infinite alternate;
+                }
+              }
+            }
+          }
+
+          .status-level {
+            text-align: right;
+            font-size: 10px;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: $text-secondary;
+          }
+
+          // Respect indicator styling
+          &.respect {
+            .status-diamonds .diamond.active {
+              background-color: $success-color;
+            }
+
+            &.legendary {
+              .status-diamonds .diamond.active {
+                background-color: $success-color;
+                box-shadow: 0 0 5px $success-color;
+                animation: pulse 2s infinite alternate;
+              }
+
+              .status-level {
+                color: $success-color;
+                text-shadow: 0 0 5px rgba($success-color, 0.5);
+              }
+            }
+
+            &.elite {
+              .status-diamonds .diamond.active {
+                background-color: lighten($success-color, 10%);
+              }
+
+              .status-level {
+                color: lighten($success-color, 10%);
+              }
+            }
+
+            &.established {
+              .status-diamonds .diamond.active {
+                background-color: lighten($success-color, 20%);
+              }
+
+              .status-level {
+                color: $text-color;
+              }
+            }
+          }
+
+          // Influence indicator styling
+          &.influence {
+            .status-diamonds .diamond.active {
+              background-color: $info-color;
+            }
+
+            &.legendary {
+              .status-diamonds .diamond.active {
+                background-color: $info-color;
+                box-shadow: 0 0 5px $info-color;
+                animation: pulse 2s infinite alternate;
+              }
+
+              .status-level {
+                color: $info-color;
+                text-shadow: 0 0 5px rgba($info-color, 0.5);
+              }
+            }
+
+            &.elite {
+              .status-diamonds .diamond.active {
+                background-color: lighten($info-color, 10%);
+              }
+
+              .status-level {
+                color: lighten($info-color, 10%);
+              }
+            }
+
+            &.established {
+              .status-diamonds .diamond.active {
+                background-color: lighten($info-color, 20%);
+              }
+
+              .status-level {
+                color: $text-color;
+              }
+            }
+          }
+
+          // Heat indicator styling
+          &.heat {
+            &.critical {
+              .status-flames .flame.active {
+                background-color: $danger-color;
+                box-shadow: 0 0 5px $danger-color;
+              }
+
+              .status-level {
+                color: $danger-color;
+                text-shadow: 0 0 5px rgba($danger-color, 0.5);
+                animation: pulse 1.5s infinite;
+              }
+            }
+
+            &.high {
+              .status-flames .flame.active {
+                background-color: lighten($danger-color, 10%);
+              }
+
+              .status-level {
+                color: lighten($danger-color, 10%);
+              }
+            }
+
+            &.moderate {
+              .status-flames .flame.active {
+                background-color: lighten($danger-color, 20%);
+              }
+
+              .status-level {
+                color: $text-color;
+              }
+            }
+          }
         }
       }
     }
@@ -987,13 +1247,20 @@ watch([allNavItems], () => {
   0% {
     opacity: 1;
   }
-
   50% {
     opacity: 0.7;
   }
-
   100% {
     opacity: 1;
+  }
+}
+
+@keyframes flicker {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
   }
 }
 </style>
