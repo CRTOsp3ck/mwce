@@ -142,15 +142,18 @@ func (s *campaignService) StartCampaign(playerID string, campaignID string) (*mo
 	}
 
 	// Check if player meets requirements for campaign
-	if campaign.RequiredLevel > 0 {
-		// Check player title/level
-		titleRank := getTitleRank(player.Title)
-		reqRank := campaign.RequiredLevel
+	_ = player
+	/*
+		if campaign.RequiredLevel > 0 {
+			// Check player title/level
+			titleRank := getTitleRank(player.Title)
+			reqRank := campaign.RequiredLevel
 
-		if titleRank < reqRank {
-			return nil, fmt.Errorf("player requires at least level %d to start this campaign", reqRank)
+			if titleRank < reqRank {
+				return nil, fmt.Errorf("player requires at least level %d to start this campaign", reqRank)
+			}
 		}
-	}
+	*/
 
 	// Check if player already has progress for this campaign
 	progress, err := s.campaignRepo.GetPlayerCampaignProgress(playerID, campaignID)
