@@ -201,6 +201,7 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 				r.Post("/{id}/start", operationsController.StartOperation)
 				r.Post("/{id}/cancel", operationsController.CancelOperation)
 				r.Post("/{id}/collect", operationsController.CollectOperation)
+				r.Post("/{id}/collect-reward", operationsController.CollectOperationReward)
 				r.Get("/refresh-info", operationsController.GetOperationsRefreshInfo)
 			})
 

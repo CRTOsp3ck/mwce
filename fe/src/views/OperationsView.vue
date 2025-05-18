@@ -128,11 +128,17 @@ async function collectOperation(operationId: string) {
   collectingOperationId.value = operationId;
 
   try {
+    // Step 1: Collect operation (mark as completed)
     const result = await operationsStore.collectOperation(operationId);
 
     if (result) {
-      // The operation has been collected and moved to completed
-      // Rewards have been applied directly
+      // Step 2: Collect the rewards
+      const rewardResult = await operationsStore.collectOperationReward(operationId);
+
+      if (rewardResult) {
+        // Show success notification or UI update here if needed
+        console.log('Rewards collected successfully');
+      }
 
       // Switch to completed tab to show the completed operation
       navigateToTab('completed');

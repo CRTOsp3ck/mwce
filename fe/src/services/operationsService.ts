@@ -77,5 +77,12 @@ export default {
    */
   collectOperation(operationId: string) {
     return api.post<OperationResult>(`${ENDPOINTS.OPERATIONS}/${operationId}/collect`);
+  },
+
+  /**
+   * Collect actual rewards after an operation has been collected
+   */
+  collectOperationReward(operationId: string) {
+    return api.post<OperationResult>(`${ENDPOINTS.OPERATIONS}/${operationId}/collect-reward`);
   }
 };

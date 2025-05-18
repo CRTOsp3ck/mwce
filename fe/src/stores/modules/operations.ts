@@ -479,9 +479,37 @@ export const useOperationsStore = defineStore('operations', {
           this.completedOperations.unshift(this.currentOperations[operationIndex]);
           this.currentOperations.splice(operationIndex, 1);
 
-          // Apply resource changes to the player
-          this.applyOperationResultToPlayer(result);
+          // IMPORTANT: REMOVE the following line to fix the issue
+          // this.applyOperationResultToPlayer(result);
         }
+
+        return {
+          result,
+          gameMessage: response.gameMessage
+        };
+      } catch (error) {
+        this.error = 'Failed to collect operation rewards';
+        console.error('Error collecting operation rewards:', error);
+        return null;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    async collectOperationReward(operationId: string) {
+      this.isLoading = true;
+      this.error = null;
+
+      try {
+        const response = await operationsService.collectOperationReward(operationId);
+        if (!response.success || !response.data) {
+          throw new Error('Failed to collect operation rewards');
+        }
+
+        const result = response.data;
+
+        // Now we can apply the rewards to the player
+        this.applyOperationResultToPlayer(result);
 
         return {
           result,
