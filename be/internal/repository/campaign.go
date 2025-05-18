@@ -35,6 +35,7 @@ type CampaignRepository interface {
 	SavePlayerMissionProgress(progress *model.PlayerMissionProgress) error
 
 	// Template retrieval
+	GetAllPOITemplates() ([]model.POITemplate, error)
 	GetConditionTemplate(templateID string) (*model.ConditionTemplate, error)
 	GetConditionTemplatesByChoice(choiceID string) ([]model.ConditionTemplate, error)
 	GetPOITemplate(templateID string) (*model.POITemplate, error)
@@ -83,6 +84,15 @@ func NewCampaignRepository(db database.Database, logger zerolog.Logger) Campaign
 // GetDB returns the database connection
 func (r *campaignRepository) GetDB() *gorm.DB {
 	return r.db
+}
+
+// GetAllPOITemplates retrieves all POI templates in the system
+func (r *campaignRepository) GetAllPOITemplates() ([]model.POITemplate, error) {
+	var templates []model.POITemplate
+	if err := r.db.Find(&templates).Error; err != nil {
+		return nil, fmt.Errorf("failed to retrieve POI templates: %w", err)
+	}
+	return templates, nil
 }
 
 // GetAllCampaigns retrieves all available campaigns

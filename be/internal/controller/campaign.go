@@ -192,12 +192,26 @@ func (c *CampaignController) GetMission(w http.ResponseWriter, r *http.Request) 
 		c.logger.Error().Err(err).Msg("Failed to check mission requirements")
 	}
 
-	// Return success response with mission, progress, and requirements check
+	// Get all active POIs for this mission
+	activePOIs, err := c.campaignService.GetActivePOIsForMission(playerID, missionID)
+	if err != nil {
+		c.logger.Error().Err(err).Msg("Failed to get active POIs")
+	}
+
+	// Get all active operations for this mission
+	activeOperations, err := c.campaignService.GetActiveOperationsForMission(playerID, missionID)
+	if err != nil {
+		c.logger.Error().Err(err).Msg("Failed to get active operations")
+	}
+
+	// Return success response with enhanced information
 	response := map[string]interface{}{
 		"mission":            mission,
 		"progress":           progress,
 		"meetsRequirements":  meetsRequirements,
 		"failedRequirements": failedRequirements,
+		"activePOIs":         activePOIs,
+		"activeOperations":   activeOperations,
 	}
 
 	util.RespondWithJSON(w, http.StatusOK, response)

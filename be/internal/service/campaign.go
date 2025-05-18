@@ -5,6 +5,8 @@ package service
 import (
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"mwce-be/internal/model"
@@ -37,11 +39,13 @@ type CampaignService interface {
 	GetActivePlayerPOIs(playerID string) ([]model.PlayerPOI, error)
 	ActivatePlayerPOI(playerID string, templateID string) (*model.PlayerPOI, error)
 	CompletePlayerPOI(playerID string, playerPOIID string) error
+	GetActivePOIsForMission(playerID string, missionID string) ([]model.PlayerPOI, error)
 
 	// Mission Operation management
 	GetActivePlayerMissionOperations(playerID string) ([]model.PlayerMissionOperation, error)
 	ActivatePlayerMissionOperation(playerID string, templateID string) (*model.PlayerMissionOperation, error)
 	CompletePlayerMissionOperation(playerID string, playerOpID string) error
+	GetActiveOperationsForMission(playerID string, missionID string) ([]model.PlayerMissionOperation, error)
 
 	// Player action tracking
 	TrackPlayerAction(playerID string, actionType string, actionValue string) error
@@ -50,6 +54,10 @@ type CampaignService interface {
 
 	// Initialization
 	LoadCampaigns(dirPath string) error
+
+	// Provider interface implementations
+	GetInjectedOperations(playerID string, regionID *string) ([]model.Operation, error)
+	GetInjectedHotspots(playerID string, regionID *string) ([]model.Hotspot, error)
 }
 
 // MissionCompleteResult contains the results of completing a mission
@@ -124,7 +132,313 @@ func (s *campaignService) GetPlayerCampaignProgresses(playerID string) ([]model.
 
 // GetPlayerMissionProgress retrieves a player's progress for a mission
 func (s *campaignService) GetPlayerMissionProgress(playerID string, missionID string) (*model.PlayerMissionProgress, error) {
-	return s.campaignRepo.GetPlayerMissionProgress(playerID, missionID)
+	// Get basic progress info from database
+	progress, err := s.campaignRepo.GetPlayerMissionProgress(playerID, missionID)
+	if err != nil {
+		return nil, err
+	}
+
+	if progress == nil {
+		return nil, nil
+	}
+
+	// Get the mission
+	mission, err := s.campaignRepo.GetMissionByID(missionID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Initialize objectives array
+	progress.Objectives = []model.MissionObjective{}
+
+	// If there's an active choice, get its conditions, POIs, and operations
+	if progress.CurrentActiveChoice != "" {
+		// Add condition objectives
+		conditions, err := s.campaignRepo.GetPlayerCompletionConditions(playerID, progress.CurrentActiveChoice)
+		if err == nil {
+			for _, condition := range conditions {
+				description := s.getConditionDescription(condition)
+				objective := model.MissionObjective{
+					Type:        "condition",
+					Description: description,
+					Target:      condition.RequiredValue,
+					IsCompleted: condition.IsCompleted,
+					CompletedAt: condition.CompletedAt,
+				}
+				progress.Objectives = append(progress.Objectives, objective)
+			}
+		}
+
+		// Add POI objectives
+		pois, err := s.campaignRepo.GetPlayerPOIsByMission(playerID, missionID)
+		if err == nil {
+			for _, poi := range pois {
+				if poi.ChoiceID == progress.CurrentActiveChoice && poi.IsActive {
+					objective := model.MissionObjective{
+						Type:        "poi",
+						Description: fmt.Sprintf("Visit %s", poi.Name),
+						Target:      poi.ID,
+						IsCompleted: poi.IsCompleted,
+						CompletedAt: poi.CompletedAt,
+					}
+					progress.Objectives = append(progress.Objectives, objective)
+				}
+			}
+		}
+
+		// Add operation objectives
+		operations, err := s.campaignRepo.GetPlayerMissionOperationsByMission(playerID, missionID)
+		if err == nil {
+			for _, op := range operations {
+				if op.ChoiceID == progress.CurrentActiveChoice && op.IsActive {
+					objective := model.MissionObjective{
+						Type:        "operation",
+						Description: fmt.Sprintf("Complete operation: %s", op.Name),
+						Target:      op.ID,
+						IsCompleted: op.IsCompleted,
+						CompletedAt: op.CompletedAt,
+					}
+					progress.Objectives = append(progress.Objectives, objective)
+				}
+			}
+		}
+	} else {
+		// No active choice yet, check if any choices can be activated automatically
+		// This is for initial mission objectives
+		for _, choice := range mission.Choices {
+			templates, err := s.campaignRepo.GetConditionTemplatesByChoice(choice.ID)
+			if err != nil || len(templates) == 0 {
+				continue
+			}
+
+			// Add initial condition for each choice
+			firstCondition := templates[0]
+			objective := model.MissionObjective{
+				Type:        "initial_condition",
+				Description: s.getTemplateConditionDescription(firstCondition),
+				Target:      firstCondition.RequiredValue,
+				IsCompleted: false,
+			}
+			progress.Objectives = append(progress.Objectives, objective)
+		}
+	}
+
+	// Determine if all objectives are completed
+	progress.CanComplete = len(progress.Objectives) > 0
+	for _, obj := range progress.Objectives {
+		if !obj.IsCompleted {
+			progress.CanComplete = false
+			break
+		}
+	}
+
+	return progress, nil
+}
+
+// Helper function to get condition descriptions
+func (s *campaignService) getConditionDescription(condition model.PlayerCompletionCondition) string {
+	switch condition.Type {
+	case "travel":
+		return fmt.Sprintf("Travel to the %s region", s.getRegionName(condition.RequiredValue))
+	case "territory":
+		parts := strings.Split(condition.RequiredValue, "_")
+		if len(parts) > 1 {
+			action := parts[0]
+			target := strings.Join(parts[1:], "_")
+			switch action {
+			case "takeover":
+				return fmt.Sprintf("Take control of %s", s.getHotspotName(target))
+			case "extortion":
+				return fmt.Sprintf("Extort money from %s", s.getHotspotName(target))
+			default:
+				return fmt.Sprintf("Perform %s on %s", action, s.getHotspotName(target))
+			}
+		}
+		return condition.RequiredValue
+	case "operation":
+		return fmt.Sprintf("Complete an operation of type: %s", condition.RequiredValue)
+	default:
+		return condition.RequiredValue
+	}
+}
+
+// Helper functions to get names
+func (s *campaignService) getRegionName(regionID string) string {
+	region, err := s.territoryService.GetRegionByID(regionID)
+	if err != nil || region == nil {
+		return regionID
+	}
+	return region.Name
+}
+
+func (s *campaignService) getHotspotName(hotspotID string) string {
+	hotspot, err := s.territoryService.GetHotspotByID(hotspotID)
+	if err != nil || hotspot == nil {
+		return hotspotID
+	}
+	return hotspot.Name
+}
+
+// Helper function to get descriptions for condition templates
+func (s *campaignService) getTemplateConditionDescription(condition model.ConditionTemplate) string {
+	switch condition.Type {
+	case "travel":
+		return fmt.Sprintf("Travel to the %s region", s.getRegionName(condition.RequiredValue))
+
+	case "territory":
+		parts := strings.Split(condition.RequiredValue, "_")
+		if len(parts) > 1 {
+			action := parts[0]
+			target := strings.Join(parts[1:], "_")
+
+			switch action {
+			case "takeover":
+				return fmt.Sprintf("Take control of %s", s.getHotspotName(target))
+			case "extortion":
+				return fmt.Sprintf("Extort money from %s", s.getHotspotName(target))
+			case "defend":
+				return fmt.Sprintf("Defend your control of %s", s.getHotspotName(target))
+			case "collection":
+				return fmt.Sprintf("Collect income from %s", s.getHotspotName(target))
+			default:
+				return fmt.Sprintf("Perform %s action on %s", action, s.getHotspotName(target))
+			}
+		}
+		return fmt.Sprintf("Perform territory action: %s", condition.RequiredValue)
+
+	case "operation":
+		switch condition.RequiredValue {
+		case "carjacking":
+			return "Complete a carjacking operation"
+		case "goods_smuggling":
+			return "Complete a goods smuggling operation"
+		case "drug_trafficking":
+			return "Complete a drug trafficking operation"
+		case "official_bribing":
+			return "Complete an official bribing operation"
+		case "intelligence_gathering":
+			return "Complete an intelligence gathering operation"
+		case "crew_recruitment":
+			return "Complete a crew recruitment operation"
+		default:
+			return fmt.Sprintf("Complete an operation of type: %s", condition.RequiredValue)
+		}
+
+	case "market":
+		parts := strings.Split(condition.RequiredValue, "_")
+		if len(parts) > 1 {
+			action := parts[0]
+			resource := strings.Join(parts[1:], "_")
+
+			switch action {
+			case "buy":
+				return fmt.Sprintf("Buy %s from the market", s.formatResourceName(resource))
+			case "sell":
+				return fmt.Sprintf("Sell %s on the market", s.formatResourceName(resource))
+			default:
+				return fmt.Sprintf("Perform %s market action for %s", action, s.formatResourceName(resource))
+			}
+		}
+		return fmt.Sprintf("Perform market action: %s", condition.RequiredValue)
+
+	case "resource":
+		parts := strings.Split(condition.RequiredValue, "_")
+		if len(parts) == 2 {
+			action := parts[0]
+			resource := parts[1]
+
+			amount := 0
+			if condition.AdditionalValue != "" {
+				amount, _ = strconv.Atoi(condition.AdditionalValue)
+			}
+
+			if amount > 0 {
+				switch action {
+				case "acquire":
+					return fmt.Sprintf("Acquire %d %s", amount, s.formatResourceName(resource))
+				case "spend":
+					return fmt.Sprintf("Spend %d %s", amount, s.formatResourceName(resource))
+				default:
+					return fmt.Sprintf("%s %d %s", action, amount, s.formatResourceName(resource))
+				}
+			} else {
+				switch action {
+				case "acquire":
+					return fmt.Sprintf("Acquire some %s", s.formatResourceName(resource))
+				case "spend":
+					return fmt.Sprintf("Spend some %s", s.formatResourceName(resource))
+				default:
+					return fmt.Sprintf("%s %s", action, s.formatResourceName(resource))
+				}
+			}
+		}
+		return fmt.Sprintf("Perform resource action: %s", condition.RequiredValue)
+
+	case "mission":
+		return fmt.Sprintf("Complete mission: %s", s.getMissionName(condition.RequiredValue))
+
+	case "poi":
+		return fmt.Sprintf("Visit the %s", s.getPOIName(condition.RequiredValue))
+
+	default:
+		return condition.RequiredValue
+	}
+}
+
+// Helper function to format resource names nicely
+func (s *campaignService) formatResourceName(resource string) string {
+	switch resource {
+	case "crew":
+		return "crew members"
+	case "money":
+		return "money"
+	case "weapons":
+		return "weapons"
+	case "vehicles":
+		return "vehicles"
+	case "respect":
+		return "respect"
+	case "influence":
+		return "influence"
+	case "heat":
+		return "heat"
+	default:
+		return resource
+	}
+}
+
+// Helper function to get POI name
+func (s *campaignService) getPOIName(poiID string) string {
+	// Try to get from active POIs first
+	pois, err := s.campaignRepo.GetActivePlayerPOIs("")
+	if err == nil {
+		for _, poi := range pois {
+			if poi.TemplateID == poiID || poi.ID == poiID {
+				return poi.Name
+			}
+		}
+	}
+
+	// Try to get from templates
+	templates, err := s.campaignRepo.GetAllPOITemplates()
+	if err == nil {
+		for _, template := range templates {
+			if template.ID == poiID {
+				return template.Name
+			}
+		}
+	}
+
+	return "location"
+}
+
+// Helper function to get mission name
+func (s *campaignService) getMissionName(missionID string) string {
+	mission, err := s.campaignRepo.GetMissionByID(missionID)
+	if err != nil || mission == nil {
+		return "mission"
+	}
+	return mission.Title
 }
 
 // StartCampaign initiates a campaign for a player
@@ -267,6 +581,41 @@ func (s *campaignService) StartMission(playerID string, missionID string) (*mode
 	progress, err := s.campaignRepo.GetPlayerMissionProgress(playerID, missionID)
 	if err != nil {
 		return nil, err
+	}
+
+	// For new missions, try to automatically activate the first appropriate choice
+	if progress == nil || progress.Status == "not_started" {
+		// Get the mission
+		mission, err := s.campaignRepo.GetMissionByID(missionID)
+		if err != nil {
+			return nil, errors.New("mission not found")
+		}
+
+		// Get player location to check for location-based conditions
+		player, err := s.playerRepo.GetPlayerByID(playerID)
+		if err == nil && player.CurrentRegionID != nil {
+			currentRegionID := *player.CurrentRegionID
+
+			// Check each choice to see if it has a travel condition matching the player's location
+			for _, choice := range mission.Choices {
+				templates, err := s.campaignRepo.GetConditionTemplatesByChoice(choice.ID)
+				if err != nil || len(templates) == 0 {
+					continue
+				}
+
+				// Check if the first condition is a travel condition matching the player's location
+				if len(templates) > 0 && templates[0].Type == "travel" &&
+					templates[0].RequiredValue == currentRegionID {
+					// Automatically activate this choice
+					if err := s.ActivateChoice(playerID, missionID, choice.ID); err != nil {
+						s.logger.Error().Err(err).Msg("Failed to auto-activate choice based on location")
+					} else {
+						s.logger.Info().Msg("Auto-activated choice based on player location")
+					}
+					break
+				}
+			}
+		}
 	}
 
 	if progress != nil && (progress.Status == "in_progress" || progress.Status == "completed") {
@@ -1329,6 +1678,118 @@ func (s *campaignService) getCampaignForMission(missionID string) (*model.Campai
 // LoadCampaigns loads campaigns from YAML files
 func (s *campaignService) LoadCampaigns(dirPath string) error {
 	return s.campaignRepo.LoadCampaignsFromYAML(dirPath)
+}
+
+// GetInjectedOperations implements OperationsProvider interface
+func (s *campaignService) GetInjectedOperations(playerID string, regionID *string) ([]model.Operation, error) {
+	var result []model.Operation
+
+	// Get active operations from player's active missions
+	activeOps, err := s.campaignRepo.GetActivePlayerMissionOperations(playerID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, op := range activeOps {
+		if !op.IsActive || op.IsCompleted {
+			continue
+		}
+
+		// Create an operation that can be used by the operations service
+		operation := model.Operation{
+			ID:          op.ID,
+			Name:        op.Name,
+			Description: op.Description,
+			Type:        op.OperationType,
+			// Set this to true to differentiate campaign ops
+			IsSpecial: true,
+			IsActive:  true,
+			IsLocked:  false,
+			// Set appropriate region IDs if the operation is region-specific
+			RegionIDs:    []string{},
+			Requirements: model.OperationRequirements{
+				// Set appropriate requirements
+			},
+			Resources:   op.Resources,
+			Rewards:     op.Rewards,
+			Risks:       op.Risks,
+			Duration:    op.Duration,
+			SuccessRate: op.SuccessRate,
+			// Set an appropriate available until date (e.g., 24 hours from now)
+			AvailableUntil: time.Now().Add(24 * time.Hour),
+			// Add campaign-specific metadata
+			Metadata: map[string]interface{}{
+				"isCampaignOperation": true,
+				"missionID":           op.MissionID,
+				"choiceID":            op.ChoiceID,
+			},
+		}
+
+		// If region filtering is applied, only include operations for that region
+		if regionID != nil {
+			// Add region check logic if campaign operations are region-specific
+			// For now, include all operations
+		}
+
+		result = append(result, operation)
+	}
+
+	return result, nil
+}
+
+// GetInjectedHotspots implements HotspotProvider interface
+func (s *campaignService) GetInjectedHotspots(playerID string, regionID *string) ([]model.Hotspot, error) {
+	var result []model.Hotspot
+
+	// Get active POIs from player's active missions
+	activePOIs, err := s.campaignRepo.GetActivePlayerPOIs(playerID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, poi := range activePOIs {
+		if !poi.IsActive || poi.IsCompleted {
+			continue
+		}
+
+		// Create a hotspot that can be used by the territory service
+		hotspot := model.Hotspot{
+			ID:           poi.ID,
+			Name:         poi.Name,
+			CityID:       poi.LocationID, // Use the location ID as the city ID if it's a city
+			Type:         "campaign_poi", // Use a special type for campaign POIs
+			BusinessType: "campaign",
+			IsLegal:      true,
+			Income:       0, // No income for campaign POIs
+			// Add campaign-specific metadata
+			Metadata: map[string]interface{}{
+				"isCampaignPOI": true,
+				"missionID":     poi.MissionID,
+				"choiceID":      poi.ChoiceID,
+				"locationType":  poi.LocationType,
+				"description":   poi.Description,
+			},
+		}
+
+		// If region filtering is applied, only include hotspots for that region
+		if regionID != nil && poi.LocationType == "region" && poi.LocationID != *regionID {
+			continue
+		}
+
+		result = append(result, hotspot)
+	}
+
+	return result, nil
+}
+
+// GetActivePOIsForMission gets all active POIs for a mission
+func (s *campaignService) GetActivePOIsForMission(playerID string, missionID string) ([]model.PlayerPOI, error) {
+	return s.campaignRepo.GetPlayerPOIsByMission(playerID, missionID)
+}
+
+// GetActiveOperationsForMission gets all active operations for a mission
+func (s *campaignService) GetActiveOperationsForMission(playerID string, missionID string) ([]model.PlayerMissionOperation, error) {
+	return s.campaignRepo.GetPlayerMissionOperationsByMission(playerID, missionID)
 }
 
 // Helper function to get title rank

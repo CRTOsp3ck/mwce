@@ -1,5 +1,46 @@
 # Campaign Mode for Mafia Wars: Criminal Empire
 
+```
+┌─────────────────────┐      ┌────────────────────┐       ┌────────────────────┐
+│  Territory Actions  │      │ Operation Actions  │       │    Travel Actions  │
+│  - Takeover         │      │ - StartOperation   │       │  - Travel to region│
+│  - Extortion        │      │ - CompleteOperation│       │                    │
+└──────────┬──────────┘      └─────────┬──────────┘       └──────────┬─────────┘
+           │                           │                             │
+           │                           │                             │
+           ▼                           ▼                             ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                                 SSE Service                                  │
+│  Dispatches events for player actions and mission progress                   │
+└────────────────────────────────────┬─────────────────────────────────────────┘
+                                     │
+                                     │
+                                     ▼
+┌────────────────────────────────────────────────────────────────────────────┐
+│                          Campaign Action Tracking                          │
+│  - TrackPlayerAction(playerID, actionType, actionValue)                    │
+│  - Maps player actions to mission conditions                               │
+└────────────────────────────────────┬───────────────────────────────────────┘
+                                     │
+                                     │
+                                     ▼
+┌────────────────────────────────────────────────────────────────────────────┐
+│                         Mission Progress Management                        │
+│  - StartMission: Activate custom POIs and operations                       │
+│  - CheckChoiceCompletion: Validate all conditions are met                  │
+│  - CompleteMission: Only allowed when conditions are met                   │
+└────────────────────────────────────┬───────────────────────────────────────┘
+                                     │
+                                     │
+                                     ▼
+┌────────────────────────────────────────────────────────────────────────────┐
+│                            Frontend Components                             │
+│  - Display mission objectives                                              │
+│  - Show completion status                                                  │
+│  - Enable/disable Complete Mission button                                  │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
 I've analyzed your codebase and see an excellent opportunity to create an engaging campaign mode that leverages your existing game mechanics. Let me outline a comprehensive approach that would integrate storytelling with your current gameplay systems.
 
 ## Core Campaign Concept

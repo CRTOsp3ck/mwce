@@ -63,25 +63,25 @@ func (c *City) BeforeCreate(tx *gorm.DB) error {
 }
 
 type Hotspot struct {
-	ID                 string     `json:"id" gorm:"type:uuid;primary_key"`
-	Name               string     `json:"name" gorm:"not null"`
-	CityID             string     `json:"cityId" gorm:"type:uuid;not null;references:cities.id"`
-	Type               string     `json:"type" gorm:"not null"`         // Bar, Restaurant, Club, Casino, etc.
-	BusinessType       string     `json:"businessType" gorm:"not null"` // Gambling, Entertainment, Protection, etc.
-	IsLegal            bool       `json:"isLegal" gorm:"not null"`
-	ControllerID       *string    `json:"controller,omitempty" gorm:"type:uuid;references:players.id"`
-	ControllerName     *string    `json:"controllerName,omitempty" gorm:"-"`
-	Income             int        `json:"income" gorm:"not null;default:0"` // Income per hour
-	PendingCollection  int        `json:"pendingCollection" gorm:"not null;default:0"`
-	LastCollectionTime *time.Time `json:"lastCollectionTime"`
-	LastIncomeTime     *time.Time `json:"lastIncomeTime"` // Time of last income generation
-	// NextIncomeTime     *time.Time  `json:"nextIncomeTime"` // Calculated field for next income time
-	Crew            int       `json:"crew" gorm:"not null;default:0"`
-	Weapons         int       `json:"weapons" gorm:"not null;default:0"`
-	Vehicles        int       `json:"vehicles" gorm:"not null;default:0"`
-	DefenseStrength int       `json:"defenseStrength" gorm:"not null;default:0"` // Calculated from resources
-	CreatedAt       time.Time `json:"-" gorm:"not null"`
-	UpdatedAt       time.Time `json:"-" gorm:"not null"`
+	ID                 string                 `json:"id" gorm:"type:uuid;primary_key"`
+	Name               string                 `json:"name" gorm:"not null"`
+	CityID             string                 `json:"cityId" gorm:"type:uuid;not null;references:cities.id"`
+	Type               string                 `json:"type" gorm:"not null"`         // Bar, Restaurant, Club, Casino, etc.
+	BusinessType       string                 `json:"businessType" gorm:"not null"` // Gambling, Entertainment, Protection, etc.
+	IsLegal            bool                   `json:"isLegal" gorm:"not null"`
+	ControllerID       *string                `json:"controller,omitempty" gorm:"type:uuid;references:players.id"`
+	ControllerName     *string                `json:"controllerName,omitempty" gorm:"-"`
+	Income             int                    `json:"income" gorm:"not null;default:0"` // Income per hour
+	PendingCollection  int                    `json:"pendingCollection" gorm:"not null;default:0"`
+	LastCollectionTime *time.Time             `json:"lastCollectionTime"`
+	LastIncomeTime     *time.Time             `json:"lastIncomeTime"` // Time of last income generation
+	Crew               int                    `json:"crew" gorm:"not null;default:0"`
+	Weapons            int                    `json:"weapons" gorm:"not null;default:0"`
+	Vehicles           int                    `json:"vehicles" gorm:"not null;default:0"`
+	DefenseStrength    int                    `json:"defenseStrength" gorm:"not null;default:0"` // Calculated from resources
+	CreatedAt          time.Time              `json:"-" gorm:"not null"`
+	UpdatedAt          time.Time              `json:"-" gorm:"not null"`
+	Metadata           map[string]interface{} `json:"metadata,omitempty" gorm:"-"`
 }
 
 // BeforeCreate is a GORM hook to generate UUID before creating a new hotspot

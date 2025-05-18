@@ -104,8 +104,12 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 	playerService := service.NewPlayerService(playerRepo, *cfg.Game, logger)
 	authService := service.NewAuthService(playerRepo, playerService, cfg.JWT, logger)
 	sseService := service.NewSSEService(logger)
+
+	// Initialize territory and operations services without providers initially
+	territoryService := service.NewTerritoryService(territoryRepo, playerRepo, sseService, *cfg.Game, logger, nil)
+	operationsService := service.NewOperationsService(operationsRepo, territoryRepo, playerRepo, playerService, sseService, *cfg.Game, logger, nil)
+
 	// -- If no regions, seed territory data --
-	territoryService := service.NewTerritoryService(territoryRepo, playerRepo, sseService, *cfg.Game, logger)
 	regions, err := territoryService.GetAllRegions()
 	if err != nil {
 		logger.Warn().Err(err)
@@ -114,13 +118,17 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 	if regions == nil || len(regions) <= 0 {
 		service.RunTerritorySeeder("../../configs/app.yaml", "../../configs/territory.yaml")
 	}
-	operationsService := service.NewOperationsService(operationsRepo, territoryRepo, playerRepo, playerService, sseService, *cfg.Game, logger)
+
 	marketService := service.NewMarketService(marketRepo, playerRepo, playerService, cfg.Game, logger)
 	travelService := service.NewTravelService(playerRepo, territoryRepo, sseService, *cfg.Game, logger)
 	campaignService := service.NewCampaignService(campaignRepo, playerRepo, playerService, operationsService, territoryService, sseService, logger)
 	if err := campaignService.LoadCampaigns("../../configs/campaigns"); err != nil {
 		logger.Warn().Err(err).Msg("Failed to load campaigns data")
 	}
+
+	// Now add campaign service as a provider to the other services
+	territoryService.AddCustomHotspotProvider(campaignService)
+	operationsService.AddCustomOperationsProvider(campaignService)
 
 	// Start scheduled jobs
 	operationsService.StartPeriodicOperationsRefresh()

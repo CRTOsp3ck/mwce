@@ -12,26 +12,27 @@ import (
 
 // Operation represents an operation that can be performed by the player
 type Operation struct {
-	ID                   string                `json:"id" gorm:"type:uuid;primary_key"`
-	Name                 string                `json:"name" gorm:"not null"`
-	Description          string                `json:"description" gorm:"not null"`
-	Type                 string                `json:"type" gorm:"not null"` // carjacking, goods_smuggling, etc.
-	IsSpecial            bool                  `json:"isSpecial" gorm:"not null;default:false"`
-	IsActive             bool                  `json:"isActive" gorm:"not null;default:true"`
-	IsLocked             bool                  `json:"isLocked" gorm:"-"`             // Not stored in DB, calculated on retrieval
-	LockReason           string                `json:"lockReason,omitempty" gorm:"-"` // Reason why it's locked
-	RegionIDs            pq.StringArray        `json:"regionIds" gorm:"type:text[]"`  // For multi-region operations
-	Requirements         OperationRequirements `json:"requirements" gorm:"embedded"`
-	Resources            OperationResources    `json:"resources" gorm:"embedded"`
-	Rewards              OperationRewards      `json:"rewards" gorm:"embedded"`
-	Risks                OperationRisks        `json:"risks" gorm:"embedded"`
-	Duration             int                   `json:"duration" gorm:"not null"`              // in seconds
-	AvailabilityDuration int                   `json:"availabilityDuration" gorm:"default:0"` // in minutes, 0 means no expiration
-	SuccessRate          int                   `json:"successRate" gorm:"not null"`           // percentage
-	AvailableUntil       time.Time             `json:"availableUntil" gorm:"not null"`
-	CreatedAt            time.Time             `json:"-" gorm:"not null"`
-	UpdatedAt            time.Time             `json:"-" gorm:"not null"`
-	PlayerAttempts       []OperationAttempt    `json:"playerAttempts,omitempty" gorm:"-"`
+	ID                   string                 `json:"id" gorm:"type:uuid;primary_key"`
+	Name                 string                 `json:"name" gorm:"not null"`
+	Description          string                 `json:"description" gorm:"not null"`
+	Type                 string                 `json:"type" gorm:"not null"` // carjacking, goods_smuggling, etc.
+	IsSpecial            bool                   `json:"isSpecial" gorm:"not null;default:false"`
+	IsActive             bool                   `json:"isActive" gorm:"not null;default:true"`
+	IsLocked             bool                   `json:"isLocked" gorm:"-"`             // Not stored in DB, calculated on retrieval
+	LockReason           string                 `json:"lockReason,omitempty" gorm:"-"` // Reason why it's locked
+	RegionIDs            pq.StringArray         `json:"regionIds" gorm:"type:text[]"`  // For multi-region operations
+	Requirements         OperationRequirements  `json:"requirements" gorm:"embedded"`
+	Resources            OperationResources     `json:"resources" gorm:"embedded"`
+	Rewards              OperationRewards       `json:"rewards" gorm:"embedded"`
+	Risks                OperationRisks         `json:"risks" gorm:"embedded"`
+	Duration             int                    `json:"duration" gorm:"not null"`              // in seconds
+	AvailabilityDuration int                    `json:"availabilityDuration" gorm:"default:0"` // in minutes, 0 means no expiration
+	SuccessRate          int                    `json:"successRate" gorm:"not null"`           // percentage
+	AvailableUntil       time.Time              `json:"availableUntil" gorm:"not null"`
+	CreatedAt            time.Time              `json:"-" gorm:"not null"`
+	UpdatedAt            time.Time              `json:"-" gorm:"not null"`
+	PlayerAttempts       []OperationAttempt     `json:"playerAttempts,omitempty" gorm:"-"`
+	Metadata             map[string]interface{} `json:"metadata,omitempty" gorm:"-"`
 }
 
 // BeforeCreate is a GORM hook to generate UUID before creating a new operation

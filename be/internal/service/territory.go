@@ -49,14 +49,17 @@ type TerritoryService interface {
 
 	// TEMP!!!
 	GetSSEService() SSEService
+
+	AddCustomHotspotProvider(provider CustomHotspotProvider)
 }
 
 type territoryService struct {
-	territoryRepo repository.TerritoryRepository
-	playerRepo    repository.PlayerRepository
-	sseService    SSEService
-	gameConfig    config.GameConfig
-	logger        zerolog.Logger
+	territoryRepo          repository.TerritoryRepository
+	playerRepo             repository.PlayerRepository
+	sseService             SSEService
+	gameConfig             config.GameConfig
+	logger                 zerolog.Logger
+	customHotspotProviders []CustomHotspotProvider
 }
 
 // NewTerritoryService creates a new territory service
@@ -66,14 +69,21 @@ func NewTerritoryService(
 	sseService SSEService,
 	gameConfig config.GameConfig,
 	logger zerolog.Logger,
+	customHotspotProviders []CustomHotspotProvider,
 ) TerritoryService {
 	return &territoryService{
-		territoryRepo: territoryRepo,
-		playerRepo:    playerRepo,
-		sseService:    sseService,
-		gameConfig:    gameConfig,
-		logger:        logger,
+		territoryRepo:          territoryRepo,
+		playerRepo:             playerRepo,
+		sseService:             sseService,
+		gameConfig:             gameConfig,
+		logger:                 logger,
+		customHotspotProviders: customHotspotProviders,
 	}
+}
+
+// AddHotspotProvider adds a provider for injected hotspots
+func (s *territoryService) AddCustomHotspotProvider(provider CustomHotspotProvider) {
+	s.customHotspotProviders = append(s.customHotspotProviders, provider)
 }
 
 // Region-aware hotspot methods
@@ -91,8 +101,23 @@ func (s *territoryService) GetHotspotsInCurrentRegion(playerID string) ([]model.
 		return []model.Hotspot{}, nil
 	}
 
-	// Get hotspots in the player's current region
-	return s.territoryRepo.GetHotspotsByRegion(*player.CurrentRegionID)
+	// Get regular hotspots in the player's current region
+	hotspots, err := s.territoryRepo.GetHotspotsByRegion(*player.CurrentRegionID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get injected hotspots from providers
+	for _, provider := range s.customHotspotProviders {
+		injectedHotspots, err := provider.GetInjectedHotspots(playerID, player.CurrentRegionID)
+		if err != nil {
+			s.logger.Error().Err(err).Msg("Failed to get injected hotspots from provider")
+			continue // Skip this provider if there's an error
+		}
+		hotspots = append(hotspots, injectedHotspots...)
+	}
+
+	return hotspots, nil
 }
 
 // GetControlledHotspotsInCurrentRegion retrieves hotspots controlled by player in their current region

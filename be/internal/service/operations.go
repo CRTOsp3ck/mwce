@@ -37,16 +37,19 @@ type OperationsService interface {
 	StartPeriodicOperationsRefresh()
 
 	GetOperationsRefreshInfo() (*model.OperationsRefreshInfo, error)
+
+	AddCustomOperationsProvider(provider CustomOperationsProvider)
 }
 
 type operationsService struct {
-	operationsRepo repository.OperationsRepository
-	territoryRepo  repository.TerritoryRepository
-	playerRepo     repository.PlayerRepository
-	playerService  PlayerService
-	sseService     SSEService
-	gameConfig     config.GameConfig
-	logger         zerolog.Logger
+	operationsRepo            repository.OperationsRepository
+	territoryRepo             repository.TerritoryRepository
+	playerRepo                repository.PlayerRepository
+	playerService             PlayerService
+	sseService                SSEService
+	gameConfig                config.GameConfig
+	logger                    zerolog.Logger
+	customOperationsProviders []CustomOperationsProvider
 
 	lastRefreshTime time.Time
 	refreshMutex    sync.RWMutex
@@ -61,17 +64,19 @@ func NewOperationsService(
 	sseService SSEService,
 	gameConfig config.GameConfig,
 	logger zerolog.Logger,
+	customOperationsProviders []CustomOperationsProvider,
 ) OperationsService {
 	return &operationsService{
-		operationsRepo:  operationsRepo,
-		territoryRepo:   territoryRepo,
-		playerRepo:      playerRepo,
-		playerService:   playerService,
-		sseService:      sseService,
-		gameConfig:      gameConfig,
-		logger:          logger,
-		lastRefreshTime: time.Now(),
-		refreshMutex:    sync.RWMutex{},
+		operationsRepo:            operationsRepo,
+		territoryRepo:             territoryRepo,
+		playerRepo:                playerRepo,
+		playerService:             playerService,
+		sseService:                sseService,
+		gameConfig:                gameConfig,
+		logger:                    logger,
+		customOperationsProviders: customOperationsProviders,
+		lastRefreshTime:           time.Now(),
+		refreshMutex:              sync.RWMutex{},
 	}
 }
 
@@ -92,7 +97,12 @@ func (s *operationsService) GetOperationsRefreshInfo() (*model.OperationsRefresh
 	}, nil
 }
 
-// GetAvailableOperations retrieves available operations for a player - NOW REGION-AWARE
+// AddOperationsProvider adds a provider for injected operations
+func (s *operationsService) AddCustomOperationsProvider(provider CustomOperationsProvider) {
+	s.customOperationsProviders = append(s.customOperationsProviders, provider)
+}
+
+// GetAvailableOperations retrieves available operations for a player
 func (s *operationsService) GetAvailableOperations(playerID string, validOnly bool) ([]model.Operation, error) {
 	// Get the player to find their current region
 	player, err := s.playerRepo.GetPlayerByID(playerID)
@@ -100,24 +110,7 @@ func (s *operationsService) GetAvailableOperations(playerID string, validOnly bo
 		return nil, err
 	}
 
-	// If player is not in any region, return global operations only (empty region_ids)
-	if player.CurrentRegionID == nil {
-		var globalOps []model.Operation
-		query := s.operationsRepo.GetDB().Where("is_active = ?", true).
-			Where("array_length(region_ids, 1) IS NULL")
-
-		if validOnly {
-			query = query.Where("available_until > ?", time.Now())
-		}
-
-		if err := query.Find(&globalOps).Error; err != nil {
-			return nil, err
-		}
-
-		return s.filterOperationsByPlayerAttempts(globalOps, playerID)
-	}
-
-	// Get operations for the player's current region and global operations
+	// Get regular operations (existing logic)
 	var operations []model.Operation
 	query := s.operationsRepo.GetDB().Where("is_active = ?", true)
 
@@ -126,16 +119,28 @@ func (s *operationsService) GetAvailableOperations(playerID string, validOnly bo
 	}
 
 	// Filter by current region - either global (empty region_ids) or includes current region
-	query = query.Where("array_length(region_ids, 1) IS NULL OR ? = ANY(region_ids)",
-		*player.CurrentRegionID)
+	if player.CurrentRegionID != nil {
+		query = query.Where("array_length(region_ids, 1) IS NULL OR ? = ANY(region_ids)",
+			*player.CurrentRegionID)
+	} else {
+		query = query.Where("array_length(region_ids, 1) IS NULL")
+	}
 
 	if err := query.Find(&operations).Error; err != nil {
 		return nil, err
 	}
 
-	// return operations, nil
+	// Get injected operations from providers
+	for _, provider := range s.customOperationsProviders {
+		injectedOps, err := provider.GetInjectedOperations(playerID, player.CurrentRegionID)
+		if err != nil {
+			s.logger.Error().Err(err).Msg("Failed to get injected operations from provider")
+			continue // Skip this provider if there's an error
+		}
+		operations = append(operations, injectedOps...)
+	}
 
-	// Filter operations based on player's in-progress attempts and requirements
+	// Filter operations (existing logic)
 	return s.filterOperationsByPlayerAttempts(s.filterOperationsByRequirements(operations, player), playerID)
 }
 

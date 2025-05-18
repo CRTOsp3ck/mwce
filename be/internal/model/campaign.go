@@ -226,6 +226,15 @@ func (p *PlayerCampaignProgress) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
+// MissionObjective represents a single objective for a mission
+type MissionObjective struct {
+	Type        string     `json:"type"`
+	Description string     `json:"description"`
+	Target      string     `json:"target"`
+	IsCompleted bool       `json:"isCompleted"`
+	CompletedAt *time.Time `json:"completedAt,omitempty"`
+}
+
 // PlayerMissionProgress tracks a player's progress on individual missions
 type PlayerMissionProgress struct {
 	ID                  string     `json:"id" gorm:"type:uuid;primary_key"`
@@ -239,6 +248,10 @@ type PlayerMissionProgress struct {
 	ActionLog           string     `json:"actionLog" gorm:"type:text"` // JSON array of tracked actions
 	CreatedAt           time.Time  `json:"-" gorm:"not null"`
 	UpdatedAt           time.Time  `json:"-" gorm:"not null"`
+
+	// Non-persisted fields
+	Objectives  []MissionObjective `json:"objectives,omitempty" gorm:"-"`
+	CanComplete bool
 }
 
 // BeforeCreate is a GORM hook to generate UUID before creating a new mission progress record
