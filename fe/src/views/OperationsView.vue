@@ -361,7 +361,8 @@ function getEstimatedCompletion(operationAttempt: OperationAttempt): string {
     return 'Completed';
   }
 
-  const operation = availableOperations.value.find(op => op.id === operationAttempt.operationId);
+  // Use operationsStore.getOperationById instead of availableOperations.value.find
+  const operation = operationsStore.getOperationById(operationAttempt.operationId);
   if (!operation) return 'Unknown';
 
   const startTime = new Date(operationAttempt.timestamp);
@@ -453,7 +454,8 @@ function getProgressPercentage(operationAttempt: OperationAttempt): number {
     return 100;
   }
 
-  const operation = availableOperations.value.find(op => op.id === operationAttempt.operationId);
+  // Use operationsStore.getOperationById instead of availableOperations.value.find
+  const operation = operationsStore.getOperationById(operationAttempt.operationId);
   if (!operation) return 0;
 
   const startTime = new Date(operationAttempt.timestamp);
@@ -478,7 +480,8 @@ function isOperationReady(operationAttempt: OperationAttempt): boolean {
     return false;
   }
 
-  const operation = availableOperations.value.find(op => op.id === operationAttempt.operationId);
+  // Use operationsStore.getOperationById instead of availableOperations.value.find
+  const operation = operationsStore.getOperationById(operationAttempt.operationId);
   if (!operation) return false;
 
   const startTime = new Date(operationAttempt.timestamp);
@@ -487,6 +490,8 @@ function isOperationReady(operationAttempt: OperationAttempt): boolean {
 
   return now >= endTime;
 }
+
+
 
 function isSuccessfulOperation(operation: OperationAttempt): boolean {
   return (operation.status === OperationStatus.COMPLETED && operation.result && operation.result.success) || false;

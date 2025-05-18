@@ -171,7 +171,8 @@ export const useOperationsStore = defineStore('operations', {
         return 'Completed';
       }
 
-      const operation = state.availableOperations.find(op => op.id === inProgressOp.operationId);
+      // Use operationsCache instead of availableOperations
+      const operation = state.operationsCache[inProgressOp.operationId];
       if (!operation) return 'Unknown';
 
       const startTime = new Date(inProgressOp.timestamp);
@@ -345,23 +346,40 @@ export const useOperationsStore = defineStore('operations', {
           // Update the inProgressOperationIds
           this.inProgressOperationIds = currentResponse.data.map(op => op.operationId);
 
-          // Fetch details for any operations not in cache
+          // Create an array to hold all promises for fetching operation details
+          const operationDetailPromises = [];
+
+          // Queue up fetches for any operations not in cache
           for (const attempt of currentResponse.data) {
             if (!this.operationsCache[attempt.operationId]) {
-              await this.fetchOperationDetails(attempt.operationId);
+              operationDetailPromises.push(this.fetchOperationDetails(attempt.operationId));
             }
           }
+
+          // Wait for all operation details to be fetched
+          if (operationDetailPromises.length > 0) {
+            await Promise.all(operationDetailPromises);
+          }
         }
+
         // Get completed operations
         const completedResponse = await operationsService.getCompletedOperations();
         if (completedResponse.success && completedResponse.data) {
           this.completedOperations = completedResponse.data;
 
-          // Fetch details for any operations not in cache
+          // Create an array to hold all promises for fetching operation details
+          const operationDetailPromises = [];
+
+          // Queue up fetches for any operations not in cache
           for (const attempt of completedResponse.data) {
             if (!this.operationsCache[attempt.operationId]) {
-              await this.fetchOperationDetails(attempt.operationId);
+              operationDetailPromises.push(this.fetchOperationDetails(attempt.operationId));
             }
+          }
+
+          // Wait for all operation details to be fetched
+          if (operationDetailPromises.length > 0) {
+            await Promise.all(operationDetailPromises);
           }
         }
       } catch (error) {
