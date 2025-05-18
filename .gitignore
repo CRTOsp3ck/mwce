@@ -33,3 +33,6 @@ coverage
 *.exe
 be/tmp/main.exe
 be/tmp/main.exe
+
+# Dumps
+be/dump
