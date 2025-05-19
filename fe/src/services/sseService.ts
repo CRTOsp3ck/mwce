@@ -4,11 +4,9 @@ import { reactive } from 'vue';
 import { usePlayerStore } from '@/stores/modules/player';
 import { useTerritoryStore } from '@/stores/modules/territory';
 import { useOperationsStore } from '@/stores/modules/operations';
-import { useCampaignStore } from '@/stores/modules/campaign';
 import { useTravelStore } from '@/stores/modules/travel';
 import { Hotspot } from '@/types/territory';
 import { Notification } from '@/types/player';
-import { POI, MissionOperation } from '@/types/campaign';
 import { Operation, OperationsRefreshInfo } from '@/types/operations';
 
 // SSE event types
@@ -20,12 +18,6 @@ export enum SSEEventType {
   HOTSPOTS_UPDATED = 'hotspots_updated',
   NOTIFICATION = 'notification',
   PLAYER_REGION_CHANGED = 'player_region_changed',
-
-  // Campaign-related types
-  CAMPAIGN_ACTION_TRACKED = 'campaign_action_tracked',
-  CAMPAIGN_CHOICE_UPDATED = 'campaign_choice_updated',
-  CAMPAIGN_POI_UPDATED = 'campaign_poi_updated',
-  CAMPAIGN_OPERATION_UPDATED = 'campaign_operation_updated',
 
   // Operations-related types
   OPERATIONS_REFRESHED = 'operations_refreshed',
@@ -67,31 +59,6 @@ export interface PlayerRegionChangedEvent {
   timestamp: string;
 }
 
-// New campaign event payload interfaces
-export interface CampaignActionTrackedEvent {
-  actionType: string;
-  actionValue: string;
-  missionId?: string;
-  choiceId?: string;
-  conditionCompleted?: boolean;
-}
-
-export interface CampaignChoiceUpdatedEvent {
-  missionId: string;
-  choiceId: string;
-  isCompleted: boolean;
-}
-
-export interface CampaignPOIUpdatedEvent {
-  poi: POI;
-  isActivated?: boolean;
-}
-
-export interface CampaignOperationUpdatedEvent {
-  operation: MissionOperation;
-  isActivated?: boolean;
-}
-
 export interface OperationsRefreshedEvent {
   operations: Operation[];
   timestamp: string;
@@ -116,7 +83,6 @@ async function invalidateAndReloadAllData() {
   const territoryStore = useTerritoryStore();
   const operationsStore = useOperationsStore();
   const travelStore = useTravelStore();
-  const campaignStore = useCampaignStore();
 
   console.log('Invalidating cache and reloading all data after region change...');
 
@@ -145,11 +111,6 @@ async function invalidateAndReloadAllData() {
     await operationsStore.fetchAvailableOperations();
     await operationsStore.fetchPlayerOperations();
     await operationsStore.fetchOperationsRefreshInfo();
-
-    // Reload campaign data
-    await campaignStore.fetchCampaigns();
-    await campaignStore.fetchActivePOIs();
-    await campaignStore.fetchActiveMissionOperations();
 
     // Restart timers
     territoryStore.startIncomeTimer();
@@ -213,7 +174,6 @@ function connect() {
 function setupEventHandlers(eventSource: EventSource) {
   const playerStore = usePlayerStore();
   const territoryStore = useTerritoryStore();
-  const campaignStore = useCampaignStore();
 
   // Connected event
   eventSource.addEventListener(SSEEventType.CONNECTED, event => {
@@ -397,87 +357,6 @@ function setupEventHandlers(eventSource: EventSource) {
     // Add notification
     if (data.notification) {
       playerStore.addNotification(data.notification);
-    }
-  });
-
-  // Campaign action tracking event handler
-  eventSource.addEventListener(SSEEventType.CAMPAIGN_ACTION_TRACKED, event => {
-    try {
-      const data = JSON.parse(event.data) as CampaignActionTrackedEvent;
-      console.log('Campaign action tracked event:', data);
-
-      // Update campaign store if a condition was completed
-      if (data.conditionCompleted && data.choiceId) {
-        // Refresh POIs and mission operations
-        campaignStore.fetchActivePOIs();
-        campaignStore.fetchActiveMissionOperations();
-
-        // If the action completed the entire choice, refresh the mission
-        if (data.missionId) {
-          campaignStore.fetchMission(data.missionId);
-        }
-      }
-    } catch (error) {
-      console.error('Error processing campaign action tracked event:', error);
-    }
-  });
-
-  // Campaign choice updated event handler
-  eventSource.addEventListener(SSEEventType.CAMPAIGN_CHOICE_UPDATED, event => {
-    try {
-      const data = JSON.parse(event.data) as CampaignChoiceUpdatedEvent;
-      console.log('Campaign choice updated event:', data);
-
-      // Refresh the mission with the updated choice
-      if (data.missionId) {
-        campaignStore.fetchMission(data.missionId);
-      }
-    } catch (error) {
-      console.error('Error processing campaign choice updated event:', error);
-    }
-  });
-
-  // Campaign POI updated event handler
-  eventSource.addEventListener(SSEEventType.CAMPAIGN_POI_UPDATED, event => {
-    try {
-      const data = JSON.parse(event.data) as CampaignPOIUpdatedEvent;
-      console.log('Campaign POI updated event:', data);
-
-      // Update the POI in the store
-      if (data.poi) {
-        // Find the POI in the activePOIs array and update it
-        const index = campaignStore.activePOIs.findIndex(p => p.id === data.poi.id);
-        if (index >= 0) {
-          campaignStore.activePOIs[index] = data.poi;
-        } else if (data.isActivated) {
-          // If it's a newly activated POI, add it to the array
-          campaignStore.activePOIs.push(data.poi);
-        }
-      }
-    } catch (error) {
-      console.error('Error processing campaign POI updated event:', error);
-    }
-  });
-
-  // Campaign mission operation updated event handler
-  eventSource.addEventListener(SSEEventType.CAMPAIGN_OPERATION_UPDATED, event => {
-    try {
-      const data = JSON.parse(event.data) as CampaignOperationUpdatedEvent;
-      console.log('Campaign operation updated event:', data);
-
-      // Update the operation in the store
-      if (data.operation) {
-        // Find the operation in the activeMissionOperations array and update it
-        const index = campaignStore.activeMissionOperations.findIndex(op => op.id === data.operation.id);
-        if (index >= 0) {
-          campaignStore.activeMissionOperations[index] = data.operation;
-        } else if (data.isActivated) {
-          // If it's a newly activated operation, add it to the array
-          campaignStore.activeMissionOperations.push(data.operation);
-        }
-      }
-    } catch (error) {
-      console.error('Error processing campaign operation updated event:', error);
     }
   });
 
