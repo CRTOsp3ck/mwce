@@ -52,6 +52,19 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 		&model.MarketTransaction{},
 		&model.MarketPriceHistory{},
 		&model.TravelAttempt{},
+
+		// Campaign-related models
+		&model.Campaign{},
+		&model.Chapter{},
+		&model.Mission{},
+		&model.Branch{},
+		&model.CampaignOperation{},
+		&model.CampaignPOI{},
+		&model.Dialogue{},
+		&model.PlayerCampaignProgress{},
+		&model.PlayerOperationRecord{},
+		&model.PlayerPOIRecord{},
+		&model.DialogueState{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)
@@ -106,6 +119,15 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 	}
 	if regions == nil || len(regions) <= 0 {
 		service.RunTerritorySeeder("../../configs/app.yaml", "../../configs/territory.yaml")
+	}
+
+	// -- If no campaigns, seed campaign data --
+	campaigns, err := campaignService.GetCampaigns()
+	if err != nil {
+		logger.Warn().Err(err).Msg("Failed to check existing campaigns")
+	} else if len(campaigns) <= 0 {
+		logger.Info().Msg("No campaigns found, seeding campaign data")
+		service.RunCampaignSeeder(campaignRepo, territoryRepo, logger)
 	}
 
 	marketService := service.NewMarketService(marketRepo, playerRepo, playerService, cfg.Game, logger)

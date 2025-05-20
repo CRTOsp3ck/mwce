@@ -4,10 +4,11 @@
 
 # Pool of basic operations
 basic_operations:
-  - name: "Car Theft Ring"
+  - id: "a1b2c3d4-e5f6-4a9f-9cf9-4a1b9f7b2a4e"
+    name: "Car Theft Ring"
     description: "Steal luxury vehicles from a wealthy neighborhood for resale."
     type: "carjacking"
-    regions: ["north", "east", "southeast", "northeast"]  # Available in these regions
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1"]  # north, east, southeast, northeast
     availability_duration: 1  # In minutes
     resources:
       crew: 2
@@ -26,10 +27,11 @@ basic_operations:
     duration: 5
     success_rate: 70
 
-  - name: "Highway Interception"
+  - id: "b2c3d4e5-f6a7-4b8c-9d0e-5f1a2b3c4d5e"
+    name: "Highway Interception"
     description: "Intercept and hijack a vehicle transport on the highway."
     type: "carjacking"
-    regions: ["north", "south", "east", "west"]  # Available in all regions
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3"]  # north, south, east, west
     availability_duration: 1  # In minutes
     resources:
       crew: 3
@@ -48,10 +50,11 @@ basic_operations:
     duration: 5
     success_rate: 65
 
-  - name: "Local Smuggling"
+  - id: "c3d4e5f6-a7b8-4c9d-0e1f-6a7b8c9d0e1f"
+    name: "Local Smuggling"
     description: "Move contraband across city lines avoiding checkpoints."
     type: "goods_smuggling"
-    regions: ["south", "east", "west", "southeast", "southwest"]
+    regions: ["5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3", "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5", "f7a9b1c3-d5e7-f9a1-b3c5-d7e9f1a3b5c7"]  # south, east, west, southeast, southwest
     availability_duration: 1  # In minutes
     resources:
       crew: 2
@@ -70,10 +73,11 @@ basic_operations:
     duration: 5
     success_rate: 75
 
-  - name: "Cross-Border Run"
+  - id: "d4e5f6a7-b8c9-4d0e-1f2a-7b8c9d0e1f2a"
+    name: "Cross-Border Run"
     description: "Transport goods across state lines with fake documentation."
     type: "goods_smuggling"
-    regions: ["south", "east", "west", "southwest", "northeast", "northwest"]
+    regions: ["5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3", "f7a9b1c3-d5e7-f9a1-b3c5-d7e9f1a3b5c7", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # south, east, west, southwest, northeast, northwest
     availability_duration: 1  # In minutes
     resources:
       crew: 3
@@ -92,10 +96,11 @@ basic_operations:
     duration: 5
     success_rate: 65
 
-  - name: "Street Corner Takeover"
+  - id: "e5f6a7b8-c9d0-4e1f-2a3b-8c9d0e1f2a3b"
+    name: "Street Corner Takeover"
     description: "Establish a presence in a new neighborhood for drug sales."
     type: "drug_trafficking"
-    regions: ["east", "west", "southeast", "southwest", "northeast", "northwest"]
+    regions: ["9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3", "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5", "f7a9b1c3-d5e7-f9a1-b3c5-d7e9f1a3b5c7", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # east, west, southeast, southwest, northeast, northwest
     availability_duration: 1  # In minutes
     resources:
       crew: 3
@@ -114,10 +119,11 @@ basic_operations:
     duration: 5
     success_rate: 70
 
-  - name: "Corrupt the Beat Cop"
+  - id: "f6a7b8c9-d0e1-4f2a-3b4c-9d0e1f2a3b4c"
+    name: "Corrupt the Beat Cop"
     description: "Bribe a patrol officer to look the other way during your operations."
     type: "official_bribing"
-    regions: ["north", "south", "east", "west", "southeast", "southwest", "northeast", "northwest"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3", "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5", "f7a9b1c3-d5e7-f9a1-b3c5-d7e9f1a3b5c7", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # north, south, east, west, southeast, southwest, northeast, northwest
     availability_duration: 1  # In minutes
     resources:
       crew: 1
@@ -134,10 +140,11 @@ basic_operations:
     duration: 5
     success_rate: 85
 
-  - name: "Traffic Court Fix"
+  - id: "a7b8c9d0-e1f2-4a3b-4c5d-0e1f2a3b4c5d"
+    name: "Traffic Court Fix"
     description: "Pay off a court clerk to dismiss charges against your crew members."
     type: "official_bribing"
-    regions: ["north", "northeast"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1"]  # north, northeast
     availability_duration: 1  # In minutes
     resources:
       crew: 1
@@ -154,10 +161,11 @@ basic_operations:
     duration: 5
     success_rate: 80
 
-  - name: "Rival Surveillance"
+  - id: "b8c9d0e1-f2a3-4b4c-5d6e-1f2a3b4c5d6e"
+    name: "Rival Surveillance"
     description: "Gather intelligence on a rival family's operations."
     type: "intelligence_gathering"
-    regions: ["north", "south", "east", "west", "southeast", "southwest", "northeast", "northwest"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3", "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5", "f7a9b1c3-d5e7-f9a1-b3c5-d7e9f1a3b5c7", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # north, south, east, west, southeast, southwest, northeast, northwest
     availability_duration: 1  # In minutes
     resources:
       crew: 2
@@ -175,10 +183,11 @@ basic_operations:
     duration: 5
     success_rate: 80
 
-  - name: "Police Scanner Network"
+  - id: "c9d0e1f2-a3b4-4c5d-6e7f-2a3b4c5d6e7f"
+    name: "Police Scanner Network"
     description: "Set up a network of police scanners to monitor law enforcement activity."
     type: "intelligence_gathering"
-    regions: ["north", "south", "southeast", "southwest", "northeast", "northwest"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f", "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5", "f7a9b1c3-d5e7-f9a1-b3c5-d7e9f1a3b5c7", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # north, south, southeast, southwest, northeast, northwest
     availability_duration: 1  # In minutes
     resources:
       crew: 2
@@ -196,10 +205,11 @@ basic_operations:
     duration: 5
     success_rate: 85
 
-  - name: "Street Recruitment"
+  - id: "d0e1f2a3-b4c5-4d6e-7f8a-3b4c5d6e7f8a"
+    name: "Street Recruitment"
     description: "Recruit new members from local street gangs."
     type: "crew_recruitment"
-    regions: ["east", "west", "southeast", "southwest"]
+    regions: ["9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3", "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5", "f7a9b1c3-d5e7-f9a1-b3c5-d7e9f1a3b5c7"]  # east, west, southeast, southwest
     availability_duration: 1  # In minutes
     resources:
       crew: 1
@@ -216,10 +226,11 @@ basic_operations:
     duration: 5
     success_rate: 90
 
-  - name: "Prison Break"
+  - id: "e1f2a3b4-c5d6-4e7f-8a9b-4c5d6e7f8a9b"
+    name: "Prison Break"
     description: "Break out valuable crew members from a minimum-security holding facility."
     type: "crew_recruitment"
-    regions: ["north", "south", "east", "west"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3"]  # north, south, east, west
     availability_duration: 90  # Longer availability due to complexity
     resources:
       crew: 4
@@ -239,10 +250,11 @@ basic_operations:
     duration: 5
     success_rate: 60
 
-  - name: "Warehouse Heist"
+  - id: "f2a3b4c5-d6e7-4f8a-9b0c-5d6e7f8a9b0c"
+    name: "Warehouse Heist"
     description: "Break into a commercial warehouse and steal valuable merchandise."
     type: "carjacking"
-    regions: ["south", "east", "west", "northeast", "northwest"]
+    regions: ["5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # south, east, west, northeast, northwest
     availability_duration: 1  # In minutes
     resources:
       crew: 4
@@ -260,10 +272,11 @@ basic_operations:
     duration: 5
     success_rate: 65
 
-  - name: "Protection Racket"
+  - id: "a3b4c5d6-e7f8-4a9b-0c1d-6e7f8a9b0c1d"
+    name: "Protection Racket"
     description: "Convince local businesses to pay for your 'protection services'."
     type: "goods_smuggling"
-    regions: ["north", "south", "east", "west", "southeast", "southwest", "northeast", "northwest"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3", "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5", "f7a9b1c3-d5e7-f9a1-b3c5-d7e9f1a3b5c7", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # north, south, east, west, southeast, southwest, northeast, northwest
     availability_duration: 1  # In minutes
     resources:
       crew: 3
@@ -280,10 +293,11 @@ basic_operations:
     duration: 5
     success_rate: 75
 
-  - name: "Street Racing Circuit"
+  - id: "b4c5d6e7-f8a9-4b0c-1d2e-7f8a9b0c1d2e"
+    name: "Street Racing Circuit"
     description: "Organize illegal street races and skim profits from betting."
     type: "drug_trafficking"
-    regions: ["north", "east", "west", "northeast", "northwest"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # north, east, west, northeast, northwest
     availability_duration: 1  # In minutes
     resources:
       crew: 2
@@ -301,10 +315,11 @@ basic_operations:
     duration: 5
     success_rate: 70
 
-  - name: "Vintage Car Collection"
+  - id: "c5d6e7f8-a9b0-4c1d-2e3f-8a9b0c1d2e3f"
+    name: "Vintage Car Collection"
     description: "Target a collector's garage storing rare vintage automobiles."
     type: "carjacking"
-    regions: ["north", "east", "northeast", "northwest"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # north, east, northeast, northwest
     availability_duration: 1  # In minutes
     resources:
       crew: 3
@@ -322,10 +337,11 @@ basic_operations:
     duration: 2400
     success_rate: 65
 
-  - name: "Motor Show Heist"
+  - id: "d6e7f8a9-b0c1-4d2e-3f4a-9b0c1d2e3f4a"
+    name: "Motor Show Heist"
     description: "Infiltrate an automobile exhibition and steal a prototype car."
     type: "carjacking"
-    regions: ["north", "east", "northeast"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1"]  # north, east, northeast
     availability_duration: 90  # Longer availability for special events
     resources:
       crew: 4
@@ -343,10 +359,11 @@ basic_operations:
     duration: 3600
     success_rate: 60
 
-  - name: "High-End Dealership Raid"
+  - id: "e7f8a9b0-c1d2-4e3f-4a5b-0c1d2e3f4a5b"
+    name: "High-End Dealership Raid"
     description: "Break into a luxury car dealership after hours."
     type: "carjacking"
-    regions: ["north", "east", "northeast", "northwest"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # north, east, northeast, northwest
     availability_duration: 1  # In minutes
     resources:
       crew: 3
@@ -364,10 +381,11 @@ basic_operations:
     duration: 3000
     success_rate: 70
 
-  - name: "Shipping Container Theft"
+  - id: "f8a9b0c1-d2e3-4f4a-5b6c-1d2e3f4a5b6c"
+    name: "Shipping Container Theft"
     description: "Intercept and steal a shipping container full of electronics."
     type: "goods_smuggling"
-    regions: ["south", "east", "southeast", "southwest"]
+    regions: ["5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5", "f7a9b1c3-d5e7-f9a1-b3c5-d7e9f1a3b5c7"]  # south, east, southeast, southwest
     availability_duration: 1  # In minutes
     resources:
       crew: 4
@@ -385,10 +403,11 @@ basic_operations:
     duration: 4500
     success_rate: 70
 
-  - name: "Art Gallery Job"
+  - id: "a9b0c1d2-e3f4-4a5b-6c7d-2e3f4a5b6c7d"
+    name: "Art Gallery Job"
     description: "Steal valuable artwork from a private gallery."
     type: "goods_smuggling"
-    regions: ["north", "east", "southeast", "northeast"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1"]  # north, east, southeast, northeast
     availability_duration: 1  # In minutes
     resources:
       crew: 3
@@ -406,10 +425,11 @@ basic_operations:
     duration: 3600
     success_rate: 65
 
-  - name: "Jewelry Store Heist"
+  - id: "b0c1d2e3-f4a5-4b6c-7d8e-3f4a5b6c7d8e"
+    name: "Jewelry Store Heist"
     description: "Rob a high-end jewelry store during business hours."
     type: "goods_smuggling"
-    regions: ["north", "east", "northeast"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1"]  # north, east, northeast
     availability_duration: 1  # In minutes
     resources:
       crew: 5
@@ -426,10 +446,11 @@ basic_operations:
     duration: 1800
     success_rate: 55
 
-  - name: "High Roller Loan Shark"
+  - id: "c1d2e3f4-a5b6-4c7d-8e9f-4a5b6c7d8e9f"
+    name: "High Roller Loan Shark"
     description: "Offer loans to casino high rollers and collect with interest."
     type: "drug_trafficking"
-    regions: ["north", "east", "west", "northwest"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # north, east, west, northwest
     availability_duration: 1  # In minutes
     resources:
       crew: 2
@@ -448,10 +469,11 @@ basic_operations:
     duration: 5400
     success_rate: 75
 
-  - name: "Nightclub Distribution"
+  - id: "d2e3f4a5-b6c7-4d8e-9f0a-5b6c7d8e9f0a"
+    name: "Nightclub Distribution"
     description: "Set up a distribution network through popular nightclubs."
     type: "drug_trafficking"
-    regions: ["north", "east", "southeast", "northeast", "northwest"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # north, east, southeast, northeast, northwest
     availability_duration: 1  # In minutes
     resources:
       crew: 4
@@ -469,10 +491,11 @@ basic_operations:
     duration: 4800
     success_rate: 70
 
-  - name: "College Campus Network"
+  - id: "e3f4a5b6-c7d8-4e9f-0a1b-6c7d8e9f0a1b"
+    name: "College Campus Network"
     description: "Establish a drug distribution network on a college campus."
     type: "drug_trafficking"
-    regions: ["northeast"]
+    regions: ["19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1"]  # northeast
     availability_duration: 1  # In minutes
     resources:
       crew: 3
@@ -490,10 +513,11 @@ basic_operations:
     duration: 3600
     success_rate: 80
 
-  - name: "Bribe Building Inspector"
+  - id: "f4a5b6c7-d8e9-4f0a-1b2c-7d8e9f0a1b2c"
+    name: "Bribe Building Inspector"
     description: "Bribe city officials to overlook code violations in your properties."
     type: "official_bribing"
-    regions: ["north", "south", "east", "west", "southeast", "southwest", "northeast", "northwest"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3", "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5", "f7a9b1c3-d5e7-f9a1-b3c5-d7e9f1a3b5c7", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # north, south, east, west, southeast, southwest, northeast, northwest
     availability_duration: 1  # In minutes
     resources:
       crew: 1
@@ -509,10 +533,11 @@ basic_operations:
     duration: 2700
     success_rate: 75
 
-  - name: "Fix Parking Tickets"
+  - id: "a5b6c7d8-e9f0-4a1b-2c3d-8e9f0a1b2c3d"
+    name: "Fix Parking Tickets"
     description: "Pay off clerks to make parking violations disappear."
     type: "official_bribing"
-    regions: ["north", "south", "east", "west", "southeast", "southwest", "northeast", "northwest"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3", "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5", "f7a9b1c3-d5e7-f9a1-b3c5-d7e9f1a3b5c7", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # north, south, east, west, southeast, southwest, northeast, northwest
     availability_duration: 1  # In minutes
     resources:
       crew: 1
@@ -528,10 +553,11 @@ basic_operations:
     duration: 1200
     success_rate: 90
 
-  - name: "Control Health Inspector"
+  - id: "b6c7d8e9-f0a1-4b2c-3d4e-9f0a1b2c3d4e"
+    name: "Control Health Inspector"
     description: "Pay off health inspectors to target rival businesses."
     type: "official_bribing"
-    regions: ["north", "south", "east", "west"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3"]  # north, south, east, west
     availability_duration: 1  # In minutes
     resources:
       crew: 1
@@ -547,10 +573,11 @@ basic_operations:
     duration: 3600
     success_rate: 80
 
-  - name: "City Hall Mole"
+  - id: "c7d8e9f0-a1b2-4c3d-4e5f-0a1b2c3d4e5f"
+    name: "City Hall Mole"
     description: "Place an informant in city hall to gather valuable intel."
     type: "intelligence_gathering"
-    regions: ["north"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e"]  # north
     availability_duration: 90  # Longer availability due to significance
     resources:
       crew: 1
@@ -567,10 +594,11 @@ basic_operations:
     duration: 10800
     success_rate: 70
 
-  - name: "Wiretap Operation"
+  - id: "d8e9f0a1-b2c3-4d4e-5f6a-1b2c3d4e5f6a"
+    name: "Wiretap Operation"
     description: "Install wiretaps on rival gang's phone lines."
     type: "intelligence_gathering"
-    regions: ["north", "south", "east", "west", "southeast", "southwest", "northeast", "northwest"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3", "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5", "f7a9b1c3-d5e7-f9a1-b3c5-d7e9f1a3b5c7", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # north, south, east, west, southeast, southwest, northeast, northwest
     availability_duration: 1  # In minutes
     resources:
       crew: 3
@@ -587,10 +615,11 @@ basic_operations:
     duration: 7200
     success_rate: 65
 
-  - name: "Corrupt Clerk"
+  - id: "e9f0a1b2-c3d4-4e5f-6a7b-2c3d4e5f6a7b"
+    name: "Corrupt Clerk"
     description: "Bribe a clerk to access police files on your organization."
     type: "intelligence_gathering"
-    regions: ["north", "northeast"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1"]  # north, northeast
     availability_duration: 1  # In minutes
     resources:
       crew: 1
@@ -606,10 +635,11 @@ basic_operations:
     duration: 3600
     success_rate: 75
 
-  - name: "Gang Territory Takeover"
+  - id: "f0a1b2c3-d4e5-4f6a-7b8c-3d4e5f6a7b8c"
+    name: "Gang Territory Takeover"
     description: "Force a small local gang to join your crew."
     type: "crew_recruitment"
-    regions: ["east", "west", "southeast", "southwest"]
+    regions: ["9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3", "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5", "f7a9b1c3-d5e7-f9a1-b3c5-d7e9f1a3b5c7"]  # east, west, southeast, southwest
     availability_duration: 1  # In minutes
     resources:
       crew: 4
@@ -626,10 +656,11 @@ basic_operations:
     duration: 5400
     success_rate: 70
 
-  - name: "Boxing Gym Recruitment"
+  - id: "a1b2c3d4-e5f6-4a7b-8c9d-4e5f6a7b8c9d"
+    name: "Boxing Gym Recruitment"
     description: "Recruit fighters from a local boxing gym."
     type: "crew_recruitment"
-    regions: ["east", "west", "southeast", "southwest", "northeast", "northwest"]
+    regions: ["9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3", "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5", "f7a9b1c3-d5e7-f9a1-b3c5-d7e9f1a3b5c7", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # east, west, southeast, southwest, northeast, northwest
     availability_duration: 1  # In minutes
     resources:
       crew: 2
@@ -645,10 +676,11 @@ basic_operations:
     duration: 2700
     success_rate: 85
 
-  - name: "Protection Racket Expansion"
+  - id: "b2c3d4e5-f6a7-4b8c-9d0e-5f6a7b8c9d0e"
+    name: "Protection Racket Expansion"
     description: "Expand your protection racket to a new neighborhood."
     type: "goods_smuggling"
-    regions: ["north", "south", "east", "west", "southeast", "southwest", "northeast", "northwest"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3", "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5", "f7a9b1c3-d5e7-f9a1-b3c5-d7e9f1a3b5c7", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # north, south, east, west, southeast, southwest, northeast, northwest
     availability_duration: 1  # In minutes
     resources:
       crew: 4
@@ -666,10 +698,11 @@ basic_operations:
     duration: 4800
     success_rate: 70
 
-  - name: "High-Stakes Poker Game"
+  - id: "c3d4e5f6-a7b8-4c9d-0e1f-6a7b8c9d0e1f"
+    name: "High-Stakes Poker Game"
     description: "Host an illegal high-stakes poker game and skim profits."
     type: "drug_trafficking"
-    regions: ["north", "east", "west", "northwest"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # north, east, west, northwest
     availability_duration: 1  # In minutes
     resources:
       crew: 3
@@ -686,10 +719,11 @@ basic_operations:
     duration: 5400
     success_rate: 75
 
-  - name: "Underground Fighting Ring"
+  - id: "d4e5f6a7-b8c9-4d0e-1f2a-7b8c9d0e1f2a"
+    name: "Underground Fighting Ring"
     description: "Establish an underground fighting ring for gambling profits."
     type: "drug_trafficking"
-    regions: ["east", "west", "southeast", "southwest"]
+    regions: ["9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3", "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5", "f7a9b1c3-d5e7-f9a1-b3c5-d7e9f1a3b5c7"]  # east, west, southeast, southwest
     availability_duration: 1  # In minutes
     resources:
       crew: 5
@@ -706,10 +740,11 @@ basic_operations:
     duration: 7200
     success_rate: 70
 
-  - name: "Dock Worker Intimidation"
+  - id: "e5f6a7b8-c9d0-4e1f-2a3b-8c9d0e1f2a3b"
+    name: "Dock Worker Intimidation"
     description: "Intimidate dock workers to look the other way during smuggling operations."
     type: "official_bribing"
-    regions: ["south"]
+    regions: ["5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f"]  # south
     availability_duration: 1  # In minutes
     resources:
       crew: 4
@@ -726,10 +761,11 @@ basic_operations:
     duration: 3600
     success_rate: 75
 
-  - name: "Racing Circuit Fixed Match"
+  - id: "f6a7b8c9-d0e1-4f2a-3b4c-9d0e1f2a3b4c"
+    name: "Racing Circuit Fixed Match"
     description: "Fix the outcome of street races to make large betting gains."
     type: "official_bribing"
-    regions: ["north", "east", "west", "northwest"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # north, east, west, northwest
     availability_duration: 1  # In minutes
     resources:
       crew: 2
@@ -746,10 +782,11 @@ basic_operations:
     duration: 3600
     success_rate: 70
 
-  - name: "Strip Club Acquisition"
+  - id: "a7b8c9d0-e1f2-4a3b-4c5d-0e1f2a3b4c5d"
+    name: "Strip Club Acquisition"
     description: "Take over a strip club through intimidation tactics."
     type: "goods_smuggling"
-    regions: ["north", "south", "east", "west", "southeast"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3", "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5"]  # north, south, east, west, southeast
     availability_duration: 1  # In minutes
     resources:
       crew: 5
@@ -767,10 +804,11 @@ basic_operations:
     duration: 5400
     success_rate: 65
 
-  - name: "Social Media Blackmail"
+  - id: "b8c9d0e1-f2a3-4b4c-5d6e-1f2a3b4c5d6e"
+    name: "Social Media Blackmail"
     description: "Acquire compromising photos of influential people for blackmail."
     type: "intelligence_gathering"
-    regions: ["north", "east", "northeast", "northwest"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # north, east, northeast, northwest
     availability_duration: 1  # In minutes
     resources:
       crew: 2
@@ -786,10 +824,11 @@ basic_operations:
     duration: 7200
     success_rate: 75
 
-  - name: "Auto Repair Chop Shop"
+  - id: "c9d0e1f2-a3b4-4c5d-6e7f-2a3b4c5d6e7f"
+    name: "Auto Repair Chop Shop"
     description: "Establish a chop shop under the cover of a legitimate auto repair business."
     type: "carjacking"
-    regions: ["west", "southwest", "northwest"]
+    regions: ["b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3", "f7a9b1c3-d5e7-f9a1-b3c5-d7e9f1a3b5c7", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # west, southwest, northwest
     availability_duration: 90  # Longer availability for business setup
     resources:
       crew: 4
@@ -807,10 +846,11 @@ basic_operations:
     duration: 8600
     success_rate: 80
 
-  - name: "Bank Insider Recruitment"
+  - id: "d0e1f2a3-b4c5-4d6e-7f8a-3b4c5d6e7f8a"
+    name: "Bank Insider Recruitment"
     description: "Recruit a bank employee to provide information on high-value targets."
     type: "crew_recruitment"
-    regions: ["north", "northeast"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1"]  # north, northeast
     availability_duration: 1  # In minutes
     resources:
       crew: 1
@@ -826,10 +866,11 @@ basic_operations:
     duration: 5400
     success_rate: 70
 
-  - name: "Construction Site Extortion"
+  - id: "e1f2a3b4-c5d6-4e7f-8a9b-4c5d6e7f8a9b"
+    name: "Construction Site Extortion"
     description: "Extort money from a construction company by threatening delays."
     type: "goods_smuggling"
-    regions: ["southwest"]
+    regions: ["f7a9b1c3-d5e7-f9a1-b3c5-d7e9f1a3b5c7"]  # southwest
     availability_duration: 1  # In minutes
     resources:
       crew: 4
@@ -846,10 +887,11 @@ basic_operations:
     duration: 2700
     success_rate: 75
 
-  - name: "Illegal Street Rave"
+  - id: "f2a3b4c5-d6e7-4f8a-9b0c-5d6e7f8a9b0c"
+    name: "Illegal Street Rave"
     description: "Organize an unauthorized rave in an abandoned warehouse."
     type: "drug_trafficking"
-    regions: ["east", "west", "southeast", "southwest"]
+    regions: ["9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3", "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5", "f7a9b1c3-d5e7-f9a1-b3c5-d7e9f1a3b5c7"]  # east, west, southeast, southwest
     availability_duration: 1  # In minutes
     resources:
       crew: 5
@@ -866,10 +908,11 @@ basic_operations:
     duration: 6300
     success_rate: 80
 
-  - name: "Sports Betting Ring"
+  - id: "a3b4c5d6-e7f8-4a9b-0c1d-6e7f8a9b0c1d"
+    name: "Sports Betting Ring"
     description: "Set up an illegal sports betting operation in local bars."
     type: "drug_trafficking"
-    regions: ["north", "south", "east", "west", "southeast", "southwest", "northeast", "northwest"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3", "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5", "f7a9b1c3-d5e7-f9a1-b3c5-d7e9f1a3b5c7", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # north, south, east, west, southeast, southwest, northeast, northwest
     availability_duration: 1  # In minutes
     resources:
       crew: 3
@@ -886,10 +929,11 @@ basic_operations:
     duration: 4800
     success_rate: 75
 
-  - name: "Illegal Arms Deal"
+- id: "b4c5d6e7-f8a9-4b0c-1d2e-7f8a9b0c1d2e"
+    name: "Illegal Arms Deal"
     description: "Broker a deal between arms dealers and local gangs."
     type: "goods_smuggling"
-    regions: ["south", "east", "west", "southeast", "southwest"]
+    regions: ["5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3", "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5", "f7a9b1c3-d5e7-f9a1-b3c5-d7e9f1a3b5c7"]  # south, east, west, southeast, southwest
     availability_duration: 1  # In minutes
     resources:
       crew: 4
@@ -907,10 +951,11 @@ basic_operations:
     duration: 6000
     success_rate: 65
 
-  - name: "Counterfeiting Operation"
+  - id: "c5d6e7f8-a9b0-4c1d-2e3f-8a9b0c1d2e3f"
+    name: "Counterfeiting Operation"
     description: "Set up a small counterfeiting operation for fake IDs and currency."
     type: "goods_smuggling"
-    regions: ["east", "southeast", "northeast"]
+    regions: ["9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1"]  # east, southeast, northeast
     availability_duration: 90  # Longer availability for setup
     resources:
       crew: 3
@@ -927,10 +972,11 @@ basic_operations:
     duration: 7200
     success_rate: 70
 
-  - name: "Illegal Casino Night"
+  - id: "d6e7f8a9-b0c1-4d2e-3f4a-9b0c1d2e3f4a"
+    name: "Illegal Casino Night"
     description: "Host an underground casino night for wealthy clients."
     type: "goods_smuggling"
-    regions: ["north", "east", "west", "northwest"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # north, east, west, northwest
     availability_duration: 1  # In minutes
     resources:
       crew: 4
@@ -947,10 +993,11 @@ basic_operations:
     duration: 5400
     success_rate: 75
 
-  - name: "Motorcycle Theft Ring"
+  - id: "e7f8a9b0-c1d2-4e3f-4a5b-0c1d2e3f4a5b"
+    name: "Motorcycle Theft Ring"
     description: "Target and steal high-end motorcycles for resale."
     type: "carjacking"
-    regions: ["north", "south", "east", "west", "southeast", "southwest", "northeast", "northwest"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3", "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5", "f7a9b1c3-d5e7-f9a1-b3c5-d7e9f1a3b5c7", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # north, south, east, west, southeast, southwest, northeast, northwest
     availability_duration: 1  # In minutes
     resources:
       crew: 3
@@ -968,10 +1015,11 @@ basic_operations:
     duration: 3600
     success_rate: 75
 
-  - name: "Yacht Party Recruitment"
+  - id: "f8a9b0c1-d2e3-4f4a-5b6c-1d2e3f4a5b6c"
+    name: "Yacht Party Recruitment"
     description: "Host a luxurious yacht party to recruit wealthy investors for your operations."
     type: "crew_recruitment"
-    regions: ["north", "south", "northwest"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # north, south, northwest
     availability_duration: 1  # In minutes
     resources:
       crew: 2
@@ -987,10 +1035,11 @@ basic_operations:
     duration: 7200
     success_rate: 80
 
-  - name: "Private Eye Blackmail"
+  - id: "a9b0c1d2-e3f4-4a5b-6c7d-2e3f4a5b6c7d"
+    name: "Private Eye Blackmail"
     description: "Hire a private investigator to gather dirt on a public official."
     type: "intelligence_gathering"
-    regions: ["north", "northeast"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1"]  # north, northeast
     availability_duration: 1  # In minutes
     resources:
       crew: 1
@@ -1006,10 +1055,11 @@ basic_operations:
     duration: 8600
     success_rate: 70
 
-  - name: "Union Infiltration"
+  - id: "b0c1d2e3-f4a5-4b6c-7d8e-3f4a5b6c7d8e"
+    name: "Union Infiltration"
     description: "Place your people in key positions within labor unions."
     type: "crew_recruitment"
-    regions: ["south", "southwest", "northwest"]
+    regions: ["5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f", "f7a9b1c3-d5e7-f9a1-b3c5-d7e9f1a3b5c7", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # south, southwest, northwest
     availability_duration: 90  # Longer availability for complex operation
     resources:
       crew: 3
@@ -1026,10 +1076,11 @@ basic_operations:
     duration: 10800
     success_rate: 70
 
-  - name: "Medical Supply Hijack"
+  - id: "c1d2e3f4-a5b6-4c7d-8e9f-4a5b6c7d8e9f"
+    name: "Medical Supply Hijack"
     description: "Intercept and steal a shipment of valuable medical supplies."
     type: "goods_smuggling"
-    regions: ["northeast"]
+    regions: ["19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1"]  # northeast
     availability_duration: 1  # In minutes
     resources:
       crew: 5
@@ -1047,10 +1098,11 @@ basic_operations:
     duration: 3600
     success_rate: 65
 
-  - name: "Corrupt College Dean"
+  - id: "d2e3f4a5-b6c7-4d8e-9f0a-5b6c7d8e9f0a"
+    name: "Corrupt College Dean"
     description: "Blackmail a college dean to admit students with fake credentials."
     type: "official_bribing"
-    regions: ["northeast"]
+    regions: ["19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1"]  # northeast
     availability_duration: 1  # In minutes
     resources:
       crew: 2
@@ -1066,10 +1118,11 @@ basic_operations:
     duration: 5400
     success_rate: 70
 
-  - name: "Lawyer Blackmail"
+  - id: "e3f4a5b6-c7d8-4e9f-0a1b-6c7d8e9f0a1b"
+    name: "Lawyer Blackmail"
     description: "Acquire compromising information to blackmail a prominent attorney."
     type: "intelligence_gathering"
-    regions: ["north", "northeast"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1"]  # north, northeast
     availability_duration: 1  # In minutes
     resources:
       crew: 2
@@ -1088,11 +1141,12 @@ basic_operations:
 
 # Pool of special operations
 special_operations:
-  - name: "Armored Car Robbery"
+  - id: "f4a5b6c7-d8e9-4f0a-1b2c-7d8e9f0a1b2c"
+    name: "Armored Car Robbery"
     description: "Hit an armored car during a cash transfer from a major bank."
     type: "carjacking"
     is_special: true
-    regions: ["north", "east", "northeast", "northwest"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # north, east, northeast, northwest
     availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 30
@@ -1116,11 +1170,12 @@ special_operations:
     duration: 5
     success_rate: 55
 
-  - name: "Casino Vault Heist"
+  - id: "a5b6c7d8-e9f0-4a1b-2c3d-8e9f0a1b2c3d"
+    name: "Casino Vault Heist"
     description: "Break into the vault of a major casino during peak hours."
     type: "carjacking"
     is_special: true
-    regions: ["north", "east", "northwest"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # north, east, northwest
     availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 40
@@ -1144,11 +1199,12 @@ special_operations:
     duration: 5
     success_rate: 45
 
-  - name: "International Smuggling Ring"
+  - id: "b6c7d8e9-f0a1-4b2c-3d4e-9f0a1b2c3d4e"
+    name: "International Smuggling Ring"
     description: "Establish a global network for high-value contraband."
     type: "goods_smuggling"
     is_special: true
-    regions: ["south", "east", "southeast", "southwest"]
+    regions: ["5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5", "f7a9b1c3-d5e7-f9a1-b3c5-d7e9f1a3b5c7"]  # south, east, southeast, southwest
     availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 35
@@ -1172,11 +1228,12 @@ special_operations:
     duration: 5
     success_rate: 60
 
-  - name: "Drug Lab Takeover"
+  - id: "c7d8e9f0-a1b2-4c3d-4e5f-0a1b2c3d4e5f"
+    name: "Drug Lab Takeover"
     description: "Seize control of a major drug production facility from rivals."
     type: "drug_trafficking"
     is_special: true
-    regions: ["east", "west", "southeast", "southwest"]
+    regions: ["9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3", "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5", "f7a9b1c3-d5e7-f9a1-b3c5-d7e9f1a3b5c7"]  # east, west, southeast, southwest
     availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 40
@@ -1200,11 +1257,12 @@ special_operations:
     duration: 5
     success_rate: 55
 
-  - name: "Corrupt the Police Captain"
+  - id: "d8e9f0a1-b2c3-4d4e-5f6a-1b2c3d4e5f6a"
+    name: "Corrupt the Police Captain"
     description: "Bribe a high-ranking police official to provide protection for all your operations."
     type: "official_bribing"
     is_special: true
-    regions: ["north", "south", "east", "west", "southeast", "southwest", "northeast", "northwest"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3", "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5", "f7a9b1c3-d5e7-f9a1-b3c5-d7e9f1a3b5c7", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # north, south, east, west, southeast, southwest, northeast, northwest
     availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 50
@@ -1227,11 +1285,12 @@ special_operations:
     duration: 5
     success_rate: 70
 
-  - name: "Judge Blackmail Operation"
+  - id: "e9f0a1b2-c3d4-4e5f-6a7b-2c3d4e5f6a7b"
+    name: "Judge Blackmail Operation"
     description: "Gather compromising information on a local judge to control court outcomes."
     type: "intelligence_gathering"
     is_special: true
-    regions: ["north", "northeast"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1"]  # north, northeast
     availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 45
@@ -1254,11 +1313,12 @@ special_operations:
     duration: 5
     success_rate: 65
 
-  - name: "Rival Family Infiltration"
+  - id: "f0a1b2c3-d4e5-4f6a-7b8c-3d4e5f6a7b8c"
+    name: "Rival Family Infiltration"
     description: "Place spies within a rival family to gather vital intelligence."
     type: "intelligence_gathering"
     is_special: true
-    regions: ["north", "south", "east", "west", "southeast", "southwest", "northeast", "northwest"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3", "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5", "f7a9b1c3-d5e7-f9a1-b3c5-d7e9f1a3b5c7", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # north, south, east, west, southeast, southwest, northeast, northwest
     availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 35
@@ -1279,11 +1339,12 @@ special_operations:
     duration: 5
     success_rate: 60
 
-  - name: "Prison Gang Alliance"
+  - id: "a1b2c3d4-e5f6-4a7b-8c9d-4e5f6a7b8c9d"
+    name: "Prison Gang Alliance"
     description: "Form an alliance with prison gangs to recruit experienced criminals upon release."
     type: "crew_recruitment"
     is_special: true
-    regions: ["north", "south", "east", "west"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3"]  # north, south, east, west
     availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 30
@@ -1305,11 +1366,12 @@ special_operations:
     duration: 5
     success_rate: 75
 
-  - name: "Federal Reserve Infiltration"
+  - id: "b2c3d4e5-f6a7-4b8c-9d0e-5f6a7b8c9d0e"
+    name: "Federal Reserve Infiltration"
     description: "Place an undercover operative within the Federal Reserve."
     type: "intelligence_gathering"
     is_special: true
-    regions: ["north", "northeast"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1"]  # north, northeast
     availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 60
@@ -1331,11 +1393,12 @@ special_operations:
     duration: 14400
     success_rate: 50
 
-  - name: "Political Campaign Takeover"
+  - id: "c3d4e5f6-a7b8-4c9d-0e1f-6a7b8c9d0e1f"
+    name: "Political Campaign Takeover"
     description: "Secretly fund and control a mayoral campaign."
     type: "official_bribing"
     is_special: true
-    regions: ["north", "northeast"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1"]  # north, northeast
     availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 50
@@ -1356,11 +1419,12 @@ special_operations:
     duration: 21600
     success_rate: 60
 
-  - name: "Port Authority Corruption"
+  - id: "d4e5f6a7-b8c9-4d0e-1f2a-7b8c9d0e1f2a"
+    name: "Port Authority Corruption"
     description: "Establish a network of corrupt officials throughout the port authority."
     type: "official_bribing"
     is_special: true
-    regions: ["south"]
+    regions: ["5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f"]  # south
     availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 45
@@ -1382,11 +1446,12 @@ special_operations:
     duration: 18000
     success_rate: 65
 
-  - name: "Stadium Construction Bid Rigging"
+  - id: "e5f6a7b8-c9d0-4e1f-2a3b-8c9d0e1f2a3b"
+    name: "Stadium Construction Bid Rigging"
     description: "Manipulate the bidding process for a major stadium construction project."
     type: "official_bribing"
     is_special: true
-    regions: ["southwest"]
+    regions: ["f7a9b1c3-d5e7-f9a1-b3c5-d7e9f1a3b5c7"]  # southwest
     availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 55
@@ -1408,11 +1473,12 @@ special_operations:
     duration: 25200
     success_rate: 60
 
-  - name: "Prison Break: Maximum Security"
+  - id: "f6a7b8c9-d0e1-4f2a-3b4c-9d0e1f2a3b4c"
+    name: "Prison Break: Maximum Security"
     description: "Orchestrate a breakout from a maximum-security prison for valuable crew members."
     type: "crew_recruitment"
     is_special: true
-    regions: ["north", "south", "east", "west"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3"]  # north, south, east, west
     availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 50
@@ -1435,11 +1501,12 @@ special_operations:
     duration: 10800
     success_rate: 40
 
-  - name: "Military Hardware Theft"
+  - id: "a7b8c9d0-e1f2-4a3b-4c5d-0e1f2a3b4c5d"
+    name: "Military Hardware Theft"
     description: "Break into a military base and steal advanced weapons."
     type: "goods_smuggling"
     is_special: true
-    regions: ["south", "east", "west", "southwest", "northwest"]
+    regions: ["5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3", "f7a9b1c3-d5e7-f9a1-b3c5-d7e9f1a3b5c7", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # south, east, west, southwest, northwest
     availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 55
@@ -1462,11 +1529,12 @@ special_operations:
     duration: 12600
     success_rate: 45
 
-  - name: "International Art Heist"
+  - id: "b8c9d0e1-f2a3-4b4c-5d6e-1f2a3b4c5d6e"
+    name: "International Art Heist"
     description: "Steal priceless artwork from a major museum for a wealthy collector."
     type: "goods_smuggling"
     is_special: true
-    regions: ["north", "east", "northeast"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1"]  # north, east, northeast
     availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 45
@@ -1489,11 +1557,12 @@ special_operations:
     duration: 16200
     success_rate: 55
 
-  - name: "Corporate Espionage"
+  - id: "c9d0e1f2-a3b4-4c5d-6e7f-2a3b4c5d6e7f"
+    name: "Corporate Espionage"
     description: "Infiltrate a major corporation to steal trade secrets."
     type: "intelligence_gathering"
     is_special: true
-    regions: ["north", "northeast", "northwest"]
+    regions: ["3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e", "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1", "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e"]  # north, northeast, northwest
     availability_duration: 120  # Longer availability for special operations
     requirements:
       min_influence: 40

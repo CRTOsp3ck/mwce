@@ -1,34 +1,34 @@
 # configs/campaigns.yaml
 
 campaigns:
-  - id: "1"
+  - id: "c1d2e3f4-a5b6-4c7d-8e9f-4a5b6c7d8e9f"
     name: "The Family Business"
     description: "Establish your criminal empire in the city by taking over key territories and eliminating rivals."
     image_url: "/assets/campaigns/family-business.jpg"
     is_active: true
     chapters:
-      - id: "1-1"
+      - id: "8a9b0c1d-2e3f-4a5b-6c7d-8e9f0a1b2c3d"
         name: "Starting Small"
         description: "Begin your criminal career by establishing connections in the local neighborhood."
         order: 1
         missions:
-          - id: "1-1-1"
+          - id: "4c5d6e7f-8a9b-4c5d-6e7f-8a9b0c1d2e3f"
             name: "First Connections"
             description: "Make your first contacts in the criminal underworld."
             order: 1
             prerequisites: []
             branches:
-              - id: "1-1-1-1"
+              - id: "e5f6a7b8-c9d0-4e1f-2a3b-8c9d0e1f2a3b"
                 name: "The Diplomatic Approach"
                 description: "Build relationships with local business owners through persuasion rather than force."
                 operations:
-                  - id: "op-1-1-1-1-1"
+                  - id: "f6a7b8c9-d0e1-4f2a-3b4c-9d0e1f2a3b4c"
                     name: "Information Gathering"
                     description: "Gather information about local businesses and their owners."
                     type: "intelligence_gathering"
                     is_special: true
                     regions:
-                      - "Downtown"
+                      - "3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e" # north
                     requirements:
                       min_influence: 0
                       max_heat: 100
@@ -57,29 +57,29 @@ campaigns:
                     duration: 1800
                     success_rate: 85
                 pois:
-                  - id: "poi-1-1-1-1-1"
+                  - id: "a7b8c9d0-e1f2-4a3b-4c5d-0e1f2a3b4c5d"
                     name: "Café Owner Marco"
                     description: "Owner of a small café that serves as a meeting place for local criminals."
-                    type: "Bar"
-                    business_type: "Protection"
+                    type: "bar"
+                    business_type: "protection"
                     is_legal: true
-                    city_id: "city-downtown-1"
+                    city_id: "a25fec6a-20c8-4ef2-b9c0-2e376e37b0fa" # central
                     dialogues:
-                      - id: "dlg-1-1-1-1-1-1"
+                      - id: "b8c9d0e1-f2a3-4b4c-5d6e-1f2a3b4c5d6e"
                         speaker: "Player"
                         interaction_type: "Neutral"
                         text: "Nice place you got here. I'm new in town, looking to make some connections."
                         order: 1
-                      - id: "dlg-1-1-1-1-1-2"
+                      - id: "c9d0e1f2-a3b4-4c5d-6e7f-2a3b4c5d6e7f"
                         speaker: "NPC"
                         text: "Thanks, been running this place for 15 years. New faces are always welcome, as long as they're respectful."
                         order: 2
-                      - id: "dlg-1-1-1-1-1-3"
+                      - id: "d0e1f2a3-b4c5-4d6e-7f8a-3b4c5d6e7f8a"
                         speaker: "Player"
                         interaction_type: "Convince"
                         text: "I could help provide some extra security for your establishment. The neighborhood isn't always safe."
                         order: 3
-                      - id: "dlg-1-1-1-1-1-4"
+                      - id: "e1f2a3b4-c5d6-4e7f-8a9b-4c5d6e7f8a9b"
                         speaker: "NPC"
                         is_success: true
                         text: "You might be right about that. I've had some trouble with vandalism lately. If you're offering protection, I'm willing to pay a fair price."
@@ -87,12 +87,12 @@ campaigns:
                         resource_effect:
                           money: 1000
                           respect: 5
-                      - id: "dlg-1-1-1-1-1-5"
+                      - id: "f2a3b4c5-d6e7-4f8a-9b0c-5d6e7f8a9b0c"
                         speaker: "Player"
                         interaction_type: "Intimidate"
                         text: "It would be a shame if something happened to this nice café. Maybe you need someone to watch your back."
                         order: 5
-                      - id: "dlg-1-1-1-1-1-6"
+                      - id: "a3b4c5d6-e7f8-4a9b-0c1d-6e7f8a9b0c1d"
                         speaker: "NPC"
                         is_success: false
                         text: "Are you threatening me? I've dealt with your kind before. Get out before I call the police."
@@ -100,17 +100,17 @@ campaigns:
                         resource_effect:
                           heat: 10
                           respect: -5
-              - id: "1-1-1-2"
+              - id: "b4c5d6e7-f8a9-4b0c-1d2e-7f8a9b0c1d2e"
                 name: "The Strong-Arm Approach"
                 description: "Take what you want by force and intimidation."
                 operations:
-                  - id: "op-1-1-1-2-1"
+                  - id: "c5d6e7f8-a9b0-4c1d-2e3f-8a9b0c1d2e3f"
                     name: "Muscle Recruitment"
                     description: "Recruit local tough guys to form your first crew."
                     type: "crew_recruitment"
                     is_special: true
                     regions:
-                      - "Industrial District"
+                      - "5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f" # south
                     requirements:
                       min_influence: 0
                       max_heat: 100
@@ -139,29 +139,29 @@ campaigns:
                     duration: 2700
                     success_rate: 75
                 pois:
-                  - id: "poi-1-1-1-2-1"
+                  - id: "d6e7f8a9-b0c1-4d2e-3f4a-9b0c1d2e3f4a"
                     name: "Boxing Gym Owner Tony"
                     description: "Runs a boxing gym where local tough guys train."
-                    type: "Warehouse"
-                    business_type: "Protection"
+                    type: "warehouse"
+                    business_type: "protection"
                     is_legal: true
-                    city_id: "city-industrial-1"
+                    city_id: "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5" # factory_row
                     dialogues:
-                      - id: "dlg-1-1-1-2-1-1"
+                      - id: "e7f8a9b0-c1d2-4e3f-4a5b-0c1d2e3f4a5b"
                         speaker: "Player"
                         interaction_type: "Neutral"
                         text: "I'm looking for some tough guys for a job. Heard this is the place to find them."
                         order: 1
-                      - id: "dlg-1-1-1-2-1-2"
+                      - id: "f8a9b0c1-d2e3-4f4a-5b6c-1d2e3f4a5b6c"
                         speaker: "NPC"
                         text: "My boys are legit boxers, not hired muscle. What kind of job are we talking about here?"
                         order: 2
-                      - id: "dlg-1-1-1-2-1-3"
+                      - id: "a9b0c1d2-e3f4-4a5b-6c7d-2e3f4a5b6c7d"
                         speaker: "Player"
                         interaction_type: "Convince"
                         text: "Nothing illegal, just need some security for my new business. Good pay, flexible hours."
                         order: 3
-                      - id: "dlg-1-1-1-2-1-4"
+                      - id: "b0c1d2e3-f4a5-4b6c-7d8e-3f4a5b6c7d8e"
                         speaker: "NPC"
                         is_success: true
                         text: "Well, some of my guys could use the extra cash. As long as they don't get into trouble with the law, I'll send a few your way."
@@ -169,12 +169,12 @@ campaigns:
                         resource_effect:
                           crew: 3
                           respect: 5
-                      - id: "dlg-1-1-1-2-1-5"
+                      - id: "c1d2e3f4-a5b6-4c7d-8e9f-4a5b6c7d8e9f"
                         speaker: "Player"
                         interaction_type: "Intimidate"
                         text: "Either you help me find the muscle I need, or your gym might have some unexpected accidents."
                         order: 5
-                      - id: "dlg-1-1-1-2-1-6"
+                      - id: "d2e3f4a5-b6c7-4d8e-9f0a-5b6c7d8e9f0a"
                         speaker: "NPC"
                         is_success: true
                         text: "Easy, easy! No need for threats. I know a few guys who aren't afraid to get their hands dirty. But this better not come back on me."
@@ -183,23 +183,23 @@ campaigns:
                           crew: 5
                           heat: 15
                           respect: 10
-          - id: "1-1-2"
+          - id: "e3f4a5b6-c7d8-4e9f-0a1b-6c7d8e9f0a1b"
             name: "Territorial Expansion"
             description: "Expand your influence to neighboring areas."
             order: 2
-            prerequisites: ["1-1-1"]
+            prerequisites: ["4c5d6e7f-8a9b-4c5d-6e7f-8a9b0c1d2e3f"]
             branches:
-              - id: "1-1-2-1"
+              - id: "f4a5b6c7-d8e9-4f0a-1b2c-7d8e9f0a1b2c"
                 name: "Strategic Alliances"
                 description: "Form alliances with other small criminal groups to expand your influence."
                 operations:
-                  - id: "op-1-1-2-1-1"
+                  - id: "a5b6c7d8-e9f0-4a1b-2c3d-8e9f0a1b2c3d"
                     name: "Negotiation Meeting"
                     description: "Arrange a meeting with leaders of local gangs to discuss potential alliances."
                     type: "intelligence_gathering"
                     is_special: true
                     regions:
-                      - "Chinatown"
+                      - "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a" # east
                     requirements:
                       min_influence: 5
                       max_heat: 75
@@ -228,29 +228,29 @@ campaigns:
                     duration: 3600
                     success_rate: 70
                 pois:
-                  - id: "poi-1-1-2-1-1"
+                  - id: "b6c7d8e9-f0a1-4b2c-3d4e-9f0a1b2c3d4e"
                     name: "Golden Dragon Restaurant Owner"
                     description: "Owner of a restaurant that serves as a front for a local gang."
-                    type: "Restaurant"
-                    business_type: "Protection"
+                    type: "restaurant"
+                    business_type: "protection"
                     is_legal: true
-                    city_id: "city-chinatown-1"
+                    city_id: "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5" # cultural
                     dialogues:
-                      - id: "dlg-1-1-2-1-1-1"
+                      - id: "c7d8e9f0-a1b2-4c3d-4e5f-0a1b2c3d4e5f"
                         speaker: "Player"
                         interaction_type: "Neutral"
                         text: "I'm here to discuss business with Mr. Chang."
                         order: 1
-                      - id: "dlg-1-1-2-1-1-2"
+                      - id: "d8e9f0a1-b2c3-4d4e-5f6a-1b2c3d4e5f6a"
                         speaker: "NPC"
                         text: "Mr. Chang is a busy man. What kind of business?"
                         order: 2
-                      - id: "dlg-1-1-2-1-1-3"
+                      - id: "e9f0a1b2-c3d4-4e5f-6a7b-2c3d4e5f6a7b"
                         speaker: "Player"
                         interaction_type: "Convince"
                         text: "I represent new interests in town. We can help each other expand without stepping on toes."
                         order: 3
-                      - id: "dlg-1-1-2-1-1-4"
+                      - id: "f0a1b2c3-d4e5-4f6a-7b8c-3d4e5f6a7b8c"
                         speaker: "NPC"
                         is_success: true
                         text: "I'll arrange a meeting. Mr. Chang appreciates diplomacy in these matters. Come back tomorrow evening."
@@ -258,17 +258,17 @@ campaigns:
                         resource_effect:
                           influence: 10
                           respect: 10
-              - id: "1-1-2-2"
+              - id: "a1b2c3d4-e5f6-4a7b-8c9d-4e5f6a7b8c9d"
                 name: "Hostile Takeover"
                 description: "Eliminate competition and take over their territory by force."
                 operations:
-                  - id: "op-1-1-2-2-1"
+                  - id: "b2c3d4e5-f6a7-4b8c-9d0e-5f6a7b8c9d0e"
                     name: "Gang Hideout Raid"
                     description: "Attack a rival gang's hideout to assert dominance in the area."
                     type: "carjacking"
                     is_special: true
                     regions:
-                      - "Harbor District"
+                      - "5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f" # south
                     requirements:
                       min_influence: 5
                       max_heat: 100
@@ -297,29 +297,29 @@ campaigns:
                     duration: 5400
                     success_rate: 60
                 pois:
-                  - id: "poi-1-1-2-2-1"
+                  - id: "c3d4e5f6-a7b8-4c9d-0e1f-6a7b8c9d0e1f"
                     name: "Harbor Warehouse Guardian"
                     description: "A gang lieutenant who protects their warehouse at the harbor."
-                    type: "Warehouse"
-                    business_type: "Smuggling"
+                    type: "warehouse"
+                    business_type: "smuggling"
                     is_legal: false
-                    city_id: "city-harbor-1"
+                    city_id: "9c1d3e5f-7a9b-1c3d-5e7f-9a1b3c5d7e9f" # dockside
                     dialogues:
-                      - id: "dlg-1-1-2-2-1-1"
+                      - id: "d4e5f6a7-b8c9-4d0e-1f2a-7b8c9d0e1f2a"
                         speaker: "Player"
                         interaction_type: "Neutral"
                         text: "Nice operation you have here. Mind if I take a look around?"
                         order: 1
-                      - id: "dlg-1-1-2-2-1-2"
+                      - id: "e5f6a7b8-c9d0-4e1f-2a3b-8c9d0e1f2a3b"
                         speaker: "NPC"
                         text: "This is private property. State your business or leave."
                         order: 2
-                      - id: "dlg-1-1-2-2-1-3"
+                      - id: "f6a7b8c9-d0e1-4f2a-3b4c-9d0e1f2a3b4c"
                         speaker: "Player"
                         interaction_type: "Intimidate"
                         text: "My business is taking over this place. You can either work for me now or get out of my way."
                         order: 3
-                      - id: "dlg-1-1-2-2-1-4"
+                      - id: "a7b8c9d0-e1f2-4a3b-4c5d-0e1f2a3b4c5d"
                         speaker: "NPC"
                         is_success: true
                         text: "You've got guts, I'll give you that. The boss has been running this place into the ground anyway. My crew and I might consider a change in management, for the right price."
@@ -329,28 +329,28 @@ campaigns:
                           crew: 8
                           weapons: 5
                           respect: 20
-      - id: "1-2"
+      - id: "b8c9d0e1-f2a3-4b4c-5d6e-1f2a3b4c5d6e"
         name: "Growing Pains"
         description: "Deal with the challenges of running a growing criminal organization."
         order: 2
         missions:
-          - id: "1-2-1"
+          - id: "c9d0e1f2-a3b4-4c5d-6e7f-2a3b4c5d6e7f"
             name: "Heat Management"
             description: "Learn to manage heat from law enforcement as your operations become more visible."
             order: 1
-            prerequisites: ["1-1-2"]
+            prerequisites: ["e3f4a5b6-c7d8-4e9f-0a1b-6c7d8e9f0a1b"]
             branches:
-              - id: "1-2-1-1"
+              - id: "d0e1f2a3-b4c5-4d6e-7f8a-3b4c5d6e7f8a"
                 name: "Police Corruption"
                 description: "Bribe local police to look the other way."
                 operations:
-                  - id: "op-1-2-1-1-1"
+                  - id: "e1f2a3b4-c5d6-4e7f-8a9b-4c5d6e7f8a9b"
                     name: "Officer Recruitment"
                     description: "Identify and approach corrupt police officers who can be bribed."
                     type: "official_bribing"
                     is_special: true
                     regions:
-                      - "Downtown"
+                      - "3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e" # north
                     requirements:
                       min_influence: 10
                       max_heat: 80
@@ -379,29 +379,29 @@ campaigns:
                     duration: 7200
                     success_rate: 65
                 pois:
-                  - id: "poi-1-2-1-1-1"
+                  - id: "f2a3b4c5-d6e7-4f8a-9b0c-5d6e7f8a9b0c"
                     name: "Sergeant Jenkins"
                     description: "A police sergeant known to be open to bribes."
-                    type: "Bar"
-                    business_type: "Protection"
+                    type: "bar"
+                    business_type: "protection"
                     is_legal: true
-                    city_id: "city-downtown-2"
+                    city_id: "b1c3d5e7-f9a8-4d2e-8c6b-4a2e6f8a0c2e" # financial
                     dialogues:
-                      - id: "dlg-1-2-1-1-1-1"
+                      - id: "a3b4c5d6-e7f8-4a9b-0c1d-6e7f8a9b0c1d"
                         speaker: "Player"
                         interaction_type: "Neutral"
                         text: "Nice place for a cop to hang out after hours."
                         order: 1
-                      - id: "dlg-1-2-1-1-1-2"
+                      - id: "b4c5d6e7-f8a9-4b0c-1d2e-7f8a9b0c1d2e"
                         speaker: "NPC"
                         text: "I'm off duty. What do you want?"
                         order: 2
-                      - id: "dlg-1-2-1-1-1-3"
+                      - id: "c5d6e7f8-a9b0-4c1d-2e3f-8a9b0c1d2e3f"
                         speaker: "Player"
                         interaction_type: "Convince"
                         text: "I hear you're a reasonable man who understands business. I could make it worth your while to be a little less observant in certain areas."
                         order: 3
-                      - id: "dlg-1-2-1-1-1-4"
+                      - id: "d6e7f8a9-b0c1-4d2e-3f4a-9b0c1d2e3f4a"
                         speaker: "NPC"
                         is_success: true
                         text: "You're talking to the right person, but this isn't the right place. Meet me tomorrow behind the old factory. Bring cash, not promises."
