@@ -8,6 +8,7 @@ import BaseButton from '@/components/ui/BaseButton.vue';
 import BaseModal from '@/components/ui/BaseModal.vue';
 import { usePlayerStore } from '@/stores/modules/player';
 import { useOperationsStore } from '@/stores/modules/operations';
+import { useCampaignStore } from '@/stores/modules/campaign';
 import sseService from '@/services/sseService';
 import {
   Operation,
@@ -22,6 +23,7 @@ const route = useRoute();
 const router = useRouter();
 const playerStore = usePlayerStore();
 const operationsStore = useOperationsStore();
+const campaignStore = useCampaignStore();
 
 // View state
 const activeTab = computed(() => route.query.tab as string || 'available');
@@ -138,6 +140,33 @@ async function collectOperation(operationId: string) {
       if (rewardResult) {
         // Show success notification or UI update here if needed
         console.log('Rewards collected successfully');
+      }
+
+      // Check if this was a campaign operation by retrieving the stored metadata
+      const campaignOpMetadata = localStorage.getItem(`campaign_operation_${operationId}`);
+      if (campaignOpMetadata) {
+        try {
+          const metadata = JSON.parse(campaignOpMetadata);
+          if (metadata.isCampaignOperation) {
+            // If it's a campaign operation, notify the campaign store
+            await campaignStore.completeOperation(operationId, result.data?.id || '');
+
+            // Remove the stored metadata
+            localStorage.removeItem(`campaign_operation_${operationId}`);
+          }
+        } catch (e) {
+          console.error('Error parsing campaign operation metadata:', e);
+        }
+      }
+
+      // Alternatively, check the operation's metadata directly if available
+      // This approach would be better if the metadata is preserved in the operation response
+      const operation = operationsStore.getOperationById ?
+                        operationsStore.getOperationById(operationId) : null;
+
+      if (operation && operation.metadata && operation.metadata.isCampaignOperation) {
+        // If it's a campaign operation, notify the campaign store
+        await campaignStore.completeOperation(operationId, result.data?.id || '');
       }
 
       // Switch to completed tab to show the completed operation
@@ -507,8 +536,20 @@ function resetFilters() {
   searchQuery.value = '';
 }
 
-function startOperation(operation: Operation) {
+async function startOperation(operation: Operation) {
   selectedOperation.value = operation;
+
+  // Check if this is a campaign operation
+  if (operation.metadata && operation.metadata.isCampaignOperation) {
+    // Store the campaign metadata for later use after the operation completes
+    localStorage.setItem(`campaign_operation_${operation.id}`, JSON.stringify({
+      campaignId: operation.metadata.campaignId,
+      missionId: operation.metadata.missionId,
+      branchId: operation.metadata.branchId,
+      isCampaignOperation: true
+    }));
+  }
+
   showStartModal.value = true;
 }
 
@@ -534,6 +575,20 @@ async function confirmStartOperation() {
       selectedOperation.value.id,
       selectedOperation.value.resources
     );
+
+    // If this is a campaign operation, store the attempt ID for completion tracking
+    if (selectedOperation.value.metadata && selectedOperation.value.metadata.isCampaignOperation &&
+        result && result.success && result.data) {
+      // Store the operation attempt ID with the campaign metadata
+      const metadata = {
+        campaignId: selectedOperation.value.metadata.campaignId,
+        missionId: selectedOperation.value.metadata.missionId,
+        branchId: selectedOperation.value.metadata.branchId,
+        isCampaignOperation: true,
+        attemptId: result.data.id
+      };
+      localStorage.setItem(`campaign_operation_${selectedOperation.value.id}`, JSON.stringify(metadata));
+    }
 
     // Switch to in-progress tab
     navigateToTab('in-progress');

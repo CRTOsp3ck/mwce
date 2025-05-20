@@ -16,6 +16,7 @@ type OperationsData struct {
 
 // OperationTemplate represents an operation template in the operations structure
 type OperationTemplate struct {
+	ID                   string                    `yaml:"id"`
 	Name                 string                    `yaml:"name"`
 	Description          string                    `yaml:"description"`
 	Type                 string                    `yaml:"type"`

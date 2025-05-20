@@ -15,6 +15,7 @@ const RegisterView = () => import('@/views/RegisterView.vue');
 const ProfileView = () => import('@/views/ProfileView.vue');
 const SettingsView = () => import('@/views/SettingsView.vue');
 const NotificationsView = () => import('@/views/NotificationsView.vue');
+const CampaignsView = () => import('@/views/CampaignsView.vue');
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -131,7 +132,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/campaigns',
     name: 'Campaigns',
-    component: () => import('@/views/CampaignsView.vue'),
+    component: CampaignsView,
     meta: {
       title: 'Campaigns - Criminal Empire',
       requiresAuth: true

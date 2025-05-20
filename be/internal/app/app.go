@@ -82,15 +82,21 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 	territoryRepo := repository.NewTerritoryRepository(db)
 	operationsRepo := repository.NewOperationsRepository(db)
 	marketRepo := repository.NewMarketRepository(db)
+	campaignRepo := repository.NewCampaignRepository(db)
 
 	// Initialize services
 	playerService := service.NewPlayerService(playerRepo, *cfg.Game, logger)
 	authService := service.NewAuthService(playerRepo, playerService, cfg.JWT, logger)
 	sseService := service.NewSSEService(logger)
 
-	// Initialize territory and operations services without providers initially
-	territoryService := service.NewTerritoryService(territoryRepo, playerRepo, sseService, *cfg.Game, logger, nil)
-	operationsService := service.NewOperationsService(operationsRepo, territoryRepo, playerRepo, playerService, sseService, *cfg.Game, logger, nil)
+	// Initialize territory and operations services with empty slices for providers
+	territoryService := service.NewTerritoryService(territoryRepo, playerRepo, sseService, *cfg.Game, logger, []service.CustomHotspotProvider{})
+	operationsService := service.NewOperationsService(operationsRepo, territoryRepo, playerRepo, playerService, sseService, *cfg.Game, logger, []service.CustomOperationsProvider{})
+	campaignService := service.NewCampaignService(campaignRepo, playerRepo, territoryRepo, playerService, sseService, logger)
+
+	// Add the campaign service as a provider to territory and operations services
+	territoryService.AddCustomHotspotProvider(campaignService)
+	operationsService.AddCustomOperationsProvider(campaignService)
 
 	// -- If no regions, seed territory data --
 	regions, err := territoryService.GetAllRegions()
@@ -118,6 +124,7 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 	operationsController := controller.NewOperationsController(operationsService, logger)
 	marketController := controller.NewMarketController(marketService, logger)
 	travelController := controller.NewTravelController(travelService, logger)
+	campaignController := controller.NewCampaignController(campaignService, logger)
 
 	// Auth middleware
 	authMiddleware := appMiddleware.NewAuthMiddleware(authService)
@@ -196,6 +203,36 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 				r.Get("/history/{type}", marketController.GetResourcePriceHistory)
 				r.Post("/buy", marketController.BuyResource)
 				r.Post("/sell", marketController.SellResource)
+			})
+
+			// Campaign routes
+			r.Route("/campaigns", func(r chi.Router) {
+				r.Get("/", campaignController.GetCampaigns)
+				r.Get("/{id}", campaignController.GetCampaign)
+
+				r.Get("/{id}/chapters", campaignController.GetChaptersByCampaign)
+				r.Get("/chapters/{id}", campaignController.GetChapter)
+				r.Get("/chapters/{id}/missions", campaignController.GetMissionsByChapter)
+				r.Get("/missions/{id}", campaignController.GetMission)
+				r.Get("/missions/{id}/branches", campaignController.GetBranchesByMission)
+				r.Get("/branches/{id}", campaignController.GetBranch)
+				r.Get("/branches/{id}/operations", campaignController.GetOperationsByBranch)
+				r.Get("/branches/{id}/pois", campaignController.GetPOIsByBranch)
+				r.Get("/pois/{id}", campaignController.GetPOI)
+				r.Get("/pois/{id}/dialogues", campaignController.GetPOIDialogues)
+
+				r.Get("/{id}/progress", campaignController.GetPlayerProgress)
+				r.Post("/{id}/start", campaignController.StartCampaign)
+				r.Get("/{id}/current-mission", campaignController.GetCurrentMission)
+
+				r.Post("/missions/{missionId}/select-branch", campaignController.SelectBranch)
+				r.Post("/missions/{missionId}/branches/{branchId}/complete", campaignController.CompleteBranch)
+				r.Get("/branches/{id}/check-completion", campaignController.CheckBranchCompletion)
+
+				r.Post("/pois/{id}/interact", campaignController.InteractWithPOI)
+				r.Post("/pois/{id}/complete", campaignController.CompletePOI)
+
+				r.Post("/operations/{id}/complete", campaignController.CompleteOperation)
 			})
 		})
 	})

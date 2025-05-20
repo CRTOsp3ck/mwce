@@ -5,6 +5,7 @@ import BaseButton from '@/components/ui/BaseButton.vue';
 import BaseModal from '@/components/ui/BaseModal.vue';
 import { usePlayerStore } from '@/stores/modules/player';
 import { useTerritoryStore } from '@/stores/modules/territory';
+import { useCampaignStore } from '@/stores/modules/campaign';
 import {
   Hotspot,
   TerritoryActionType,
@@ -21,6 +22,7 @@ const router = useRouter();
 
 const playerStore = usePlayerStore();
 const territoryStore = useTerritoryStore();
+const campaignStore = useCampaignStore();
 
 // View state
 const activeTab = computed(() => route.query.tab as string || 'empire');
@@ -636,6 +638,17 @@ function selectHotspot(hotspot: Hotspot) {
 }
 
 function openActionModal(hotspot: Hotspot, action: TerritoryActionType) {
+  // Check if this is a campaign POI
+  if (hotspot.metadata && hotspot.metadata.isCampaignPOI) {
+    // For campaign POIs, we'll open a dialogue interaction instead
+    if (action === TerritoryActionType.COLLECTION) {
+      // Notify the campaign store that the user interacted with this POI
+      campaignStore.handlePOIInteraction(hotspot.id);
+      return;
+    }
+  }
+
+  // Original code for regular hotspots
   selectHotspot(hotspot);
   selectedAction.value = action;
 
@@ -702,6 +715,29 @@ async function performAction() {
   isPerformingAction.value = true;
 
   try {
+    // Check if this is a campaign POI
+    if (selectedHotspot.value.metadata && selectedHotspot.value.metadata.isCampaignPOI) {
+      // For campaign POIs with extortion/takeover actions, complete the POI
+      if (selectedAction.value === TerritoryActionType.EXTORTION ||
+          selectedAction.value === TerritoryActionType.TAKEOVER) {
+        await campaignStore.completePOI(selectedHotspot.value.id);
+
+        // Create a success result
+        actionResult.value = {
+          success: true,
+          message: `Successfully completed interaction with ${selectedHotspot.value.name}!`
+        };
+
+        actionSuccess.value = true;
+
+        // Close action modal and show result
+        showActionModal.value = false;
+        showResultModal.value = true;
+        return;
+      }
+    }
+
+    // Original code for regular hotspots
     const actResult = await territoryStore.performTerritoryAction(
       selectedAction.value,
       selectedHotspot.value.id,
@@ -848,6 +884,26 @@ async function collectHotspotIncome(hotspotId: string) {
   collectingHotspotId.value = hotspotId;
 
   try {
+    // Get the hotspot details first to check if it's a campaign POI
+    const hotspot = territoryStore.hotspots.find(h => h.id === hotspotId);
+
+    // Check if this is a campaign POI
+    if (hotspot && hotspot.metadata && hotspot.metadata.isCampaignPOI) {
+      // If it's a campaign POI, notify the campaign store
+      await campaignStore.completePOI(hotspotId);
+
+      // Show a notification
+      actionResult.value = {
+        success: true,
+        message: `You have completed interaction with ${hotspot.name}!`
+      };
+
+      actionSuccess.value = true;
+      showResultModal.value = true;
+      return;
+    }
+
+    // Original collection code for regular hotspots
     const result = await territoryStore.collectHotspotIncome(hotspotId);
 
     if (result) {
@@ -903,6 +959,17 @@ function openDetailModal(hotspot: Hotspot) {
 
 // Method to forward action request from detail modal to action modal
 function handleOpenActionModal(hotspot: Hotspot, action: TerritoryActionType) {
+  // Check if this is a campaign POI
+  if (hotspot.metadata && hotspot.metadata.isCampaignPOI) {
+    // For campaign POIs, check what kind of interaction this is
+    if (action === TerritoryActionType.COLLECTION) {
+      // For collection, this would be a dialogue interaction in the campaign system
+      campaignStore.handlePOIInteraction(hotspot.id);
+      return;
+    }
+  }
+
+  // Original code for regular hotspots
   openActionModal(hotspot, action);
 }
 

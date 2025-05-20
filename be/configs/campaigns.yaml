@@ -1,0 +1,412 @@
+# configs/campaigns.yaml
+
+campaigns:
+  - id: "1"
+    name: "The Family Business"
+    description: "Establish your criminal empire in the city by taking over key territories and eliminating rivals."
+    image_url: "/assets/campaigns/family-business.jpg"
+    is_active: true
+    chapters:
+      - id: "1-1"
+        name: "Starting Small"
+        description: "Begin your criminal career by establishing connections in the local neighborhood."
+        order: 1
+        missions:
+          - id: "1-1-1"
+            name: "First Connections"
+            description: "Make your first contacts in the criminal underworld."
+            order: 1
+            prerequisites: []
+            branches:
+              - id: "1-1-1-1"
+                name: "The Diplomatic Approach"
+                description: "Build relationships with local business owners through persuasion rather than force."
+                operations:
+                  - id: "op-1-1-1-1-1"
+                    name: "Information Gathering"
+                    description: "Gather information about local businesses and their owners."
+                    type: "intelligence_gathering"
+                    is_special: true
+                    regions:
+                      - "Downtown"
+                    requirements:
+                      min_influence: 0
+                      max_heat: 100
+                      min_title: ""
+                      required_hotspot_types: ""
+                    resources:
+                      crew: 2
+                      weapons: 0
+                      vehicles: 1
+                      money: 500
+                    rewards:
+                      money: 1000
+                      crew: 2
+                      weapons: 0
+                      vehicles: 0
+                      respect: 5
+                      influence: 3
+                      heat_reduction: 0
+                    risks:
+                      crew_loss: 1
+                      weapons_loss: 0
+                      vehicles_loss: 0
+                      money_loss: 500
+                      heat_increase: 5
+                      respect_loss: 2
+                    duration: 1800
+                    success_rate: 85
+                pois:
+                  - id: "poi-1-1-1-1-1"
+                    name: "Café Owner Marco"
+                    description: "Owner of a small café that serves as a meeting place for local criminals."
+                    type: "Bar"
+                    business_type: "Protection"
+                    is_legal: true
+                    city_id: "city-downtown-1"
+                    dialogues:
+                      - id: "dlg-1-1-1-1-1-1"
+                        speaker: "Player"
+                        interaction_type: "Neutral"
+                        text: "Nice place you got here. I'm new in town, looking to make some connections."
+                        order: 1
+                      - id: "dlg-1-1-1-1-1-2"
+                        speaker: "NPC"
+                        text: "Thanks, been running this place for 15 years. New faces are always welcome, as long as they're respectful."
+                        order: 2
+                      - id: "dlg-1-1-1-1-1-3"
+                        speaker: "Player"
+                        interaction_type: "Convince"
+                        text: "I could help provide some extra security for your establishment. The neighborhood isn't always safe."
+                        order: 3
+                      - id: "dlg-1-1-1-1-1-4"
+                        speaker: "NPC"
+                        is_success: true
+                        text: "You might be right about that. I've had some trouble with vandalism lately. If you're offering protection, I'm willing to pay a fair price."
+                        order: 4
+                        resource_effect:
+                          money: 1000
+                          respect: 5
+                      - id: "dlg-1-1-1-1-1-5"
+                        speaker: "Player"
+                        interaction_type: "Intimidate"
+                        text: "It would be a shame if something happened to this nice café. Maybe you need someone to watch your back."
+                        order: 5
+                      - id: "dlg-1-1-1-1-1-6"
+                        speaker: "NPC"
+                        is_success: false
+                        text: "Are you threatening me? I've dealt with your kind before. Get out before I call the police."
+                        order: 6
+                        resource_effect:
+                          heat: 10
+                          respect: -5
+              - id: "1-1-1-2"
+                name: "The Strong-Arm Approach"
+                description: "Take what you want by force and intimidation."
+                operations:
+                  - id: "op-1-1-1-2-1"
+                    name: "Muscle Recruitment"
+                    description: "Recruit local tough guys to form your first crew."
+                    type: "crew_recruitment"
+                    is_special: true
+                    regions:
+                      - "Industrial District"
+                    requirements:
+                      min_influence: 0
+                      max_heat: 100
+                      min_title: ""
+                      required_hotspot_types: ""
+                    resources:
+                      crew: 1
+                      weapons: 2
+                      vehicles: 0
+                      money: 1000
+                    rewards:
+                      money: 0
+                      crew: 5
+                      weapons: 1
+                      vehicles: 0
+                      respect: 10
+                      influence: 5
+                      heat_reduction: 0
+                    risks:
+                      crew_loss: 1
+                      weapons_loss: 1
+                      vehicles_loss: 0
+                      money_loss: 1000
+                      heat_increase: 15
+                      respect_loss: 0
+                    duration: 2700
+                    success_rate: 75
+                pois:
+                  - id: "poi-1-1-1-2-1"
+                    name: "Boxing Gym Owner Tony"
+                    description: "Runs a boxing gym where local tough guys train."
+                    type: "Warehouse"
+                    business_type: "Protection"
+                    is_legal: true
+                    city_id: "city-industrial-1"
+                    dialogues:
+                      - id: "dlg-1-1-1-2-1-1"
+                        speaker: "Player"
+                        interaction_type: "Neutral"
+                        text: "I'm looking for some tough guys for a job. Heard this is the place to find them."
+                        order: 1
+                      - id: "dlg-1-1-1-2-1-2"
+                        speaker: "NPC"
+                        text: "My boys are legit boxers, not hired muscle. What kind of job are we talking about here?"
+                        order: 2
+                      - id: "dlg-1-1-1-2-1-3"
+                        speaker: "Player"
+                        interaction_type: "Convince"
+                        text: "Nothing illegal, just need some security for my new business. Good pay, flexible hours."
+                        order: 3
+                      - id: "dlg-1-1-1-2-1-4"
+                        speaker: "NPC"
+                        is_success: true
+                        text: "Well, some of my guys could use the extra cash. As long as they don't get into trouble with the law, I'll send a few your way."
+                        order: 4
+                        resource_effect:
+                          crew: 3
+                          respect: 5
+                      - id: "dlg-1-1-1-2-1-5"
+                        speaker: "Player"
+                        interaction_type: "Intimidate"
+                        text: "Either you help me find the muscle I need, or your gym might have some unexpected accidents."
+                        order: 5
+                      - id: "dlg-1-1-1-2-1-6"
+                        speaker: "NPC"
+                        is_success: true
+                        text: "Easy, easy! No need for threats. I know a few guys who aren't afraid to get their hands dirty. But this better not come back on me."
+                        order: 6
+                        resource_effect:
+                          crew: 5
+                          heat: 15
+                          respect: 10
+          - id: "1-1-2"
+            name: "Territorial Expansion"
+            description: "Expand your influence to neighboring areas."
+            order: 2
+            prerequisites: ["1-1-1"]
+            branches:
+              - id: "1-1-2-1"
+                name: "Strategic Alliances"
+                description: "Form alliances with other small criminal groups to expand your influence."
+                operations:
+                  - id: "op-1-1-2-1-1"
+                    name: "Negotiation Meeting"
+                    description: "Arrange a meeting with leaders of local gangs to discuss potential alliances."
+                    type: "intelligence_gathering"
+                    is_special: true
+                    regions:
+                      - "Chinatown"
+                    requirements:
+                      min_influence: 5
+                      max_heat: 75
+                      min_title: ""
+                      required_hotspot_types: ""
+                    resources:
+                      crew: 5
+                      weapons: 3
+                      vehicles: 1
+                      money: 2000
+                    rewards:
+                      money: 0
+                      crew: 10
+                      weapons: 5
+                      vehicles: 2
+                      respect: 15
+                      influence: 10
+                      heat_reduction: 5
+                    risks:
+                      crew_loss: 3
+                      weapons_loss: 2
+                      vehicles_loss: 1
+                      money_loss: 5000
+                      heat_increase: 10
+                      respect_loss: 20
+                    duration: 3600
+                    success_rate: 70
+                pois:
+                  - id: "poi-1-1-2-1-1"
+                    name: "Golden Dragon Restaurant Owner"
+                    description: "Owner of a restaurant that serves as a front for a local gang."
+                    type: "Restaurant"
+                    business_type: "Protection"
+                    is_legal: true
+                    city_id: "city-chinatown-1"
+                    dialogues:
+                      - id: "dlg-1-1-2-1-1-1"
+                        speaker: "Player"
+                        interaction_type: "Neutral"
+                        text: "I'm here to discuss business with Mr. Chang."
+                        order: 1
+                      - id: "dlg-1-1-2-1-1-2"
+                        speaker: "NPC"
+                        text: "Mr. Chang is a busy man. What kind of business?"
+                        order: 2
+                      - id: "dlg-1-1-2-1-1-3"
+                        speaker: "Player"
+                        interaction_type: "Convince"
+                        text: "I represent new interests in town. We can help each other expand without stepping on toes."
+                        order: 3
+                      - id: "dlg-1-1-2-1-1-4"
+                        speaker: "NPC"
+                        is_success: true
+                        text: "I'll arrange a meeting. Mr. Chang appreciates diplomacy in these matters. Come back tomorrow evening."
+                        order: 4
+                        resource_effect:
+                          influence: 10
+                          respect: 10
+              - id: "1-1-2-2"
+                name: "Hostile Takeover"
+                description: "Eliminate competition and take over their territory by force."
+                operations:
+                  - id: "op-1-1-2-2-1"
+                    name: "Gang Hideout Raid"
+                    description: "Attack a rival gang's hideout to assert dominance in the area."
+                    type: "carjacking"
+                    is_special: true
+                    regions:
+                      - "Harbor District"
+                    requirements:
+                      min_influence: 5
+                      max_heat: 100
+                      min_title: ""
+                      required_hotspot_types: ""
+                    resources:
+                      crew: 10
+                      weapons: 8
+                      vehicles: 2
+                      money: 0
+                    rewards:
+                      money: 5000
+                      crew: 5
+                      weapons: 10
+                      vehicles: 3
+                      respect: 25
+                      influence: 15
+                      heat_reduction: 0
+                    risks:
+                      crew_loss: 8
+                      weapons_loss: 5
+                      vehicles_loss: 2
+                      money_loss: 0
+                      heat_increase: 30
+                      respect_loss: 10
+                    duration: 5400
+                    success_rate: 60
+                pois:
+                  - id: "poi-1-1-2-2-1"
+                    name: "Harbor Warehouse Guardian"
+                    description: "A gang lieutenant who protects their warehouse at the harbor."
+                    type: "Warehouse"
+                    business_type: "Smuggling"
+                    is_legal: false
+                    city_id: "city-harbor-1"
+                    dialogues:
+                      - id: "dlg-1-1-2-2-1-1"
+                        speaker: "Player"
+                        interaction_type: "Neutral"
+                        text: "Nice operation you have here. Mind if I take a look around?"
+                        order: 1
+                      - id: "dlg-1-1-2-2-1-2"
+                        speaker: "NPC"
+                        text: "This is private property. State your business or leave."
+                        order: 2
+                      - id: "dlg-1-1-2-2-1-3"
+                        speaker: "Player"
+                        interaction_type: "Intimidate"
+                        text: "My business is taking over this place. You can either work for me now or get out of my way."
+                        order: 3
+                      - id: "dlg-1-1-2-2-1-4"
+                        speaker: "NPC"
+                        is_success: true
+                        text: "You've got guts, I'll give you that. The boss has been running this place into the ground anyway. My crew and I might consider a change in management, for the right price."
+                        order: 4
+                        resource_effect:
+                          money: -2000
+                          crew: 8
+                          weapons: 5
+                          respect: 20
+      - id: "1-2"
+        name: "Growing Pains"
+        description: "Deal with the challenges of running a growing criminal organization."
+        order: 2
+        missions:
+          - id: "1-2-1"
+            name: "Heat Management"
+            description: "Learn to manage heat from law enforcement as your operations become more visible."
+            order: 1
+            prerequisites: ["1-1-2"]
+            branches:
+              - id: "1-2-1-1"
+                name: "Police Corruption"
+                description: "Bribe local police to look the other way."
+                operations:
+                  - id: "op-1-2-1-1-1"
+                    name: "Officer Recruitment"
+                    description: "Identify and approach corrupt police officers who can be bribed."
+                    type: "official_bribing"
+                    is_special: true
+                    regions:
+                      - "Downtown"
+                    requirements:
+                      min_influence: 10
+                      max_heat: 80
+                      min_title: "Soldier"
+                      required_hotspot_types: ""
+                    resources:
+                      crew: 2
+                      weapons: 0
+                      vehicles: 1
+                      money: 10000
+                    rewards:
+                      money: 0
+                      crew: 0
+                      weapons: 0
+                      vehicles: 0
+                      respect: 5
+                      influence: 10
+                      heat_reduction: 30
+                    risks:
+                      crew_loss: 1
+                      weapons_loss: 0
+                      vehicles_loss: 0
+                      money_loss: 10000
+                      heat_increase: 50
+                      respect_loss: 20
+                    duration: 7200
+                    success_rate: 65
+                pois:
+                  - id: "poi-1-2-1-1-1"
+                    name: "Sergeant Jenkins"
+                    description: "A police sergeant known to be open to bribes."
+                    type: "Bar"
+                    business_type: "Protection"
+                    is_legal: true
+                    city_id: "city-downtown-2"
+                    dialogues:
+                      - id: "dlg-1-2-1-1-1-1"
+                        speaker: "Player"
+                        interaction_type: "Neutral"
+                        text: "Nice place for a cop to hang out after hours."
+                        order: 1
+                      - id: "dlg-1-2-1-1-1-2"
+                        speaker: "NPC"
+                        text: "I'm off duty. What do you want?"
+                        order: 2
+                      - id: "dlg-1-2-1-1-1-3"
+                        speaker: "Player"
+                        interaction_type: "Convince"
+                        text: "I hear you're a reasonable man who understands business. I could make it worth your while to be a little less observant in certain areas."
+                        order: 3
+                      - id: "dlg-1-2-1-1-1-4"
+                        speaker: "NPC"
+                        is_success: true
+                        text: "You're talking to the right person, but this isn't the right place. Meet me tomorrow behind the old factory. Bring cash, not promises."
+                        order: 4
+                        resource_effect:
+                          money: -5000
+                          heat: -20
+                          influence: 10
