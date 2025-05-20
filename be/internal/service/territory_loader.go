@@ -5,7 +5,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
@@ -156,7 +155,7 @@ func seedTerritoryData(db *gorm.DB, data *TerritoryData, l zerolog.Logger) error
 	// Create regions
 	for _, regionData := range data.Regions {
 		region := model.Region{
-			ID:        uuid.NewString(),
+			ID:        regionData.ID, // Use ID from YAML file
 			Name:      regionData.Name,
 			CreatedAt: now,
 			UpdatedAt: now,
@@ -171,7 +170,7 @@ func seedTerritoryData(db *gorm.DB, data *TerritoryData, l zerolog.Logger) error
 		// Create districts for this region
 		for _, districtData := range regionData.Districts {
 			district := model.District{
-				ID:        uuid.NewString(),
+				ID:        districtData.ID, // Use ID from YAML file
 				Name:      districtData.Name,
 				RegionID:  region.ID,
 				CreatedAt: now,
@@ -187,7 +186,7 @@ func seedTerritoryData(db *gorm.DB, data *TerritoryData, l zerolog.Logger) error
 			// Create cities for this district
 			for _, cityData := range districtData.Cities {
 				city := model.City{
-					ID:         uuid.NewString(),
+					ID:         cityData.ID, // Use ID from YAML file
 					Name:       cityData.Name,
 					DistrictID: district.ID,
 					CreatedAt:  now,
@@ -203,7 +202,7 @@ func seedTerritoryData(db *gorm.DB, data *TerritoryData, l zerolog.Logger) error
 				// Create hotspots for this city
 				for _, hotspotData := range cityData.Hotspots {
 					hotspot := model.Hotspot{
-						ID:                 uuid.NewString(),
+						ID:                 hotspotData.ID, // Use ID from YAML file
 						Name:               hotspotData.Name,
 						CityID:             city.ID,
 						Type:               hotspotData.Type,
