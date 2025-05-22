@@ -51,6 +51,26 @@ function isOperationComplete(operationId: string) {
 function isPOIComplete(poiId: string) {
   return campaignStore.isPOIComplete(poiId);
 }
+
+// Helper function to get location display text
+function getLocationDisplay(poi: CampaignPOI): string {
+  if (poi.metadata?.fullLocation) {
+    return poi.metadata.fullLocation;
+  }
+
+  // Fallback to building location from individual parts
+  const parts = [];
+  if (poi.metadata?.cityName) parts.push(poi.metadata.cityName);
+  if (poi.metadata?.districtName) parts.push(poi.metadata.districtName);
+  if (poi.metadata?.regionName) parts.push(poi.metadata.regionName);
+
+  if (parts.length > 0) {
+    return parts.join(', ');
+  }
+
+  // Final fallback to cityId if no metadata is available
+  return poi.cityId;
+}
 </script>
 
 <template>
@@ -140,7 +160,7 @@ function isPOIComplete(poiId: string) {
               <div class="poi-stats">
                 <div class="stat">
                   <span class="stat-icon">🏙️</span>
-                  <span class="stat-value">{{ poi.cityId }}</span>
+                  <span class="stat-value">{{ getLocationDisplay(poi) }}</span>
                 </div>
                 <div class="stat">
                   <span class="stat-icon">💼</span>
@@ -302,6 +322,14 @@ function isPOIComplete(poiId: string) {
               gap: $spacing-xs;
               font-size: $font-size-sm;
               color: $text-secondary;
+
+              .stat-value {
+                font-weight: 500;
+                max-width: 200px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+              }
             }
           }
         }

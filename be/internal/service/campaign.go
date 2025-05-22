@@ -393,7 +393,58 @@ func (s *campaignService) CompleteBranch(playerID, missionID, branchID string) e
 
 // GetPOIsByBranchID retrieves POIs by branch ID
 func (s *campaignService) GetPOIsByBranchID(branchID string) ([]model.CampaignPOI, error) {
-	return s.campaignRepo.GetPOIsByBranchID(branchID)
+	// Get the basic POIs
+	pois, err := s.campaignRepo.GetPOIsByBranchID(branchID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Enrich each POI with location information
+	enrichedPOIs := make([]model.CampaignPOI, 0, len(pois))
+
+	for _, poi := range pois {
+		// Get city information
+		city, err := s.territoryRepo.GetCityByID(poi.CityID)
+		if err != nil {
+			s.logger.Error().Err(err).Str("cityID", poi.CityID).Msg("Failed to get city for POI")
+			// Add the POI without location info if we can't get the city
+			enrichedPOIs = append(enrichedPOIs, poi)
+			continue
+		}
+
+		// Get district information
+		district, err := s.territoryRepo.GetDistrictByID(city.DistrictID)
+		if err != nil {
+			s.logger.Error().Err(err).Str("districtID", city.DistrictID).Msg("Failed to get district for city")
+			// Add the POI without full location info if we can't get the district
+			enrichedPOIs = append(enrichedPOIs, poi)
+			continue
+		}
+
+		// Get region information
+		region, err := s.territoryRepo.GetRegionByID(district.RegionID)
+		if err != nil {
+			s.logger.Error().Err(err).Str("regionID", district.RegionID).Msg("Failed to get region for district")
+			// Add the POI without full location info if we can't get the region
+			enrichedPOIs = append(enrichedPOIs, poi)
+			continue
+		}
+
+		// Create enriched POI with location information
+		// We'll add the location info to the POI's metadata field since we can't modify the struct
+		if poi.Metadata == nil {
+			poi.Metadata = make(map[string]interface{})
+		}
+
+		poi.Metadata["regionName"] = region.Name
+		poi.Metadata["districtName"] = district.Name
+		poi.Metadata["cityName"] = city.Name
+		poi.Metadata["fullLocation"] = fmt.Sprintf("%s, %s, %s", city.Name, district.Name, region.Name)
+
+		enrichedPOIs = append(enrichedPOIs, poi)
+	}
+
+	return enrichedPOIs, nil
 }
 
 // GetPOIByID retrieves a POI by ID

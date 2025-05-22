@@ -70,6 +70,13 @@ export interface CampaignPOI {
   isLegal: boolean;
   cityId: string;
   dialogues: Dialogue[];
+  metadata?: {
+    regionName?: string;
+    districtName?: string;
+    cityName?: string;
+    fullLocation?: string;
+    [key: string]: any;
+  };
 }
 
 export interface Dialogue {

@@ -120,17 +120,18 @@ func (o *CampaignOperation) BeforeCreate(tx *gorm.DB) error {
 
 // CampaignPOI represents a point of interest (hotspot) in a campaign branch
 type CampaignPOI struct {
-	ID           string     `json:"id" gorm:"type:uuid;primary_key"`
-	BranchID     string     `json:"branchId" gorm:"type:uuid;not null;references:branches.id"`
-	Name         string     `json:"name" gorm:"not null"`
-	Description  string     `json:"description" gorm:"not null"`
-	Type         string     `json:"type" gorm:"not null"`
-	BusinessType string     `json:"businessType" gorm:"not null"`
-	IsLegal      bool       `json:"isLegal" gorm:"not null"`
-	CityID       string     `json:"cityId" gorm:"type:uuid;not null"`
-	Dialogues    []Dialogue `json:"dialogues,omitempty" gorm:"foreignKey:POIID"`
-	CreatedAt    time.Time  `json:"-" gorm:"not null"`
-	UpdatedAt    time.Time  `json:"-" gorm:"not null"`
+	ID           string                 `json:"id" gorm:"type:uuid;primary_key"`
+	BranchID     string                 `json:"branchId" gorm:"type:uuid;not null;references:branches.id"`
+	Name         string                 `json:"name" gorm:"not null"`
+	Description  string                 `json:"description" gorm:"not null"`
+	Type         string                 `json:"type" gorm:"not null"`
+	BusinessType string                 `json:"businessType" gorm:"not null"`
+	IsLegal      bool                   `json:"isLegal" gorm:"not null"`
+	CityID       string                 `json:"cityId" gorm:"type:uuid;not null"`
+	Dialogues    []Dialogue             `json:"dialogues,omitempty" gorm:"foreignKey:POIID"`
+	Metadata     map[string]interface{} `json:"metadata,omitempty" gorm:"-"`
+	CreatedAt    time.Time              `json:"-" gorm:"not null"`
+	UpdatedAt    time.Time              `json:"-" gorm:"not null"`
 }
 
 // BeforeCreate is a GORM hook to generate UUID before creating a new campaign POI
