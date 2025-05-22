@@ -127,7 +127,7 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 		logger.Warn().Err(err).Msg("Failed to check existing campaigns")
 	} else if len(campaigns) <= 0 {
 		logger.Info().Msg("No campaigns found, seeding campaign data")
-		service.RunCampaignSeeder(campaignRepo, territoryRepo, logger)
+		service.RunCampaignSeeder(campaignRepo, logger)
 	}
 
 	marketService := service.NewMarketService(marketRepo, playerRepo, playerService, cfg.Game, logger)
