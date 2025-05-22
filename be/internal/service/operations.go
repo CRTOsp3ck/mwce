@@ -118,12 +118,11 @@ func (s *operationsService) GetAvailableOperations(playerID string, validOnly bo
 		query = query.Where("available_until > ?", time.Now())
 	}
 
-	// Filter by current region - either global (empty region_ids) or includes current region
+	// Filter by current region - either global (empty/null region_ids) or includes current region
 	if player.CurrentRegionID != nil {
-		query = query.Where("array_length(region_ids, 1) IS NULL OR ? = ANY(region_ids)",
-			*player.CurrentRegionID)
+		query = query.Where("(region_ids IS NULL OR array_length(region_ids, 1) = 0) OR ? = ANY(region_ids)", *player.CurrentRegionID)
 	} else {
-		query = query.Where("array_length(region_ids, 1) IS NULL")
+		query = query.Where("region_ids IS NULL OR array_length(region_ids, 1) = 0")
 	}
 
 	if err := query.Find(&operations).Error; err != nil {

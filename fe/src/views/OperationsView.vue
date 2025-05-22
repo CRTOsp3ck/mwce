@@ -48,7 +48,7 @@ const playerInfluence = computed(() => playerStore.playerInfluence);
 const playerHeat = computed(() => playerStore.playerHeat);
 const playerTitle = computed(() => playerStore.playerTitle);
 
-const availableOperations = computed(() => operationsStore.availableOperations);
+const availableOperations = computed(() => operationsStore.regionalOperations);
 const inProgressOperations = computed(() => operationsStore.inProgressOperations);
 const completedOperations = computed(() => operationsStore.completedOperations);
 const alreadyInProgressOperations = computed(() => {

@@ -78,20 +78,8 @@ export const useOperationsStore = defineStore('operations', {
 
     // Region-aware getters
     regionalOperations: (state) => {
-      const playerStore = usePlayerStore();
-      const currentRegionId = playerStore.profile?.currentRegionId;
-
-      if (!currentRegionId) {
-        // If not in any region, show only global operations (empty regionIds)
-        return state.availableOperations.filter(o => !o.regionIds || o.regionIds.length === 0);
-      }
-
-      // If in a region, show both global operations and those that include the current region
-      return state.availableOperations.filter(o =>
-        !o.regionIds ||
-        o.regionIds.length === 0 ||
-        o.regionIds.includes(currentRegionId)
-      );
+      // Since backend already filters, just return availableOperations
+      return state.availableOperations;
     },
 
     globalOperations: (state) => {
@@ -246,8 +234,8 @@ export const useOperationsStore = defineStore('operations', {
 
     // Handle operations refreshed - now properly handles regional operations
     handleOperationsRefreshed(operations: Operation[], refreshInfo?: OperationsRefreshInfo) {
-      // Store all operations but display them filtered by region
-      this.availableOperations = operations || []; // Ensure it's at least an empty array
+      // Store operations (already filtered by region from backend)
+      this.availableOperations = operations || [];
 
       // Update cache with new operations
       if (operations && Array.isArray(operations)) {
@@ -261,20 +249,14 @@ export const useOperationsStore = defineStore('operations', {
         this.refreshInfo = refreshInfo;
       }
 
-      // Log regional context
+      // Log for debugging
       const playerStore = usePlayerStore();
       const currentRegionId = playerStore.profile?.currentRegionId;
 
       if (currentRegionId) {
-        const regionalOps = this.availableOperations.filter(o =>
-          !o.regionIds ||
-          o.regionIds.length === 0 ||
-          o.regionIds.includes(currentRegionId)
-        );
-        console.log(`Operations refreshed for region ${currentRegionId}: ${regionalOps.length} operations available`);
+        console.log(`Operations refreshed for region ${currentRegionId}: ${operations?.length || 0} operations available`);
       } else {
-        const globalOps = this.availableOperations.filter(o => !o.regionIds || o.regionIds.length === 0);
-        console.log(`Global operations refreshed: ${globalOps.length} operations available`);
+        console.log(`Global operations refreshed: ${operations?.length || 0} operations available`);
       }
     },
 
