@@ -49,29 +49,28 @@ type MissionTemplate struct {
 
 // BranchTemplate represents a branch template in the YAML file
 type BranchTemplate struct {
-	ID          string              `yaml:"id"`
-	Name        string              `yaml:"name"`
-	Description string              `yaml:"description"`
-	Operations  []OperationTemplate `yaml:"operations,omitempty"`
-	POIs        []POITemplate       `yaml:"pois,omitempty"`
+	ID          string                      `yaml:"id"`
+	Name        string                      `yaml:"name"`
+	Description string                      `yaml:"description"`
+	Operations  []CampaignOperationTemplate `yaml:"operations,omitempty"`
+	POIs        []POITemplate               `yaml:"pois,omitempty"`
 }
 
-// **NOTE: Already present in operations loader**
 // OperationTemplate represents a campaign operation template in the YAML file
-// type OperationTemplate struct {
-// 	ID           string                    `yaml:"id"`
-// 	Name         string                    `yaml:"name"`
-// 	Description  string                    `yaml:"description"`
-// 	Type         string                    `yaml:"type"`
-// 	IsSpecial    bool                      `yaml:"is_special"`
-// 	Regions      []string                  `yaml:"regions,omitempty"`
-// 	Requirements OperationRequirementsYAML `yaml:"requirements"`
-// 	Resources    OperationResourcesYAML    `yaml:"resources"`
-// 	Rewards      OperationRewardsYAML      `yaml:"rewards"`
-// 	Risks        OperationRisksYAML        `yaml:"risks"`
-// 	Duration     int                       `yaml:"duration"`
-// 	SuccessRate  int                       `yaml:"success_rate"`
-// }
+type CampaignOperationTemplate struct {
+	ID           string                    `yaml:"id"`
+	Name         string                    `yaml:"name"`
+	Description  string                    `yaml:"description"`
+	Type         string                    `yaml:"type"`
+	IsSpecial    bool                      `yaml:"is_special"`
+	RegionIDs    []string                  `yaml:"regions"` // Renamed from Regions to RegionIDs
+	Requirements OperationRequirementsYAML `yaml:"requirements"`
+	Resources    OperationResourcesYAML    `yaml:"resources"`
+	Rewards      OperationRewardsYAML      `yaml:"rewards"`
+	Risks        OperationRisksYAML        `yaml:"risks"`
+	Duration     int                       `yaml:"duration"`
+	SuccessRate  int                       `yaml:"success_rate"`
+}
 
 // POITemplate represents a campaign POI template in the YAML file
 type POITemplate struct {
@@ -112,7 +111,7 @@ func LoadCampaignData(campaignRepo repository.CampaignRepository, logger zerolog
 	// Get the campaigns YAML file path
 	campaignsFile := os.Getenv("CAMPAIGNS_FILE")
 	if campaignsFile == "" {
-		campaignsFile = "./configs/campaigns.yaml"
+		campaignsFile = "../../configs/campaigns.yaml"
 	}
 
 	// Check if file exists
@@ -229,17 +228,6 @@ func LoadCampaignData(campaignRepo repository.CampaignRepository, logger zerolog
 
 					// Seed operations
 					for _, operationTemplate := range branchTemplate.Operations {
-						// Convert regions to region IDs
-						var regionIDs []string
-						for _, regionName := range operationTemplate.Regions {
-							var region model.Region
-							if err := tx.Where("name = ?", regionName).First(&region).Error; err != nil {
-								logger.Warn().Str("region", regionName).Msg("Region not found, skipping")
-								continue
-							}
-							regionIDs = append(regionIDs, region.ID)
-						}
-
 						operation := model.CampaignOperation{
 							ID:          operationTemplate.ID,
 							BranchID:    branch.ID,
@@ -247,7 +235,7 @@ func LoadCampaignData(campaignRepo repository.CampaignRepository, logger zerolog
 							Description: operationTemplate.Description,
 							Type:        operationTemplate.Type,
 							IsSpecial:   operationTemplate.IsSpecial,
-							RegionIDs:   regionIDs,
+							RegionIDs:   operationTemplate.RegionIDs, // Use RegionIDs directly, no conversion needed
 							Requirements: model.OperationRequirements{
 								MinInfluence:         operationTemplate.Requirements.MinInfluence,
 								MaxHeat:              operationTemplate.Requirements.MaxHeat,
@@ -299,7 +287,7 @@ func LoadCampaignData(campaignRepo repository.CampaignRepository, logger zerolog
 							Type:         poiTemplate.Type,
 							BusinessType: poiTemplate.BusinessType,
 							IsLegal:      poiTemplate.IsLegal,
-							CityID:       poiTemplate.CityID,
+							CityID:       poiTemplate.CityID, // Use CityID directly, no conversion needed
 							CreatedAt:    now,
 							UpdatedAt:    now,
 						}
