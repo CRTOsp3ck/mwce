@@ -74,22 +74,33 @@ func (r *campaignRepository) GetDB() *gorm.DB {
 	return r.db.GetDB()
 }
 
-// GetAllCampaigns retrieves all campaigns
+// GetAllCampaigns retrieves all campaigns with their nested relationships
 func (r *campaignRepository) GetAllCampaigns() ([]model.Campaign, error) {
 	var campaigns []model.Campaign
-	if err := r.db.GetDB().Find(&campaigns).Error; err != nil {
+	if err := r.db.GetDB().
+		Preload("Chapters", func(db *gorm.DB) *gorm.DB {
+			return db.Order("\"order\" ASC")
+		}).
+		Preload("Chapters.Missions", func(db *gorm.DB) *gorm.DB {
+			return db.Order("\"order\" ASC")
+		}).
+		Find(&campaigns).Error; err != nil {
 		return nil, err
 	}
 	return campaigns, nil
 }
 
-// GetCampaignByID retrieves a campaign by ID
+// GetCampaignByID retrieves a campaign by ID with full nested relationships
 func (r *campaignRepository) GetCampaignByID(id string) (*model.Campaign, error) {
 	var campaign model.Campaign
 	if err := r.db.GetDB().
 		Preload("Chapters", func(db *gorm.DB) *gorm.DB {
 			return db.Order("\"order\" ASC")
 		}).
+		Preload("Chapters.Missions", func(db *gorm.DB) *gorm.DB {
+			return db.Order("\"order\" ASC")
+		}).
+		Preload("Chapters.Missions.Branches").
 		Where("id = ?", id).
 		First(&campaign).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
