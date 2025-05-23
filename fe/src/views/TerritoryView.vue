@@ -719,7 +719,7 @@ async function performAction() {
     if (selectedHotspot.value.metadata && selectedHotspot.value.metadata.isCampaignPOI) {
       // For campaign POIs with extortion/takeover actions, complete the POI
       if (selectedAction.value === TerritoryActionType.EXTORTION ||
-          selectedAction.value === TerritoryActionType.TAKEOVER) {
+        selectedAction.value === TerritoryActionType.TAKEOVER) {
         await campaignStore.completePOI(selectedHotspot.value.id);
 
         // Create a success result
@@ -1073,9 +1073,6 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <!-- Section Separator -->
-      <!-- <div class="section-separator"></div> -->
-
       <!-- Current Region Hotspots Section -->
       <div v-if="currentRegionName" class="hotspots-section">
         <div class="section-header">
@@ -1107,15 +1104,22 @@ onBeforeUnmount(() => {
         </div>
         <div v-else class="hotspots-grid empire-grid">
           <div v-for="hotspot in sortedCurrentRegionHotspots" :key="hotspot.id"
-            class="hotspot-card controlled current-region" :class="{ 'has-pending': hotspot.pendingCollection > 0 }"
-            @click="openDetailModal(hotspot)">
-            <div class="card-badge" v-if="hotspot.pendingCollection > 0">
+            class="hotspot-card controlled current-region" :class="{
+              'has-pending': hotspot.pendingCollection > 0,
+              'campaign-poi': hotspot.metadata && hotspot.metadata.isCampaignPOI
+            }" @click="openDetailModal(hotspot)">
+
+            <!-- POI Badge (highest priority) -->
+            <div class="card-badge poi" v-if="hotspot.metadata && hotspot.metadata.isCampaignPOI">
+              <span class="badge-icon">🎯</span>
+              Point of Interest
+            </div>
+            <!-- Existing badges -->
+            <div class="card-badge" v-else-if="hotspot.pendingCollection > 0">
               <span class="badge-icon">💰</span>
               ${{ formatNumber(hotspot.pendingCollection) }}
             </div>
             <div class="card-badge" v-else>
-              <!-- <span class="badge-icon">🚀</span> -->
-              <!-- <span class="badge-icon">🤑</span> -->
               <span class="badge-icon">💸</span>
               Waiting for income
             </div>
@@ -1132,29 +1136,25 @@ onBeforeUnmount(() => {
             </div>
 
             <div class="hotspot-details">
-              <!-- <div class="detail-row"> -->
-                <div class="detail-item">
-                  <span class="detail-label">Location:</span>
-                  <span class="detail-value">{{ getHotspotLocation(hotspot) }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">Business:</span>
-                  <span class="detail-value">{{ hotspot.businessType }}</span>
-                </div>
-              <!-- </div> -->
+              <div class="detail-item">
+                <span class="detail-label">Location:</span>
+                <span class="detail-value">{{ getHotspotLocation(hotspot) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Business:</span>
+                <span class="detail-value">{{ hotspot.businessType }}</span>
+              </div>
 
-              <!-- <div class="detail-row"> -->
-                <div class="detail-item">
-                  <span class="detail-label">Income:</span>
-                  <span class="detail-value">${{ formatNumber(hotspot.income) }}/hr</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">Defense:</span>
-                  <span class="detail-value defense" :class="getDefenseClass(hotspot.defenseStrength)">
-                    {{ getDefenseLabel(hotspot.defenseStrength) }}
-                  </span>
-                </div>
-              <!-- </div> -->
+              <div class="detail-item">
+                <span class="detail-label">Income:</span>
+                <span class="detail-value">${{ formatNumber(hotspot.income) }}/hr</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Defense:</span>
+                <span class="detail-value defense" :class="getDefenseClass(hotspot.defenseStrength)">
+                  {{ getDefenseLabel(hotspot.defenseStrength) }}
+                </span>
+              </div>
 
               <!-- Updated next income display using store getters -->
               <div class="income-timer">
@@ -1201,9 +1201,6 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <!-- Section Divider with extra spacing -->
-      <!-- <div class="section-divider"></div> -->
-
       <!-- Out of Region Hotspots Section -->
       <div class="hotspots-section">
         <div class="section-header">
@@ -1227,16 +1224,23 @@ onBeforeUnmount(() => {
 
         <div class="hotspots-grid empire-grid">
           <div v-for="hotspot in sortedOutOfRegionHotspots" :key="hotspot.id"
-            class="hotspot-card controlled out-of-region" :class="{ 'has-pending': hotspot.pendingCollection > 0 }"
-            @click="openDetailModal(hotspot)">
+            class="hotspot-card controlled out-of-region" :class="{
+              'has-pending': hotspot.pendingCollection > 0,
+              'campaign-poi': hotspot.metadata && hotspot.metadata.isCampaignPOI
+            }" @click="openDetailModal(hotspot)">
+
+            <!-- POI Badge (highest priority) -->
+            <div class="card-badge poi" v-if="hotspot.metadata && hotspot.metadata.isCampaignPOI">
+              <span class="badge-icon">🎯</span>
+              Point of Interest
+            </div>
             <!-- Location badge for out-of-region -->
-            <div class="card-badge location" v-if="!hotspot.pendingCollection">
+            <div class="card-badge location" v-else-if="!hotspot.pendingCollection">
               <span class="badge-icon">📍</span>
               {{ getHotspotLocation(hotspot).split(',')[0] }}
             </div>
-
             <!-- Pending badge -->
-            <div class="card-badge pending" v-if="hotspot.pendingCollection > 0">
+            <div class="card-badge pending" v-else-if="hotspot.pendingCollection > 0">
               <span class="badge-icon">💰</span>
               ${{ formatNumber(hotspot.pendingCollection) }}
             </div>
@@ -1253,29 +1257,25 @@ onBeforeUnmount(() => {
             </div>
 
             <div class="hotspot-details">
-              <!-- <div class="detail-row"> -->
-                <div class="detail-item">
-                  <span class="detail-label">Location:</span>
-                  <span class="detail-value">{{ getHotspotLocation(hotspot, true) }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">Business:</span>
-                  <span class="detail-value">{{ hotspot.businessType }}</span>
-                </div>
-              <!-- </div> -->
+              <div class="detail-item">
+                <span class="detail-label">Location:</span>
+                <span class="detail-value">{{ getHotspotLocation(hotspot, true) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Business:</span>
+                <span class="detail-value">{{ hotspot.businessType }}</span>
+              </div>
 
-              <!-- <div class="detail-row"> -->
-                <div class="detail-item">
-                  <span class="detail-label">Income:</span>
-                  <span class="detail-value">${{ formatNumber(hotspot.income) }}/hr</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">Defense:</span>
-                  <span class="detail-value defense" :class="getDefenseClass(hotspot.defenseStrength)">
-                    {{ getDefenseLabel(hotspot.defenseStrength) }}
-                  </span>
-                </div>
-              <!-- </div> -->
+              <div class="detail-item">
+                <span class="detail-label">Income:</span>
+                <span class="detail-value">${{ formatNumber(hotspot.income) }}/hr</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Defense:</span>
+                <span class="detail-value defense" :class="getDefenseClass(hotspot.defenseStrength)">
+                  {{ getDefenseLabel(hotspot.defenseStrength) }}
+                </span>
+              </div>
 
               <div class="income-timer">
                 <div class="detail-item">
@@ -1312,11 +1312,9 @@ onBeforeUnmount(() => {
               <BaseButton v-if="hotspot.pendingCollection > 0" variant="outline" small disabled
                 title="Travel to this region to collect">
                 <span style="opacity: 0.6;">Collect</span>
-                <!-- <span style="font-size: 0.9em; opacity: 0.7;">(Travel Required)</span> -->
               </BaseButton>
               <BaseButton variant="outline" small disabled title="Travel to this region to manage defense">
                 <span style="opacity: 0.6;">Defend</span>
-                <!-- <span style="font-size: 0.9em; opacity: 0.7;">(Travel Required)</span> -->
               </BaseButton>
             </div>
           </div>
@@ -1349,9 +1347,6 @@ onBeforeUnmount(() => {
           </div>
         </div>
       </div>
-
-      <!-- Section Separator -->
-      <!-- <div class="section-separator"></div> -->
 
       <!-- Region distribution chart -->
       <div class="empire-regions-overview">
@@ -1443,10 +1438,17 @@ onBeforeUnmount(() => {
           <div v-for="hotspot in displayedHotspots" :key="hotspot.id" class="hotspot-card" :class="{
             'controlled': isPlayerControlled(hotspot),
             'rival-controlled': isRivalControlled(hotspot),
-            'illegal': !hotspot.isLegal
+            'illegal': !hotspot.isLegal,
+            'campaign-poi': hotspot.metadata && hotspot.metadata.isCampaignPOI
           }" @click="openDetailModal(hotspot)">
 
-            <div v-if="!hotspot.isLegal" class="card-badge illegal">
+            <!-- POI Badge (highest priority) -->
+            <div v-if="hotspot.metadata && hotspot.metadata.isCampaignPOI" class="card-badge poi">
+              <span class="badge-icon">🎯</span>
+              Point of Interest
+            </div>
+            <!-- Existing badges -->
+            <div v-else-if="!hotspot.isLegal" class="card-badge illegal">
               <span class="badge-icon">⚠️</span>
               Illegal
             </div>
@@ -1628,7 +1630,8 @@ onBeforeUnmount(() => {
     <!-- Action Modal -->
     <BaseModal v-model="showActionModal" :title="actionModalTitle" class="action-modal">
       <div v-if="selectedHotspot" class="action-modal-content">
-        <div class="hotspot-summary">
+        <div class="hotspot-summary"
+          :class="{ 'campaign-poi': selectedHotspot.metadata && selectedHotspot.metadata.isCampaignPOI }">
           <div class="summary-title">
             <h3>{{ selectedHotspot.name }}</h3>
             <div class="hotspot-type">{{ selectedHotspot.type }} - {{ selectedHotspot.businessType }}</div>
@@ -1723,7 +1726,7 @@ onBeforeUnmount(() => {
                     <label>Crew</label>
                   </div>
                   <span class="resource-available">Current Allocation: {{ actionResources.crew }} / {{ availableCrew
-                    }}</span>
+                  }}</span>
                 </div>
 
                 <div class="control-actions">
@@ -2287,6 +2290,115 @@ onBeforeUnmount(() => {
           }
         }
       }
+
+      // Campaign POI specific styling
+      &.campaign-poi {
+        position: relative;
+        border: 2px solid transparent;
+        background: linear-gradient($background-card, $background-card) padding-box,
+          linear-gradient(45deg, $info-color, $secondary-color, $info-color) border-box;
+
+        &::before {
+          content: '';
+          position: absolute;
+          top: -2px;
+          left: -2px;
+          right: -2px;
+          bottom: -2px;
+          background: linear-gradient(45deg, $info-color, $secondary-color, $info-color);
+          border-radius: $border-radius-md;
+          z-index: -1;
+          opacity: 0.8;
+          animation: poi-glow 3s ease-in-out infinite alternate;
+        }
+
+        // Animated border glow
+        @keyframes poi-glow {
+          0% {
+            opacity: 0.8;
+            transform: scale(1);
+          }
+
+          100% {
+            opacity: 1;
+            transform: scale(1.02);
+          }
+        }
+
+        // POI badge styling
+        .card-badge.poi {
+          background: linear-gradient(45deg, #3b82f6, #f59e0b) !important;
+          color: #1a1a1a !important;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+          animation: badge-pulse 2s infinite;
+
+          .badge-icon {
+            animation: icon-spin 4s linear infinite;
+          }
+
+          @keyframes badge-pulse {
+
+            0%,
+            100% {
+              box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+              background: linear-gradient(45deg, #3b82f6, #f59e0b);
+            }
+
+            50% {
+              box-shadow: 0 0 20px rgba(59, 130, 246, 0.8), 0 0 30px rgba(245, 158, 11, 0.4);
+              background: linear-gradient(45deg, #4f46e5, #f97316);
+            }
+          }
+
+          @keyframes icon-spin {
+            from {
+              transform: rotate(0deg);
+            }
+
+            to {
+              transform: rotate(360deg);
+            }
+          }
+        }
+
+        // Enhanced hover effect for POIs
+        &:hover {
+          box-shadow:
+            0 0 20px rgba($info-color, 0.7),
+            0 0 40px rgba($secondary-color, 0.5),
+            0 0 60px rgba($info-color, 0.3);
+          transform: translateY(-8px) scale(1.02);
+          transition: all 0.4s ease;
+
+          &::before {
+            opacity: 1;
+            transform: scale(1.05);
+          }
+        }
+
+        // POI title styling
+        .hotspot-header h3 {
+          background: linear-gradient(45deg, $info-color, $secondary-color);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          text-shadow: 0 0 10px rgba($info-color, 0.3);
+          font-weight: 700;
+        }
+
+        // Special detail value styling for POIs
+        .detail-value {
+          &.poi-special {
+            color: $info-color;
+            font-weight: 600;
+            text-shadow: 0 0 5px rgba($info-color, 0.5);
+          }
+        }
+      }
+
     }
 
     .section-divider {
@@ -2570,6 +2682,8 @@ onBeforeUnmount(() => {
         position: absolute;
         top: -10px;
         right: 10px;
+        background-color: $secondary-color; // ✅ ADDED - Fix for POI badge transparency
+        color: $background-darker; // ✅ ADDED - Fix for POI badge transparency
         font-weight: 600;
         font-size: $font-size-sm;
         padding: 3px 10px;
@@ -2594,6 +2708,45 @@ onBeforeUnmount(() => {
           color: $background-darker;
         }
 
+        // ✅ POI Badge - Same gradient as other POI elements
+        &.poi {
+          background: linear-gradient(45deg, $info-color, $secondary-color) !important;
+          color: $background-darker !important;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          box-shadow: 0 0 10px rgba($info-color, 0.5);
+          animation: badge-pulse 2s infinite;
+
+          // .badge-icon {
+          //   animation: icon-spin 4s linear infinite;
+          // }
+
+          @keyframes badge-pulse {
+
+            0%,
+            100% {
+              box-shadow: 0 0 10px rgba($info-color, 0.5);
+              background: linear-gradient(45deg, $info-color, $secondary-color);
+            }
+
+            50% {
+              box-shadow: 0 0 20px rgba($info-color, 0.8), 0 0 30px rgba($secondary-color, 0.4);
+              background: linear-gradient(45deg, darken($info-color, 10%), lighten($secondary-color, 10%));
+            }
+          }
+
+          @keyframes icon-spin {
+            from {
+              transform: rotate(0deg);
+            }
+
+            to {
+              transform: rotate(360deg);
+            }
+          }
+        }
+
         .badge-icon {
           font-size: 14px;
         }
@@ -2609,6 +2762,36 @@ onBeforeUnmount(() => {
 
       &.illegal {
         border-left: 4px solid $danger-color;
+      }
+    }
+
+    .hotspot-card.campaign-poi {
+      // Special border animation for explore view
+      border-left: 4px solid $info-color;
+      position: relative;
+
+      // &::after {
+      //   content: '';
+      //   position: absolute;
+      //   left: -4px;
+      //   top: 0;
+      //   width: 4px;
+      //   height: 100%;
+      //   background: linear-gradient(0deg,
+      //       $info-color 0%,
+      //       $secondary-color 50%,
+      //       $info-color 100%);
+      //   animation: border-flow 3s linear infinite;
+      // }
+
+      @keyframes border-flow {
+        0% {
+          background-position: 0% 0%;
+        }
+
+        100% {
+          background-position: 0% 200%;
+        }
       }
     }
   }
@@ -3262,6 +3445,41 @@ onBeforeUnmount(() => {
         }
       }
     }
+
+    .hotspot-summary {
+      .campaign-poi & {
+        background: linear-gradient(135deg,
+            rgba($info-color, 0.1) 0%,
+            rgba($background-card, 1) 25%,
+            rgba($background-card, 1) 75%,
+            rgba($secondary-color, 0.1) 100%);
+        border: 1px solid rgba($info-color, 0.3);
+        border-radius: $border-radius-md;
+        padding: $spacing-md;
+        position: relative;
+
+        &::before {
+          content: '🎯 POINT OF INTEREST';
+          position: absolute;
+          top: -10px;
+          left: $spacing-md;
+          background: linear-gradient(45deg, $info-color, $secondary-color);
+          color: $background-darker;
+          padding: 2px 8px;
+          font-size: $font-size-xs;
+          font-weight: 700;
+          border-radius: $border-radius-sm;
+          letter-spacing: 1px;
+        }
+
+        .summary-title h3 {
+          background: linear-gradient(45deg, $info-color, $secondary-color);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+      }
+    }
   }
 
   /* Result Modal Styles */
@@ -3484,6 +3702,115 @@ onBeforeUnmount(() => {
       width: 100px;
       height: 1px;
       background: linear-gradient(to right, transparent, $secondary-color);
+    }
+  }
+
+  /* POI Tooltip Enhancements */
+  .hotspot-info-icon {
+    .campaign-poi & {
+      background: linear-gradient(45deg, $info-color, $secondary-color);
+      color: $background-darker;
+      box-shadow: 0 0 10px rgba($info-color, 0.5);
+
+      &:hover {
+        box-shadow: 0 0 15px rgba($info-color, 0.8);
+        transform: scale(1.2);
+      }
+    }
+  }
+
+  // Enhanced detail values for POIs
+  .hotspot-card.campaign-poi {
+    .detail-value {
+      &.poi-special {
+        position: relative;
+
+        &::after {
+          content: '✨';
+          position: absolute;
+          right: -15px;
+          top: 0;
+          font-size: 0.8em;
+          animation: sparkle 2s infinite;
+        }
+
+        @keyframes sparkle {
+
+          0%,
+          100% {
+            opacity: 0.5;
+            transform: scale(1);
+          }
+
+          50% {
+            opacity: 1;
+            transform: scale(1.2);
+          }
+        }
+      }
+    }
+
+    // Special income timer styling for POIs
+    .income-timer {
+      border-top: 1px dashed rgba($info-color, 0.5);
+      background: linear-gradient(90deg,
+          rgba($info-color, 0.1) 0%,
+          transparent 50%,
+          rgba($secondary-color, 0.1) 100%);
+      border-radius: $border-radius-sm;
+      padding: $spacing-sm;
+      margin-top: $spacing-sm;
+    }
+
+    // POI-specific button styling
+    .hotspot-footer {
+      .base-button {
+        background: linear-gradient(45deg, $info-color, $secondary-color);
+        border: none;
+        font-weight: 700;
+        color: $background-darker;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+
+        &:hover {
+          box-shadow:
+            0 0 15px rgba($info-color, 0.8),
+            0 0 25px rgba($secondary-color, 0.6);
+          transform: translateY(-2px) scale(1.05);
+        }
+
+        &:disabled {
+          background: linear-gradient(45deg, rgba($info-color, 0.5), rgba($secondary-color, 0.5));
+
+          &:hover {
+            transform: none;
+            box-shadow: none;
+          }
+        }
+      }
+    }
+  }
+
+  .empty-state {
+    &.poi-section {
+      background: linear-gradient(135deg,
+          rgba($info-color, 0.1) 0%,
+          rgba($background-card, 1) 25%,
+          rgba($background-card, 1) 75%,
+          rgba($secondary-color, 0.1) 100%);
+      border: 2px dashed rgba($info-color, 0.3);
+
+      .empty-icon {
+        color: $info-color;
+        text-shadow: 0 0 10px rgba($info-color, 0.5);
+      }
+
+      h4 {
+        background: linear-gradient(45deg, $info-color, $secondary-color);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
     }
   }
 }
