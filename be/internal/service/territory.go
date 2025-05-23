@@ -31,6 +31,7 @@ type TerritoryService interface {
 	GetAllHotspots() ([]model.Hotspot, error)
 	GetHotspotsInCurrentRegion(playerID string) ([]model.Hotspot, error)
 	GetHotspotsByCity(cityID string) ([]model.Hotspot, error)
+	GetHotspotsByCityWithInjected(playerID, cityID string) ([]model.Hotspot, error)
 	GetHotspotByID(id string) (*model.Hotspot, error)
 
 	GetControlledHotspots(playerID string) ([]model.Hotspot, error)
@@ -87,6 +88,42 @@ func (s *territoryService) AddCustomHotspotProvider(provider CustomHotspotProvid
 }
 
 // Region-aware hotspot methods
+
+// GetHotspotsByCityWithInjected retrieves hotspots by city including injected ones from providers
+func (s *territoryService) GetHotspotsByCityWithInjected(playerID, cityID string) ([]model.Hotspot, error) {
+	// Get regular hotspots in the city
+	hotspots, err := s.territoryRepo.GetHotspotsByCity(cityID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get player to find their current region
+	player, err := s.playerRepo.GetPlayerByID(playerID)
+	if err != nil {
+		s.logger.Error().Err(err).Msg("Failed to get player for injected hotspots")
+		return hotspots, nil // Return regular hotspots even if we can't get injected ones
+	}
+
+	// If player is in a region, get injected hotspots for that region
+	if player.CurrentRegionID != nil {
+		for _, provider := range s.customHotspotProviders {
+			injectedHotspots, err := provider.GetInjectedHotspots(playerID, player.CurrentRegionID)
+			if err != nil {
+				s.logger.Error().Err(err).Msg("Failed to get injected hotspots from provider")
+				continue
+			}
+
+			// Filter injected hotspots by city
+			for _, injected := range injectedHotspots {
+				if injected.CityID == cityID {
+					hotspots = append(hotspots, injected)
+				}
+			}
+		}
+	}
+
+	return hotspots, nil
+}
 
 // GetHotspotsInCurrentRegion retrieves hotspots in the player's current region
 func (s *territoryService) GetHotspotsInCurrentRegion(playerID string) ([]model.Hotspot, error) {

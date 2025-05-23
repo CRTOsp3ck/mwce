@@ -160,6 +160,13 @@ func (c *TerritoryController) GetCity(w http.ResponseWriter, r *http.Request) {
 
 // GetHotspots handles getting all hotspots or hotspots in a city
 func (c *TerritoryController) GetHotspots(w http.ResponseWriter, r *http.Request) {
+	// Get player ID from context
+	playerID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		util.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
 	// Check if city ID is provided as a query parameter
 	cityID := r.URL.Query().Get("cityId")
 
@@ -167,11 +174,11 @@ func (c *TerritoryController) GetHotspots(w http.ResponseWriter, r *http.Request
 	var err error
 
 	if cityID != "" {
-		// Get hotspots in the specified city
-		hotspots, err = c.territoryService.GetHotspotsByCity(cityID)
+		// Get hotspots in the specified city (including injected ones)
+		hotspots, err = c.territoryService.GetHotspotsByCityWithInjected(playerID, cityID)
 	} else {
-		// Get all hotspots
-		hotspots, err = c.territoryService.GetAllHotspots()
+		// Get hotspots in player's current region (includes injected POIs)
+		hotspots, err = c.territoryService.GetHotspotsInCurrentRegion(playerID)
 	}
 
 	if err != nil {
