@@ -93,21 +93,22 @@ func (b *Branch) BeforeCreate(tx *gorm.DB) error {
 
 // CampaignOperation represents an operation that is part of a campaign branch
 type CampaignOperation struct {
-	ID           string                `json:"id" gorm:"type:uuid;primary_key"`
-	BranchID     string                `json:"branchId" gorm:"type:uuid;not null;references:branches.id"`
-	Name         string                `json:"name" gorm:"not null"`
-	Description  string                `json:"description" gorm:"not null"`
-	Type         string                `json:"type" gorm:"not null"` // carjacking, goods_smuggling, etc.
-	IsSpecial    bool                  `json:"isSpecial" gorm:"not null;default:true"`
-	RegionIDs    pq.StringArray        `json:"regionIds" gorm:"type:text[]"`
-	Requirements OperationRequirements `json:"requirements" gorm:"embedded"`
-	Resources    OperationResources    `json:"resources" gorm:"embedded"`
-	Rewards      OperationRewards      `json:"rewards" gorm:"embedded"`
-	Risks        OperationRisks        `json:"risks" gorm:"embedded"`
-	Duration     int                   `json:"duration" gorm:"not null"`
-	SuccessRate  int                   `json:"successRate" gorm:"not null"`
-	CreatedAt    time.Time             `json:"-" gorm:"not null"`
-	UpdatedAt    time.Time             `json:"-" gorm:"not null"`
+	ID           string                 `json:"id" gorm:"type:uuid;primary_key"`
+	BranchID     string                 `json:"branchId" gorm:"type:uuid;not null;references:branches.id"`
+	Name         string                 `json:"name" gorm:"not null"`
+	Description  string                 `json:"description" gorm:"not null"`
+	Type         string                 `json:"type" gorm:"not null"` // carjacking, goods_smuggling, etc.
+	IsSpecial    bool                   `json:"isSpecial" gorm:"not null;default:true"`
+	RegionIDs    pq.StringArray         `json:"regionIds" gorm:"type:text[]"`
+	Requirements OperationRequirements  `json:"requirements" gorm:"embedded"`
+	Resources    OperationResources     `json:"resources" gorm:"embedded"`
+	Rewards      OperationRewards       `json:"rewards" gorm:"embedded"`
+	Risks        OperationRisks         `json:"risks" gorm:"embedded"`
+	Duration     int                    `json:"duration" gorm:"not null"`
+	SuccessRate  int                    `json:"successRate" gorm:"not null"`
+	Metadata     map[string]interface{} `json:"metadata,omitempty" gorm:"-"`
+	CreatedAt    time.Time              `json:"-" gorm:"not null"`
+	UpdatedAt    time.Time              `json:"-" gorm:"not null"`
 }
 
 // BeforeCreate is a GORM hook to generate UUID before creating a new campaign operation

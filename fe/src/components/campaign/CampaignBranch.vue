@@ -71,6 +71,11 @@ function getLocationDisplay(poi: CampaignPOI): string {
   // Final fallback to cityId if no metadata is available
   return poi.cityId;
 }
+
+// Helper function to get operation regions display text
+function getOperationRegionsDisplay(operation: CampaignOperation): string {
+  return operation.metadata?.regionsDisplay || 'All Regions';
+}
 </script>
 
 <template>
@@ -125,6 +130,10 @@ function getLocationDisplay(poi: CampaignPOI): string {
                   <span class="stat-icon">📊</span>
                   <span class="stat-value">{{ operation.successRate }}% Success</span>
                 </div>
+                <div class="stat">
+                  <span class="stat-icon">🏙️</span>
+                  <span class="stat-value">{{ getOperationRegionsDisplay(operation) }}</span>
+                </div>
               </div>
             </div>
             <div class="operation-status">
@@ -143,16 +152,16 @@ function getLocationDisplay(poi: CampaignPOI): string {
           <div v-for="poi in pois" :key="poi.id" class="poi-item"
             :class="{ 'completed': isPOIComplete(poi.id) }">
             <div class="poi-icon">
-              {{ poi.type === 'Bar' ? '🍸' :
-                 poi.type === 'Restaurant' ? '🍽️' :
-                 poi.type === 'Club' ? '🎭' :
-                 poi.type === 'Casino' ? '🎰' :
-                 poi.type === 'Hotel' ? '🏨' :
-                 poi.type === 'Warehouse' ? '🏭' :
-                 poi.type === 'Dock' ? '🚢' :
-                 poi.type === 'Factory' ? '🏭' :
-                 poi.type === 'Shop' ? '🛒' :
-                 poi.type === 'Construction' ? '🏗️' : '📍' }}
+              {{ poi.type === 'Bar' || poi.type === 'bar' ? '🍸' :
+                 poi.type === 'Restaurant' || poi.type === 'restaurant' ? '🍽️' :
+                 poi.type === 'Club' || poi.type === 'club' ? '🎭' :
+                 poi.type === 'Casino' || poi.type === 'casino' ? '🎰' :
+                 poi.type === 'Hotel' || poi.type === 'hotel' ? '🏨' :
+                 poi.type === 'Warehouse' || poi.type === 'warehouse' ? '🏭' :
+                 poi.type === 'Dock' || poi.type === 'dock' ? '🚢' :
+                 poi.type === 'Factory' || poi.type === 'factory' ? '🏭' :
+                 poi.type === 'Shop' || poi.type === 'shop' ? '🛒' :
+                 poi.type === 'Construction' || poi.type === 'construction' ? '🏗️' : '📍' }}
             </div>
             <div class="poi-details">
               <h5 class="poi-name">{{ poi.name }}</h5>
@@ -315,6 +324,7 @@ function getLocationDisplay(poi: CampaignPOI): string {
           .poi-stats {
             display: flex;
             gap: $spacing-md;
+            flex-wrap: wrap;
 
             .stat {
               display: flex;
@@ -322,6 +332,7 @@ function getLocationDisplay(poi: CampaignPOI): string {
               gap: $spacing-xs;
               font-size: $font-size-sm;
               color: $text-secondary;
+              min-width: 0;
 
               .stat-value {
                 font-weight: 500;

@@ -58,6 +58,11 @@ export interface CampaignOperation {
   risks: OperationRisks;
   duration: number;
   successRate: number;
+  metadata?: {
+    regionNames?: string[];
+    regionsDisplay?: string;
+    [key: string]: any;
+  };
 }
 
 export interface CampaignPOI {

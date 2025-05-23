@@ -8,6 +8,7 @@ import (
 	"mwce-be/internal/model"
 	"mwce-be/internal/repository"
 	"mwce-be/internal/util"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -811,8 +812,59 @@ func (s *campaignService) CompletePOI(playerID, poiID string) error {
 }
 
 // GetOperationsByBranchID retrieves operations by branch ID
+// GetOperationsByBranchID retrieves operations by branch ID with region names
 func (s *campaignService) GetOperationsByBranchID(branchID string) ([]model.CampaignOperation, error) {
-	return s.campaignRepo.GetOperationsByBranchID(branchID)
+	// Get the basic operations
+	operations, err := s.campaignRepo.GetOperationsByBranchID(branchID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Enrich each operation with region information
+	enrichedOperations := make([]model.CampaignOperation, 0, len(operations))
+
+	for _, operation := range operations {
+		// Initialize metadata if nil
+		if operation.Metadata == nil {
+			operation.Metadata = make(map[string]interface{})
+		}
+
+		// Get region names for this operation
+		regionNames := make([]string, 0, len(operation.RegionIDs))
+		for _, regionID := range operation.RegionIDs {
+			region, err := s.territoryRepo.GetRegionByID(regionID)
+			if err != nil {
+				s.logger.Warn().Err(err).Str("regionID", regionID).Msg("Failed to get region for operation")
+				// Use a fallback name if region not found
+				regionNames = append(regionNames, fmt.Sprintf("Region-%s", regionID[:8]))
+				continue
+			}
+			regionNames = append(regionNames, region.Name)
+		}
+
+		// Add region information to metadata
+		operation.Metadata["regionNames"] = regionNames
+		if len(regionNames) == 0 {
+			operation.Metadata["regionsDisplay"] = "All Regions"
+		} else if len(regionNames) == 1 {
+			operation.Metadata["regionsDisplay"] = regionNames[0]
+		} else if len(regionNames) <= 3 {
+			operation.Metadata["regionsDisplay"] = strings.Join(regionNames, ", ")
+		} else {
+			operation.Metadata["regionsDisplay"] = fmt.Sprintf("%s + %d more", strings.Join(regionNames[:2], ", "), len(regionNames)-2)
+		}
+
+		s.logger.Debug().
+			Str("operationId", operation.ID).
+			Str("operationName", operation.Name).
+			Strs("regionIds", operation.RegionIDs).
+			Strs("regionNames", regionNames).
+			Msg("Successfully enriched operation with region data")
+
+		enrichedOperations = append(enrichedOperations, operation)
+	}
+
+	return enrichedOperations, nil
 }
 
 // GetOperationByID retrieves an operation by ID
