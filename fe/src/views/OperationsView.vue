@@ -162,7 +162,7 @@ async function collectOperation(operationId: string) {
       // Alternatively, check the operation's metadata directly if available
       // This approach would be better if the metadata is preserved in the operation response
       const operation = operationsStore.getOperationById ?
-                        operationsStore.getOperationById(operationId) : null;
+        operationsStore.getOperationById(operationId) : null;
 
       if (operation && operation.metadata && operation.metadata.isCampaignOperation) {
         // If it's a campaign operation, notify the campaign store
@@ -578,7 +578,7 @@ async function confirmStartOperation() {
 
     // If this is a campaign operation, store the attempt ID for completion tracking
     if (selectedOperation.value.metadata && selectedOperation.value.metadata.isCampaignOperation &&
-        result && result.success && result.data) {
+      result && result.success && result.data) {
       // Store the operation attempt ID with the campaign metadata
       const metadata = {
         campaignId: selectedOperation.value.metadata.campaignId,
@@ -699,10 +699,17 @@ function hasInsufficientTimeRemaining(operation: Operation): boolean {
     <div v-if="activeTab === 'available'" class="operations-list available-operations">
       <BaseCard v-for="operation in filteredOperations" :key="operation.id" class="operation-card" :class="{
         'special-operation': operation.isSpecial,
-        'insufficient-time': hasInsufficientTimeRemaining(operation)
+        'insufficient-time': hasInsufficientTimeRemaining(operation),
+        'campaign-operation': operation.metadata && operation.metadata.isCampaignOperation
       }">
         <template #header>
-          <div class="operation-badge" v-if="operation.isSpecial">
+          <!-- Campaign badge (highest priority) -->
+          <div class="operation-badge campaign" v-if="operation.metadata && operation.metadata.isCampaignOperation">
+            <span class="badge-icon">📋</span>
+            Campaign Mission
+          </div>
+          <!-- Existing special badge -->
+          <div class="operation-badge" v-else-if="operation.isSpecial">
             Special
           </div>
         </template>
@@ -903,7 +910,16 @@ function hasInsufficientTimeRemaining(operation: Operation): boolean {
 
     <!-- In Progress Operations Tab -->
     <div v-else-if="activeTab === 'in-progress'" class="operations-list in-progress-operations">
-      <BaseCard v-for="operation in inProgressOperations" :key="operation.id" class="operation-card in-progress">
+      <BaseCard v-for="operation in inProgressOperations" :key="operation.id" class="operation-card in-progress" :class="{
+        'campaign-operation': operation.metadata && operation.metadata.isCampaignOperation
+      }">
+
+        <!-- Add campaign indicator -->
+        <div class="campaign-indicator" v-if="operation.metadata && operation.metadata.isCampaignOperation">
+          <span class="campaign-icon">📋</span>
+          <span class="campaign-text">Campaign Mission</span>
+        </div>
+
         <div class="operation-header">
           <h3>{{ getOperationName(operation) }}</h3>
           <div class="operation-type">{{ getOperationType(operation) }}</div>
@@ -996,8 +1012,16 @@ function hasInsufficientTimeRemaining(operation: Operation): boolean {
     <div v-else-if="activeTab === 'completed'" class="operations-list completed-operations">
       <BaseCard v-for="operation in completedOperations" :key="operation.id" class="operation-card" :class="{
         'success': isSuccessfulOperation(operation),
-        'failure': isFailedOperation(operation)
+        'failure': isFailedOperation(operation),
+        'campaign-operation': operation.metadata && operation.metadata.isCampaignOperation
       }">
+
+        <!-- Add campaign completion indicator -->
+        <div class="campaign-completion" v-if="operation.metadata && operation.metadata.isCampaignOperation">
+          <span class="completion-icon">🏆</span>
+          <span class="completion-text">Campaign Mission Completed</span>
+        </div>
+
         <div class="operation-header">
           <h3>{{ getOperationName(operation) }}</h3>
           <div class="operation-type">{{ getOperationType(operation) }}</div>
@@ -1134,7 +1158,8 @@ function hasInsufficientTimeRemaining(operation: Operation): boolean {
 
     <!-- Start Operation Modal -->
     <BaseModal v-model="showStartModal"
-      :title="selectedOperation ? `Start Operation: ${selectedOperation.name}` : 'Start Operation'">
+      :title="selectedOperation ? `Start Operation: ${selectedOperation.name}` : 'Start Operation'"
+      :class="{ 'campaign-operation': selectedOperation && selectedOperation.metadata && selectedOperation.metadata.isCampaignOperation }">
       <div v-if="selectedOperation" class="start-operation-modal">
         <div class="operation-summary">
           <h3>{{ selectedOperation.name }}</h3>
@@ -1707,6 +1732,267 @@ function hasInsufficientTimeRemaining(operation: Operation): boolean {
           text-align: center;
         }
       }
+
+      &.campaign-operation {
+        position: relative;
+        border: 2px solid transparent;
+        background: linear-gradient($background-card, $background-card) padding-box,
+          linear-gradient(45deg, #9c27b0, $secondary-color, #9c27b0) border-box;
+
+        &::before {
+          content: '';
+          position: absolute;
+          top: -2px;
+          left: -2px;
+          right: -2px;
+          bottom: -2px;
+          background: linear-gradient(45deg, #9c27b0, $secondary-color, #9c27b0);
+          border-radius: $border-radius-md;
+          z-index: -1;
+          opacity: 0.7;
+          animation: campaign-glow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes campaign-glow {
+          0% {
+            opacity: 0.7;
+            transform: scale(1);
+          }
+
+          100% {
+            opacity: 0.9;
+            transform: scale(1.01);
+          }
+        }
+
+        // Campaign badge styling
+        .operation-badge {
+          &.campaign {
+            background: linear-gradient(45deg, #9c27b0, $secondary-color);
+            color: $background-darker;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 0 10px rgba(#9c27b0, 0.5);
+            animation: campaign-badge-pulse 2s infinite;
+            position: relative;
+            overflow: hidden;
+
+            &::before {
+              content: '';
+              position: absolute;
+              top: -50%;
+              left: -50%;
+              width: 200%;
+              height: 200%;
+              background: linear-gradient(45deg,
+                  transparent,
+                  rgba(255, 255, 255, 0.1),
+                  transparent);
+              animation: campaign-shine 3s infinite;
+            }
+
+            .badge-icon {
+              animation: campaign-icon-bounce 2s infinite;
+            }
+
+            @keyframes campaign-badge-pulse {
+
+              0%,
+              100% {
+                box-shadow: 0 0 10px rgba(#9c27b0, 0.5);
+              }
+
+              50% {
+                box-shadow: 0 0 20px rgba(#9c27b0, 0.8), 0 0 30px rgba($secondary-color, 0.4);
+              }
+            }
+
+            @keyframes campaign-shine {
+              0% {
+                transform: translateX(-100%) translateY(-100%) rotate(45deg);
+              }
+
+              50% {
+                transform: translateX(100%) translateY(100%) rotate(45deg);
+              }
+
+              100% {
+                transform: translateX(-100%) translateY(-100%) rotate(45deg);
+              }
+            }
+
+            @keyframes campaign-icon-bounce {
+
+              0%,
+              20%,
+              50%,
+              80%,
+              100% {
+                transform: translateY(0);
+              }
+
+              40% {
+                transform: translateY(-3px);
+              }
+
+              60% {
+                transform: translateY(-1px);
+              }
+            }
+          }
+        }
+
+        // Enhanced hover effect for campaign operations
+        /*
+        &:hover {
+          box-shadow:
+            0 0 25px rgba(#9c27b0, 0.8),
+            0 0 50px rgba($secondary-color, 0.6),
+            0 0 75px rgba(#9c27b0, 0.4);
+          transform: translateY(-10px) scale(1.02);
+          transition: all 0.4s ease;
+
+          &::before {
+            opacity: 1;
+            transform: scale(1.03);
+          }
+        }
+        */
+
+        // Campaign operation header styling
+        .operation-header h3 {
+          background: linear-gradient(45deg, #9c27b0, $secondary-color);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          text-shadow: 0 0 10px rgba(#9c27b0, 0.3);
+          font-weight: 700;
+          position: relative;
+
+          &::after {
+            content: '👑';
+            position: absolute;
+            right: -25px;
+            top: 0;
+            font-size: 0.8em;
+            animation: crown-float 2s ease-in-out infinite;
+          }
+
+          @keyframes crown-float {
+
+            0%,
+            100% {
+              transform: translateY(0);
+            }
+
+            50% {
+              transform: translateY(-3px);
+            }
+          }
+        }
+
+        // Special styling for campaign operation stats
+        .operation-stats {
+          background: linear-gradient(90deg,
+              rgba(#9c27b0, 0.1) 0%,
+              rgba($secondary-color, 0.1) 50%,
+              rgba(#9c27b0, 0.1) 100%);
+          border-radius: $border-radius-sm;
+          padding: $spacing-md;
+          margin-top: $spacing-sm;
+          position: relative;
+
+          &::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg,
+                transparent 0%,
+                #9c27b0 25%,
+                $secondary-color 50%,
+                #9c27b0 75%,
+                transparent 100%);
+            animation: stat-line-flow 3s linear infinite;
+          }
+
+          @keyframes stat-line-flow {
+            0% {
+              transform: translateX(-100%);
+            }
+
+            100% {
+              transform: translateX(100%);
+            }
+          }
+
+          .stat-value {
+            color: #9c27b0;
+            font-weight: 700;
+            text-shadow: 0 0 5px rgba(#9c27b0, 0.5);
+          }
+        }
+
+        // Campaign rewards styling
+        .rewards-list {
+          .reward-text {
+            color: $secondary-color;
+            font-weight: 600;
+            text-shadow: 0 0 3px rgba($secondary-color, 0.5);
+          }
+        }
+
+        // Campaign operation footer
+        .operation-footer {
+          background: linear-gradient(90deg,
+              rgba(#9c27b0, 0.1) 0%,
+              rgba($secondary-color, 0.1) 50%,
+              rgba(#9c27b0, 0.1) 100%);
+          border-radius: $border-radius-sm;
+          padding: $spacing-sm;
+          margin-top: $spacing-sm;
+          border-top: 1px solid rgba(#9c27b0, 0.3);
+        }
+      }
+
+      // In-progress campaign operations
+      &.campaign-operation.in-progress {
+        .progress-fill {
+          background: linear-gradient(90deg, #9c27b0, $secondary-color, #9c27b0);
+          animation: campaign-progress-flow 2s linear infinite;
+        }
+
+        @keyframes campaign-progress-flow {
+          0% {
+            background-position: 0% 50%;
+          }
+
+          50% {
+            background-position: 100% 50%;
+          }
+
+          100% {
+            background-position: 0% 50%;
+          }
+        }
+      }
+
+      // Completed campaign operations
+      &.campaign-operation.success {
+        border-left: 4px solid $secondary-color;
+
+        .result-status {
+          background: linear-gradient(45deg, #9c27b0, $secondary-color);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          font-weight: 800;
+        }
+      }
+
     }
 
     .empty-state {
@@ -1889,6 +2175,316 @@ function hasInsufficientTimeRemaining(operation: Operation): boolean {
       font-weight: bold;
       color: $secondary-color;
       font-family: monospace;
+    }
+  }
+
+  /* Campaign Operation Modal Styling */
+  .start-operation-modal {
+    .campaign-operation & {
+      .operation-summary {
+        background: linear-gradient(135deg,
+            rgba(#9c27b0, 0.1) 0%,
+            rgba($background-card, 1) 25%,
+            rgba($background-card, 1) 75%,
+            rgba($secondary-color, 0.1) 100%);
+        border: 1px solid rgba(#9c27b0, 0.3);
+        border-radius: $border-radius-md;
+        padding: $spacing-md;
+        position: relative;
+
+        &::before {
+          content: '📋 CAMPAIGN MISSION';
+          position: absolute;
+          top: -10px;
+          left: $spacing-md;
+          background: linear-gradient(45deg, #9c27b0, $secondary-color);
+          color: $background-darker;
+          padding: 2px 8px;
+          font-size: $font-size-xs;
+          font-weight: 700;
+          border-radius: $border-radius-sm;
+          letter-spacing: 1px;
+        }
+
+        h3 {
+          background: linear-gradient(45deg, #9c27b0, $secondary-color);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        .summary-stats {
+          .stat-value {
+            color: #9c27b0;
+            font-weight: 700;
+            text-shadow: 0 0 5px rgba(#9c27b0, 0.5);
+          }
+        }
+      }
+
+      .resource-allocation {
+        border: 1px solid rgba(#9c27b0, 0.2);
+        border-radius: $border-radius-md;
+        padding: $spacing-md;
+        background: linear-gradient(135deg,
+            rgba(#9c27b0, 0.05) 0%,
+            transparent 50%,
+            rgba($secondary-color, 0.05) 100%);
+      }
+    }
+  }
+
+  /* Campaign Operation Filters Enhancement */
+  .operations-filters {
+    .filter {
+      select option[value="campaign"] {
+        background: linear-gradient(45deg, #9c27b0, $secondary-color);
+        color: $background-darker;
+        font-weight: 600;
+      }
+    }
+  }
+
+  /* Campaign Operation Search Highlight */
+  .operations-list {
+    .campaign-operation {
+      &.search-highlighted {
+        box-shadow:
+          0 0 15px rgba(#9c27b0, 0.8),
+          0 0 30px rgba($secondary-color, 0.6);
+        animation: search-highlight 1s ease-in-out;
+      }
+
+      @keyframes search-highlight {
+
+        0%,
+        100% {
+          transform: scale(1);
+        }
+
+        50% {
+          transform: scale(1.02);
+        }
+      }
+    }
+  }
+
+  // Campaign indicator for in-progress operations
+  .campaign-indicator {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    margin-bottom: $spacing-md;
+    padding: $spacing-xs $spacing-sm;
+    background: linear-gradient(90deg, rgba(#9c27b0, 0.2), rgba($secondary-color, 0.2));
+    border-radius: $border-radius-sm;
+    font-size: $font-size-sm;
+    font-weight: 600;
+    color: #9c27b0;
+    border: 1px solid rgba(#9c27b0, 0.3);
+
+    .campaign-icon {
+      font-size: 16px;
+      animation: campaign-icon-pulse 2s infinite;
+    }
+
+    @keyframes campaign-icon-pulse {
+
+      0%,
+      100% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.1);
+      }
+    }
+  }
+
+  // Campaign completion indicator
+  .campaign-completion {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-md;
+    padding: $spacing-sm;
+    background: linear-gradient(45deg, rgba(#9c27b0, 0.2), rgba($secondary-color, 0.2), rgba($success-color, 0.2));
+    border-radius: $border-radius-md;
+    font-weight: 700;
+    color: $secondary-color;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border: 2px solid rgba($secondary-color, 0.5);
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg,
+          transparent,
+          rgba($secondary-color, 0.1),
+          transparent);
+      animation: completion-shine 2s infinite;
+    }
+
+    .completion-icon {
+      font-size: 20px;
+      animation: completion-bounce 1s infinite;
+    }
+
+    @keyframes completion-shine {
+      0% {
+        transform: translateX(-100%) translateY(-100%) rotate(45deg);
+      }
+
+      100% {
+        transform: translateX(100%) translateY(100%) rotate(45deg);
+      }
+    }
+
+    @keyframes completion-bounce {
+
+      0%,
+      20%,
+      50%,
+      80%,
+      100% {
+        transform: translateY(0);
+      }
+
+      40% {
+        transform: translateY(-5px);
+      }
+
+      60% {
+        transform: translateY(-2px);
+      }
+    }
+  }
+
+  // Enhanced progress bar for campaign operations
+  .operation-card.campaign-operation {
+    .progress-tracker {
+      border: 1px solid rgba(#9c27b0, 0.3);
+      background: linear-gradient(135deg,
+          rgba(#9c27b0, 0.1) 0%,
+          rgba($background-card, 1) 50%,
+          rgba($secondary-color, 0.1) 100%);
+
+      .progress-bar {
+        border: 1px solid rgba(#9c27b0, 0.2);
+
+        .progress-fill {
+          background: linear-gradient(90deg, #9c27b0, $secondary-color);
+          box-shadow: 0 0 10px rgba(#9c27b0, 0.5);
+
+          &.almost-complete {
+            animation: campaign-almost-complete 1s infinite;
+          }
+
+          &.complete {
+            background: linear-gradient(90deg, $success-color, $secondary-color);
+            box-shadow: 0 0 15px rgba($success-color, 0.8);
+          }
+        }
+
+        @keyframes campaign-almost-complete {
+
+          0%,
+          100% {
+            box-shadow: 0 0 10px rgba(#9c27b0, 0.5);
+          }
+
+          50% {
+            box-shadow: 0 0 20px rgba(#9c27b0, 0.8), 0 0 30px rgba($secondary-color, 0.6);
+          }
+        }
+      }
+
+      .time-remaining {
+        color: #9c27b0;
+        font-weight: 700;
+        text-shadow: 0 0 5px rgba(#9c27b0, 0.5);
+
+        &.ready-text {
+          color: $secondary-color;
+          text-shadow: 0 0 8px rgba($secondary-color, 0.7);
+          animation: ready-glow 1s infinite;
+        }
+      }
+
+      @keyframes ready-glow {
+
+        0%,
+        100% {
+          text-shadow: 0 0 8px rgba($secondary-color, 0.7);
+        }
+
+        50% {
+          text-shadow: 0 0 15px rgba($secondary-color, 1), 0 0 25px rgba($secondary-color, 0.5);
+        }
+      }
+    }
+  }
+
+  // Collect operation button enhancement for campaign operations
+  .operation-card.campaign-operation {
+    .collect-wrapper {
+      .base-button {
+        background: linear-gradient(45deg, #9c27b0, $secondary-color);
+        border: none;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        position: relative;
+        overflow: hidden;
+
+        &::before {
+          content: '';
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          width: 200%;
+          height: 200%;
+          background: linear-gradient(45deg,
+              transparent,
+              rgba(255, 255, 255, 0.2),
+              transparent);
+          animation: collect-shine 2s infinite;
+        }
+
+        &:hover {
+          box-shadow:
+            0 0 20px rgba(#9c27b0, 0.8),
+            0 0 40px rgba($secondary-color, 0.6);
+          transform: translateY(-2px) scale(1.05);
+        }
+
+        @keyframes collect-shine {
+          0% {
+            transform: translateX(-100%) translateY(-100%) rotate(45deg);
+          }
+
+          100% {
+            transform: translateX(100%) translateY(100%) rotate(45deg);
+          }
+        }
+      }
+
+      .op-complete-message {
+        color: #9c27b0;
+        font-weight: 600;
+        text-align: center;
+        font-size: $font-size-sm;
+        margin-top: $spacing-xs;
+        text-shadow: 0 0 5px rgba(#9c27b0, 0.5);
+      }
     }
   }
 }
