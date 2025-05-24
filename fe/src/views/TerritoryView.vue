@@ -185,6 +185,10 @@ const hasCollectableBusiness = computed(() => {
 const regionsWithControlledHotspots = computed(() => {
   const result = [];
 
+  // We need to get all hotspots to calculate regional distribution properly
+  // First, get all controlled hotspots from the store
+  const allControlledHotspots = territoryStore.allControlledHotspots;
+  
   for (const region of regions.value) {
     const districtsInRegion = districts.value.filter(d => d.regionId === region.id);
     const districtIds = districtsInRegion.map(d => d.id);
@@ -192,27 +196,25 @@ const regionsWithControlledHotspots = computed(() => {
     const citiesInRegion = cities.value.filter(c => districtIds.includes(c.districtId));
     const cityIds = citiesInRegion.map(c => c.id);
 
-    const hotspotsInRegion = hotspots.value.filter(h => cityIds.includes(h.cityId));
-    const legalBusinessesInRegion = hotspotsInRegion.filter(h => h.isLegal);
-    const controlledHotspotsInRegion = legalBusinessesInRegion.filter(h => isPlayerControlled(h));
-
-    // Show ALL regions, regardless of whether they have businesses or player control
+    // For total count, we need all hotspots in the region
+    // Since we only have current region hotspots, we'll need to estimate or use controlled hotspots
+    const controlledHotspotsInRegion = allControlledHotspots.filter(h => cityIds.includes(h.cityId) && h.isLegal);
+    
+    // For now, we'll show controlled count without total until we have a way to get all hotspots
     result.push({
       id: region.id,
       name: region.name,
       controlled: controlledHotspotsInRegion.length,
-      total: legalBusinessesInRegion.length,
-      controlPercentage: legalBusinessesInRegion.length > 0 
-        ? Math.round((controlledHotspotsInRegion.length / legalBusinessesInRegion.length) * 100)
-        : 0,
-      hasBusinesses: legalBusinessesInRegion.length > 0
+      total: 0, // We don't have access to all hotspots across regions
+      controlPercentage: 0, // Can't calculate without total
+      hasBusinesses: controlledHotspotsInRegion.length > 0
     });
   }
 
   return result.sort((a, b) => {
-    // Sort by control percentage first, then by whether they have businesses, then by name
-    if (b.controlPercentage !== a.controlPercentage) {
-      return b.controlPercentage - a.controlPercentage;
+    // Sort by controlled count, then by whether they have businesses, then by name
+    if (b.controlled !== a.controlled) {
+      return b.controlled - a.controlled;
     }
     if (b.hasBusinesses !== a.hasBusinesses) {
       return b.hasBusinesses ? 1 : -1;
@@ -1371,9 +1373,9 @@ onBeforeUnmount(() => {
             <div class="region-name">{{ region.name }}</div>
             <div class="bar-wrapper">
               <div v-if="region.hasBusinesses" class="bar-fill" 
-                   :style="{ width: `${region.controlPercentage}%` }"
-                   :class="{ 'powerful': region.controlPercentage > 60 }"></div>
-              <span v-if="region.hasBusinesses" class="bar-value">{{ region.controlled }}/{{ region.total }}</span>
+                   :style="{ width: region.controlled > 0 ? '100%' : '0%' }"
+                   :class="{ 'powerful': region.controlled > 5 }"></div>
+              <span v-if="region.hasBusinesses" class="bar-value">{{ region.controlled }} businesses</span>
               <span v-else class="bar-value no-data">No businesses</span>
             </div>
           </div>

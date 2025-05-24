@@ -19,6 +19,7 @@ interface TerritoryState {
   districts: District[];
   cities: City[];
   hotspots: Hotspot[];
+  allControlledHotspots: Hotspot[]; // All controlled hotspots across all regions
   selectedRegionId: string | null;
   selectedDistrictId: string | null;
   selectedCityId: string | null;
@@ -38,6 +39,7 @@ export const useTerritoryStore = defineStore('territory', {
     districts: [],
     cities: [],
     hotspots: [],
+    allControlledHotspots: [],
     selectedRegionId: null,
     selectedDistrictId: null,
     selectedCityId: null,
@@ -118,7 +120,8 @@ export const useTerritoryStore = defineStore('territory', {
         return [];
       }
 
-      const allControlled = state.hotspots.filter(h => h.controller === playerId);
+      // Use allControlledHotspots which contains hotspots from all regions
+      const allControlled = state.allControlledHotspots;
 
       if (!currentRegionId) {
         // If not in any region, all controlled hotspots are "out of region"
@@ -280,10 +283,16 @@ export const useTerritoryStore = defineStore('territory', {
         const hotspotsResponse = await territoryService.getHotspots();
         if (hotspotsResponse.success && hotspotsResponse.data) {
           this.hotspots = hotspotsResponse.data;
-
-          // Process hotspot timing data
-          this.ensureAllIncomeTimes();
         }
+
+        // Also get ALL controlled hotspots across all regions
+        const controlledResponse = await territoryService.getControlledHotspots();
+        if (controlledResponse.success && controlledResponse.data) {
+          this.allControlledHotspots = controlledResponse.data;
+        }
+
+        // Process hotspot timing data for all hotspots
+        this.ensureAllIncomeTimes();
 
         // Set initial filtered hotspots based on current region
         this.updateFilteredHotspots();
@@ -475,7 +484,7 @@ export const useTerritoryStore = defineStore('territory', {
               }
             }
 
-            // Update in both hotspots arrays
+            // Update in all hotspots arrays
             const index = this.hotspots.findIndex(h => h.id === hotspotId);
             if (index !== -1) {
               this.hotspots[index] = updatedHotspot;
@@ -484,6 +493,18 @@ export const useTerritoryStore = defineStore('territory', {
             const filteredIndex = this.filteredHotspots.findIndex(h => h.id === hotspotId);
             if (filteredIndex !== -1) {
               this.filteredHotspots[filteredIndex] = updatedHotspot;
+            }
+
+            // If this was a takeover and the player now controls it, add to allControlledHotspots
+            if (actionType === TerritoryActionType.TAKEOVER && result.success && updatedHotspot.controller === playerStore.profile?.id) {
+              const controlledIndex = this.allControlledHotspots.findIndex(h => h.id === hotspotId);
+              if (controlledIndex === -1) {
+                // Add to allControlledHotspots if not already there
+                this.allControlledHotspots.push(updatedHotspot);
+              } else {
+                // Update if already exists
+                this.allControlledHotspots[controlledIndex] = updatedHotspot;
+              }
             }
 
             // If takeover was successful, update controlled hotspots count
@@ -526,6 +547,7 @@ export const useTerritoryStore = defineStore('territory', {
       const playerStore = usePlayerStore();
       const playerId = playerStore.profile?.id;
 
+      // Process hotspots in current region
       this.hotspots.forEach(hotspot => {
         // Only process controlled hotspots
         if (hotspot.controller === playerId) {
@@ -544,6 +566,25 @@ export const useTerritoryStore = defineStore('territory', {
             hotspot.nextIncomeTime = nextIncomeTime.toISOString();
             console.log(`Initialized timing for ${hotspot.name}`);
           }
+        }
+      });
+
+      // Also process all controlled hotspots
+      this.allControlledHotspots.forEach(hotspot => {
+        // If we have lastIncomeTime but not nextIncomeTime, calculate it
+        if (hotspot.lastIncomeTime && !hotspot.nextIncomeTime) {
+          const lastIncomeTime = new Date(hotspot.lastIncomeTime);
+          const nextIncomeTime = new Date(lastIncomeTime.getTime() + 60 * 60 * 1000);
+          hotspot.nextIncomeTime = nextIncomeTime.toISOString();
+          console.log(`Calculated nextIncomeTime for ${hotspot.name}: ${hotspot.nextIncomeTime}`);
+        }
+        // If both are missing, initialize with current time
+        else if (!hotspot.lastIncomeTime && !hotspot.nextIncomeTime) {
+          const now = new Date();
+          hotspot.lastIncomeTime = now.toISOString();
+          const nextIncomeTime = new Date(now.getTime() + 60 * 60 * 1000);
+          hotspot.nextIncomeTime = nextIncomeTime.toISOString();
+          console.log(`Initialized timing for ${hotspot.name}`);
         }
       });
 
@@ -811,6 +852,7 @@ export const useTerritoryStore = defineStore('territory', {
       this.districts = [];
       this.cities = [];
       this.hotspots = [];
+      this.allControlledHotspots = [];
       this.selectedRegionId = null;
       this.selectedDistrictId = null;
       this.selectedCityId = null;
