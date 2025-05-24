@@ -1,17 +1,17 @@
 <!-- fe/src/views/CampaignsView.vue -->
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import BaseButton from '@/components/ui/BaseButton.vue';
-import BaseCard from '@/components/ui/BaseCard.vue';
 import BaseModal from '@/components/ui/BaseModal.vue';
 import CampaignsList from '@/components/campaign/CampaignsList.vue';
 import CampaignMission from '@/components/campaign/CampaignMission.vue';
 import { useCampaignStore } from '@/stores/modules/campaign';
-import { Campaign, Branch, Mission, InteractionType } from '@/types/campaign';
+import { Campaign, Branch } from '@/types/campaign';
 
 const router = useRouter();
+const route = useRoute();
 const campaignStore = useCampaignStore();
 
 // View state
@@ -29,17 +29,46 @@ const selectedCampaign = computed(() => campaignStore.selectedCampaign);
 const currentMission = computed(() => campaignStore.currentMission);
 const hasCampaignStarted = computed(() => campaignStore.hasCampaignStarted);
 
-// Load campaigns on mount
+// Load campaigns on mount and handle route params
 onMounted(async () => {
   isLoading.value = true;
   await campaignStore.fetchCampaigns();
+  
+  // Check if we're on a specific campaign route
+  if (route.params.campaignId) {
+    const campaignId = route.params.campaignId as string;
+    await campaignStore.selectCampaign(campaignId);
+    
+    // Check if we're on the mission route
+    if (route.name === 'CampaignMission') {
+      activeView.value = 'mission';
+    } else {
+      activeView.value = 'detail';
+    }
+  }
+  
   isLoading.value = false;
+});
+
+// Watch for route changes
+watch(() => route.params.campaignId, async (newCampaignId) => {
+  if (newCampaignId) {
+    await campaignStore.selectCampaign(newCampaignId as string);
+    
+    if (route.name === 'CampaignMission') {
+      activeView.value = 'mission';
+    } else {
+      activeView.value = 'detail';
+    }
+  } else {
+    activeView.value = 'list';
+    campaignStore.selectedCampaignId = null;
+  }
 });
 
 // Handle campaign selection
 async function selectCampaign(campaign: Campaign) {
-  await campaignStore.selectCampaign(campaign.id);
-  activeView.value = 'detail';
+  await router.push({ name: 'CampaignDetail', params: { campaignId: campaign.id } });
 }
 
 // Handle campaign start
@@ -53,17 +82,16 @@ async function startCampaign() {
   if (result && result.success) {
     showStartModal.value = false;
 
-    // If there's a current mission, show it
-    if (campaignStore.currentMission) {
-      activeView.value = 'mission';
+    // If there's a current mission, navigate to it
+    if (campaignStore.currentMission && selectedCampaign.value) {
+      await router.push({ 
+        name: 'CampaignMission', 
+        params: { campaignId: selectedCampaign.value.id } 
+      });
     }
   }
 }
 
-// Handle branch selection (deprecated - branches are now automatically determined)
-async function selectBranch(mission: Mission, branch: Branch) {
-  // No longer needed - all branches are visible
-}
 
 // Show branch completion modal
 function showCompleteBranchModal(branch: Branch) {
@@ -83,43 +111,33 @@ async function completeBranch() {
     showCompleteModal.value = false;
     selectedBranch.value = null;
 
-    // If there's a new current mission, show it
-    if (campaignStore.currentMission) {
-      activeView.value = 'mission';
-    } else {
-      // Campaign completed
-      activeView.value = 'detail';
+    // If there's a new current mission, navigate to it
+    if (campaignStore.currentMission && selectedCampaign.value) {
+      await router.push({ 
+        name: 'CampaignMission', 
+        params: { campaignId: selectedCampaign.value.id } 
+      });
+    } else if (selectedCampaign.value) {
+      // Campaign completed, go back to detail
+      await router.push({ 
+        name: 'CampaignDetail', 
+        params: { campaignId: selectedCampaign.value.id } 
+      });
     }
   }
 }
 
-// Handle POI completion
-async function completePOI(poiId: string) {
-  isLoading.value = true;
-  const result = await campaignStore.completePOI(poiId);
-  isLoading.value = false;
 
-  if (result && result.success) {
-    // Refresh the mission data
-    if (currentMission.value && selectedCampaign.value) {
-      await campaignStore.fetchCurrentMission(selectedCampaign.value.id);
-    }
-  }
-}
-
-// Handle POI interaction (deprecated - POIs are now simple completion markers)
-async function interactWithPOI(poiId: string, interactionType: InteractionType) {
-  // Just complete the POI
-  await completePOI(poiId);
-}
 
 // Navigation
 function goBack() {
   if (activeView.value === 'detail') {
-    activeView.value = 'list';
-    campaignStore.selectedCampaignId = null;
-  } else if (activeView.value === 'mission') {
-    activeView.value = 'detail';
+    router.push({ name: 'Campaigns' });
+  } else if (activeView.value === 'mission' && selectedCampaign.value) {
+    router.push({ 
+      name: 'CampaignDetail', 
+      params: { campaignId: selectedCampaign.value.id } 
+    });
   }
 }
 </script>
@@ -159,7 +177,7 @@ function goBack() {
             <BaseButton v-if="!hasCampaignStarted" @click="showStartModal = true">
               Start Campaign
             </BaseButton>
-            <BaseButton v-else-if="currentMission" @click="activeView = 'mission'">
+            <BaseButton v-else-if="currentMission" @click="router.push({ name: 'CampaignMission', params: { campaignId: selectedCampaign.id } })">
               Continue Campaign
             </BaseButton>
             <BaseButton v-else variant="outline" disabled>

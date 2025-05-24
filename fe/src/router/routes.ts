@@ -137,6 +137,28 @@ const routes: Array<RouteRecordRaw> = [
       title: 'Campaigns - Criminal Empire',
       requiresAuth: true
     },
+    children: [
+      {
+        path: ':campaignId',
+        name: 'CampaignDetail',
+        component: CampaignsView,
+        meta: {
+          title: 'Campaign Detail - Criminal Empire',
+          requiresAuth: true
+        },
+        children: [
+          {
+            path: 'mission',
+            name: 'CampaignMission',
+            component: CampaignsView,
+            meta: {
+              title: 'Campaign Mission - Criminal Empire',
+              requiresAuth: true
+            }
+          }
+        ]
+      }
+    ]
   },
   // Catch-all route for 404
   {
