@@ -43,8 +43,23 @@ onMounted(async () => {
     console.error('Failed to load branch progress:', error);
   }
 
-  // Load data for first branch by default
-  if (branches.value.length > 0) {
+  // For completed missions, find which branch was completed
+  if (props.mission.is_completed && branches.value.length > 0) {
+    // Check which branch was completed by looking at completedBranchIds
+    const completedBranch = branches.value.find(branch => 
+      campaignStore.isBranchComplete(branch.id)
+    );
+    
+    if (completedBranch) {
+      selectedBranchId.value = completedBranch.id;
+      await loadBranchData(completedBranch);
+    } else {
+      // Fallback to first branch if we can't determine which was completed
+      selectedBranchId.value = branches.value[0].id;
+      await loadBranchData(branches.value[0]);
+    }
+  } else if (branches.value.length > 0) {
+    // For current mission or if not completed, load first branch by default
     selectedBranchId.value = branches.value[0].id;
     await loadBranchData(branches.value[0]);
   }
@@ -77,6 +92,11 @@ async function loadBranchData(branch: Branch) {
   } finally {
     loadingBranchData.value[branch.id] = false;
   }
+}
+
+// Helper to check if a branch was the one completed for this mission
+function isBranchCompleted(branchId: string): boolean {
+  return props.mission.is_completed === true && campaignStore.isBranchComplete(branchId);
 }
 
 function completeBranch(branch: Branch) {
@@ -139,11 +159,17 @@ function getOperationRegionsDisplay(operation: CampaignOperation): string {
             v-for="(branch, index) in branches" 
             :key="branch.id"
             class="branch-tab"
-            :class="{ active: selectedBranch?.id === branch.id }"
+            :class="{ 
+              active: selectedBranch?.id === branch.id,
+              completed: isBranchCompleted(branch.id)
+            }"
             @click="selectBranch(branch)"
           >
             <span class="branch-number">Path {{ index + 1 }}</span>
             <span class="branch-name">{{ branch.name }}</span>
+            <span v-if="isBranchCompleted(branch.id)" class="branch-completed-badge">
+              <i class="fas fa-check-circle"></i> Chosen
+            </span>
             <div class="branch-progress-mini">
               <div class="progress-bar-mini">
                 <div 
@@ -176,12 +202,15 @@ function getOperationRegionsDisplay(operation: CampaignOperation): string {
           </div>
 
           <BaseButton 
-            v-if="branchesProgress[selectedBranch.id]" 
+            v-if="branchesProgress[selectedBranch.id] && !mission.is_completed" 
             variant="primary" 
             @click="completeBranch(selectedBranch)"
           >
             Complete This Path
           </BaseButton>
+          <div v-else-if="mission.is_completed && isBranchCompleted(selectedBranch.id)" class="branch-completed-status">
+            <i class="fas fa-check-circle"></i> You completed this path
+          </div>
         </div>
 
         <div v-if="loadingBranchData[selectedBranch.id]" class="loading-state">
@@ -330,6 +359,25 @@ function getOperationRegionsDisplay(operation: CampaignOperation): string {
           }
         }
 
+        &.completed {
+          border-color: $success-color;
+          background: rgba($success-color, 0.05);
+        }
+
+        .branch-completed-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          color: $success-color;
+          font-size: $font-size-sm;
+          font-weight: 500;
+          margin-top: $spacing-xs;
+
+          i {
+            font-size: 14px;
+          }
+        }
+
         .branch-number {
           display: block;
           color: $gold-color;
@@ -418,6 +466,18 @@ function getOperationRegionsDisplay(operation: CampaignOperation): string {
               background-color: $success-color;
             }
           }
+        }
+      }
+
+      .branch-completed-status {
+        color: $success-color;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: $spacing-xs;
+
+        i {
+          font-size: 18px;
         }
       }
     }

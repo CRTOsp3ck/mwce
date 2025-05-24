@@ -8,7 +8,8 @@ import BaseModal from '@/components/ui/BaseModal.vue';
 import CampaignsList from '@/components/campaign/CampaignsList.vue';
 import CampaignMission from '@/components/campaign/CampaignMission.vue';
 import { useCampaignStore } from '@/stores/modules/campaign';
-import { Campaign, Branch } from '@/types/campaign';
+import { Campaign, Branch, Mission } from '@/types/campaign';
+import campaignService from '@/services/campaignService';
 
 const router = useRouter();
 const route = useRoute();
@@ -31,14 +32,19 @@ const hasCampaignStarted = computed(() => campaignStore.hasCampaignStarted);
 
 // Track if viewing a specific mission
 const viewingMissionId = ref<string | null>(null);
+const viewingMissionData = ref<Mission | null>(null);
+const loadingMission = ref(false);
+
 const viewingMission = computed(() => {
-  if (!viewingMissionId.value || !selectedCampaign.value) return null;
+  if (!viewingMissionId.value) return null;
   
-  for (const chapter of selectedCampaign.value.chapters) {
-    const mission = chapter.missions.find(m => m.id === viewingMissionId.value);
-    if (mission) return mission;
+  // If the viewingMissionId is the current mission, return null to use currentMission instead
+  if (currentMission.value && currentMission.value.id === viewingMissionId.value) {
+    return null;
   }
-  return null;
+  
+  // Return the loaded mission data with full details
+  return viewingMissionData.value;
 });
 
 // Load campaigns on mount and handle route params
@@ -58,6 +64,10 @@ onMounted(async () => {
       // Check if viewing a specific mission
       if (route.query.missionId) {
         viewingMissionId.value = route.query.missionId as string;
+        // Load mission details if it's not the current mission
+        if (currentMission.value?.id !== viewingMissionId.value) {
+          await loadMissionDetails(viewingMissionId.value);
+        }
       }
     } else {
       activeView.value = 'detail';
@@ -84,9 +94,34 @@ watch(() => route.params.campaignId, async (newCampaignId) => {
 });
 
 // Watch for mission query changes
-watch(() => route.query.missionId, (newMissionId) => {
+watch(() => route.query.missionId, async (newMissionId) => {
   viewingMissionId.value = newMissionId as string | null;
+  
+  // Load mission details if viewing a past mission
+  if (newMissionId && currentMission.value?.id !== newMissionId) {
+    await loadMissionDetails(newMissionId as string);
+  } else {
+    viewingMissionData.value = null;
+  }
 });
+
+// Load full mission details with branches
+async function loadMissionDetails(missionId: string) {
+  loadingMission.value = true;
+  try {
+    const response = await campaignService.getMission(missionId);
+    if (response.success && response.data) {
+      // Add is_completed flag based on player progress
+      const mission = response.data;
+      mission.is_completed = campaignStore.isMissionComplete(missionId);
+      viewingMissionData.value = mission;
+    }
+  } catch (error) {
+    console.error('Failed to load mission details:', error);
+  } finally {
+    loadingMission.value = false;
+  }
+}
 
 // Handle campaign selection
 async function selectCampaign(campaign: Campaign) {
@@ -177,6 +212,23 @@ const currentChapter = computed(() => {
   }
   return null;
 });
+
+// Get chapter info for any mission
+const getMissionChapter = (missionToFind: any) => {
+  if (!selectedCampaign.value || !missionToFind) return null;
+  
+  for (const chapter of selectedCampaign.value.chapters) {
+    const mission = chapter.missions.find(m => m.id === missionToFind.id);
+    if (mission) {
+      return {
+        chapter,
+        missionIndex: chapter.missions.indexOf(mission),
+        totalMissions: chapter.missions.length
+      };
+    }
+  }
+  return null;
+};
 
 // Check if chapter is complete
 function isChapterComplete(chapter: any): boolean {
@@ -319,17 +371,24 @@ function backToCurrent() {
           <i class="fas fa-arrow-left"></i> Back to Current Mission
         </BaseButton>
       </div>
-      <div v-else-if="currentChapter && currentMission" class="mission-context">
-        <p class="context-info">
-          {{ selectedCampaign?.name }} - Chapter {{ currentChapter.chapter.order }}: {{ currentChapter.chapter.name }}
-        </p>
-        <p class="mission-progress">
-          Mission {{ currentMission.order }} of {{ currentChapter.totalMissions }}
-        </p>
+      <div v-else-if="currentMission" class="mission-context">
+        <template v-if="getMissionChapter(currentMission)">
+          <p class="context-info">
+            {{ selectedCampaign?.name }} - Chapter {{ getMissionChapter(currentMission)?.chapter.order }}: {{ getMissionChapter(currentMission)?.chapter.name }}
+          </p>
+          <p class="mission-progress">
+            Mission {{ currentMission.order }} of {{ getMissionChapter(currentMission)?.totalMissions }}
+          </p>
+        </template>
       </div>
 
+      <div v-if="loadingMission" class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading mission details...</p>
+      </div>
+      
       <CampaignMission
-        v-if="viewingMission || currentMission"
+        v-else-if="viewingMission || currentMission"
         :mission="viewingMission || currentMission!"
         @complete-branch="showCompleteBranchModal"
       />
