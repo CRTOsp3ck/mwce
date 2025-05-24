@@ -10,7 +10,9 @@ $background-dark: #1e1e1e; // Slightly lighter than background
 $background-darker: #1e1e1e; // Slightly lighter than background
 $background-card: #252525; // Card background
 $text-color: #ffffff; // White text
+$text-primary: #ffffff; // Primary text (white)
 $text-secondary: #bbbbbb; // Lighter gray for secondary text
+$text-tertiary: #888888; // Even lighter gray for tertiary text
 $danger-color: #ff4444; // Red for danger/heat
 $success-color: #00c851; // Green for success
 $warning-color: #ffbb33; // Amber for warnings
@@ -39,6 +41,7 @@ $spacing-xl: 32px;
 $spacing-xxl: 48px;
 
 // Borders
+$border-radius: 8px; // Default border radius
 $border-radius-sm: 4px;
 $border-radius-md: 8px;
 $border-radius-lg: 12px;

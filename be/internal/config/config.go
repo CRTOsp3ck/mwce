@@ -84,11 +84,11 @@ func LoadConfig(path string, config interface{}) error {
 	}
 
 	// Print first 100 characters for debugging
-	preview := string(data)
-	if len(preview) > 100 {
-		preview = preview[:100]
-	}
-	fmt.Printf("First 100 chars of %s: %s...\n", filepath.Base(path), preview)
+	// preview := string(data)
+	// if len(preview) > 100 {
+	// 	preview = preview[:100]
+	// }
+	// fmt.Printf("First 100 chars of %s: %s...\n", filepath.Base(path), preview)
 
 	// Unmarshal the data
 	if err := yaml.Unmarshal(data, config); err != nil {

@@ -17,6 +17,7 @@ export interface Operation {
   isLocked: boolean; // Indicates if operation is locked due to requirements
   lockReason: string; // Reason why operation is locked
   playerAttempts?: OperationAttempt[];
+  metadata?: Record<string, any>; // Additional metadata (e.g., for campaign operations)
 }
 
 export enum OperationType {

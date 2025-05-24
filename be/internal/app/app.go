@@ -237,6 +237,7 @@ func NewApp(cfg *config.Config, logger zerolog.Logger) (*App, error) {
 				r.Get("/chapters/{id}/missions", campaignController.GetMissionsByChapter)
 				r.Get("/missions/{id}", campaignController.GetMission)
 				r.Get("/missions/{id}/branches", campaignController.GetBranchesByMission)
+				r.Get("/missions/{id}/branches-progress", campaignController.GetMissionBranchesProgress)
 				r.Get("/branches/{id}", campaignController.GetBranch)
 				r.Get("/branches/{id}/operations", campaignController.GetOperationsByBranch)
 				r.Get("/branches/{id}/pois", campaignController.GetPOIsByBranch)

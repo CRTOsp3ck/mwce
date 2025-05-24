@@ -48,10 +48,12 @@ type CampaignService interface {
 	// Progress checking
 	CheckBranchCompletion(playerID, branchID string) (bool, error)
 	CheckMissionCompletion(playerID, missionID string) (bool, error)
+	GetMissionBranchesProgress(playerID, missionID string) (map[string]bool, error)
 
 	// Provider implementations
 	GetInjectedHotspots(playerID string, regionID *string) ([]model.Hotspot, error)
 	GetInjectedOperations(playerID string, regionID *string) ([]model.Operation, error)
+	HandlePOITakeover(playerID, hotspotID string) error
 }
 
 type campaignService struct {
@@ -207,8 +209,15 @@ func (s *campaignService) GetCurrentMission(playerID, campaignID string) (*model
 	return s.campaignRepo.GetMissionByID(*progress.CurrentMissionID)
 }
 
-// SelectBranch selects a branch for a mission
+// SelectBranch is deprecated - branches are automatically determined by completion
+// This method is kept for backward compatibility but does nothing
 func (s *campaignService) SelectBranch(playerID, missionID, branchID string) error {
+	// No longer needed - branches are selected based on completion
+	return nil
+}
+
+// CompleteBranch completes a branch for a mission
+func (s *campaignService) CompleteBranch(playerID, missionID, branchID string) error {
 	// Get the mission to find campaign ID
 	mission, err := s.campaignRepo.GetMissionByID(missionID)
 	if err != nil {
@@ -246,56 +255,6 @@ func (s *campaignService) SelectBranch(playerID, missionID, branchID string) err
 		return errors.New("branch does not belong to this mission")
 	}
 
-	// Set current branch
-	progress.CurrentBranchID = &branchID
-	progress.UpdatedAt = time.Now()
-
-	return s.campaignRepo.UpdatePlayerCampaignProgress(progress)
-}
-
-// CompleteBranch completes a branch for a mission
-func (s *campaignService) CompleteBranch(playerID, missionID, branchID string) error {
-	// Get the mission to find campaign ID
-	mission, err := s.campaignRepo.GetMissionByID(missionID)
-	if err != nil {
-		return err
-	}
-
-	// Get the chapter to find campaign ID
-	chapter, err := s.campaignRepo.GetChapterByID(mission.ChapterID)
-	if err != nil {
-		return err
-	}
-
-	// Get player's progress
-	progress, err := s.campaignRepo.GetPlayerCampaignProgress(playerID, chapter.CampaignID)
-	if err != nil {
-		return err
-	}
-
-	if progress == nil {
-		return errors.New("player has not started this campaign")
-	}
-
-	// Check if this is the player's current mission and branch
-	if progress.CurrentMissionID == nil || *progress.CurrentMissionID != missionID {
-		return errors.New("this is not the player's current mission")
-	}
-
-	if progress.CurrentBranchID == nil || *progress.CurrentBranchID != branchID {
-		return errors.New("this is not the player's current branch")
-	}
-
-	// Verify branch exists
-	branch, err := s.campaignRepo.GetBranchByID(branchID)
-	if err != nil {
-		return err
-	}
-
-	if branch.MissionID != missionID {
-		return errors.New("branch does not belong to this mission")
-	}
-
 	// Check if branch is complete
 	complete, err := s.CheckBranchCompletion(playerID, branchID)
 	if err != nil {
@@ -311,6 +270,9 @@ func (s *campaignService) CompleteBranch(playerID, missionID, branchID string) e
 
 	// Add to completed missions
 	progress.CompletedMissionIDs = append(progress.CompletedMissionIDs, missionID)
+
+	// Set the completed branch as current (for tracking which path was taken)
+	progress.CurrentBranchID = &branchID
 
 	// Find next mission
 	missions, err := s.campaignRepo.GetMissionsByChapterID(mission.ChapterID)
@@ -386,7 +348,7 @@ func (s *campaignService) CompleteBranch(playerID, missionID, branchID string) e
 	}
 
 	// Send notification
-	message := fmt.Sprintf("You have completed mission '%s'!", mission.Name)
+	message := fmt.Sprintf("You have completed mission '%s' using the '%s' approach!", mission.Name, branch.Name)
 	s.playerService.AddNotification(playerID, message, util.NotificationTypeCampaign)
 
 	return nil
@@ -458,266 +420,18 @@ func (s *campaignService) GetDialoguesByPOIID(poiID string) ([]model.Dialogue, e
 	return s.campaignRepo.GetDialoguesByPOIID(poiID)
 }
 
-// InteractWithPOI allows a player to interact with a POI
+// InteractWithPOI is deprecated - POIs are now simple completion markers
 func (s *campaignService) InteractWithPOI(playerID, poiID string, interactionType model.InteractionType) (*model.Dialogue, *model.ResourceEffect, error) {
-	// Get the POI
-	poi, err := s.campaignRepo.GetPOIByID(poiID)
+	// This method is kept for backward compatibility but simply completes the POI
+	err := s.CompletePOI(playerID, poiID)
 	if err != nil {
 		return nil, nil, err
 	}
-
-	// Get the branch to find mission ID
-	branch, err := s.campaignRepo.GetBranchByID(poi.BranchID)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// Get the mission to find chapter ID
-	mission, err := s.campaignRepo.GetMissionByID(branch.MissionID)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// Get the chapter to find campaign ID
-	chapter, err := s.campaignRepo.GetChapterByID(mission.ChapterID)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// Get player's progress
-	progress, err := s.campaignRepo.GetPlayerCampaignProgress(playerID, chapter.CampaignID)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if progress == nil {
-		return nil, nil, errors.New("player has not started this campaign")
-	}
-
-	// Check if this is part of the player's current branch
-	if progress.CurrentBranchID == nil || *progress.CurrentBranchID != poi.BranchID {
-		return nil, nil, errors.New("this POI is not part of the player's current branch")
-	}
-
-	// Get or create POI record
-	poiRecord, err := s.campaignRepo.GetPlayerPOIRecordByIDs(progress.ID, poiID)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if poiRecord == nil {
-		// Create new record
-		poiRecord = &model.PlayerPOIRecord{
-			PlayerID:    playerID,
-			ProgressID:  progress.ID,
-			POIID:       poiID,
-			IsCompleted: false,
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
-		}
-
-		if err := s.campaignRepo.CreatePlayerPOIRecord(poiRecord); err != nil {
-			return nil, nil, err
-		}
-	}
-
-	if poiRecord.IsCompleted {
-		return nil, nil, errors.New("this POI has already been completed")
-	}
-
-	// Get dialogues
-	dialogues, err := s.campaignRepo.GetDialoguesByPOIID(poiID)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if len(dialogues) == 0 {
-		return nil, nil, errors.New("POI has no dialogues")
-	}
-
-	// Find the next interactive dialogue that matches the interaction type
-	var nextDialogue *model.Dialogue
-	for _, dialogue := range dialogues {
-		// Skip NPC dialogues
-		if dialogue.Speaker != "Player" {
-			continue
-		}
-
-		// Skip dialogues with different interaction type
-		if dialogue.InteractionType == nil || *dialogue.InteractionType != interactionType {
-			continue
-		}
-
-		// Check if this dialogue has already been used
-		dialogueState, err := s.campaignRepo.GetDialogueStateByIDs(poiRecord.ID, dialogue.ID)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		if dialogueState == nil || !dialogueState.IsCompleted {
-			nextDialogue = &dialogue
-			break
-		}
-	}
-
-	if nextDialogue == nil {
-		return nil, nil, errors.New("no matching dialogue found for this interaction type")
-	}
-
-	// Find response dialogue (next in sequence)
-	var responseDialogue *model.Dialogue
-	for _, dialogue := range dialogues {
-		if dialogue.Order == nextDialogue.Order+1 && dialogue.Speaker == "NPC" {
-			responseDialogue = &dialogue
-			break
-		}
-	}
-
-	if responseDialogue == nil {
-		return nil, nil, errors.New("no response dialogue found")
-	}
-
-	// Create or update dialogue state
-	dialogueState, err := s.campaignRepo.GetDialogueStateByIDs(poiRecord.ID, nextDialogue.ID)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if dialogueState == nil {
-		// Create new state
-		dialogueState = &model.DialogueState{
-			RecordID:     poiRecord.ID,
-			DialogueID:   nextDialogue.ID,
-			IsCompleted:  true,
-			PlayerChoice: nextDialogue.InteractionType,
-			CreatedAt:    time.Now(),
-			UpdatedAt:    time.Now(),
-		}
-
-		if err := s.campaignRepo.CreateDialogueState(dialogueState); err != nil {
-			return nil, nil, err
-		}
-	} else {
-		// Update existing state
-		dialogueState.IsCompleted = true
-		dialogueState.PlayerChoice = nextDialogue.InteractionType
-		dialogueState.UpdatedAt = time.Now()
-
-		if err := s.campaignRepo.UpdateDialogueState(dialogueState); err != nil {
-			return nil, nil, err
-		}
-	}
-
-	// Create dialogue state for response as well
-	responseState, err := s.campaignRepo.GetDialogueStateByIDs(poiRecord.ID, responseDialogue.ID)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if responseState == nil {
-		// Create new state
-		responseState = &model.DialogueState{
-			RecordID:    poiRecord.ID,
-			DialogueID:  responseDialogue.ID,
-			IsCompleted: true,
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
-		}
-
-		if err := s.campaignRepo.CreateDialogueState(responseState); err != nil {
-			return nil, nil, err
-		}
-	} else {
-		// Update existing state
-		responseState.IsCompleted = true
-		responseState.UpdatedAt = time.Now()
-
-		if err := s.campaignRepo.UpdateDialogueState(responseState); err != nil {
-			return nil, nil, err
-		}
-	}
-
-	// Apply resource effects if this is a success
-	var resourceEffect *model.ResourceEffect
-	if responseDialogue.IsSuccess != nil && *responseDialogue.IsSuccess {
-		resourceEffect = &responseDialogue.ResourceEffect
-
-		// Update player resources
-		resourceUpdates := make(map[string]int)
-
-		if resourceEffect.Money != 0 {
-			resourceUpdates["money"] = resourceEffect.Money
-		}
-
-		if resourceEffect.Crew != 0 {
-			resourceUpdates["crew"] = resourceEffect.Crew
-		}
-
-		if resourceEffect.Weapons != 0 {
-			resourceUpdates["weapons"] = resourceEffect.Weapons
-		}
-
-		if resourceEffect.Vehicles != 0 {
-			resourceUpdates["vehicles"] = resourceEffect.Vehicles
-		}
-
-		if resourceEffect.Respect != 0 {
-			resourceUpdates["respect"] = resourceEffect.Respect
-		}
-
-		if resourceEffect.Influence != 0 {
-			resourceUpdates["influence"] = resourceEffect.Influence
-		}
-
-		if resourceEffect.Heat != 0 {
-			resourceUpdates["heat"] = resourceEffect.Heat
-		}
-
-		if len(resourceUpdates) > 0 {
-			if err := s.playerService.UpdatePlayerResources(playerID, resourceUpdates); err != nil {
-				s.logger.Error().Err(err).Msg("Failed to update player resources after dialogue interaction")
-			}
-		}
-	}
-
-	// Check if all dialogues are completed
-	allCompleted := true
-	for _, dialogue := range dialogues {
-		dialogueState, err := s.campaignRepo.GetDialogueStateByIDs(poiRecord.ID, dialogue.ID)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		if dialogueState == nil || !dialogueState.IsCompleted {
-			allCompleted = false
-			break
-		}
-	}
-
-	// If all dialogues are completed, mark POI as completed
-	if allCompleted {
-		poiRecord.IsCompleted = true
-		poiRecord.CompletedAt = ptrTime(time.Now())
-		poiRecord.UpdatedAt = time.Now()
-
-		if err := s.campaignRepo.UpdatePlayerPOIRecord(poiRecord); err != nil {
-			return nil, nil, err
-		}
-
-		// Add to completed POIs
-		progress.CompletedPOIIDs = append(progress.CompletedPOIIDs, poiID)
-		progress.UpdatedAt = time.Now()
-
-		if err := s.campaignRepo.UpdatePlayerCampaignProgress(progress); err != nil {
-			return nil, nil, err
-		}
-
-		// Send notification
-		message := fmt.Sprintf("You have completed interaction with %s!", poi.Name)
-		s.playerService.AddNotification(playerID, message, util.NotificationTypeCampaign)
-	}
-
-	return responseDialogue, resourceEffect, nil
+	
+	// Return empty dialogue and effect
+	return &model.Dialogue{
+		Text: "POI completed successfully",
+	}, nil, nil
 }
 
 // CompletePOI marks a POI as completed
@@ -756,9 +470,14 @@ func (s *campaignService) CompletePOI(playerID, poiID string) error {
 		return errors.New("player has not started this campaign")
 	}
 
-	// Check if this is part of the player's current branch
-	if progress.CurrentBranchID == nil || *progress.CurrentBranchID != poi.BranchID {
-		return errors.New("this POI is not part of the player's current branch")
+	// Check if this POI is part of the current mission
+	if progress.CurrentMissionID == nil || *progress.CurrentMissionID != mission.ID {
+		return errors.New("this POI is not part of the player's current mission")
+	}
+
+	// Check if already completed
+	if contains(progress.CompletedPOIIDs, poiID) {
+		return nil // Already completed
 	}
 
 	// Get or create POI record
@@ -811,7 +530,6 @@ func (s *campaignService) CompletePOI(playerID, poiID string) error {
 	return nil
 }
 
-// GetOperationsByBranchID retrieves operations by branch ID
 // GetOperationsByBranchID retrieves operations by branch ID with region names
 func (s *campaignService) GetOperationsByBranchID(branchID string) ([]model.CampaignOperation, error) {
 	// Get the basic operations
@@ -908,9 +626,14 @@ func (s *campaignService) CompleteOperation(playerID, operationID, attemptID str
 		return errors.New("player has not started this campaign")
 	}
 
-	// Check if this is part of the player's current branch
-	if progress.CurrentBranchID == nil || *progress.CurrentBranchID != operation.BranchID {
-		return errors.New("this operation is not part of the player's current branch")
+	// Check if this operation is part of the current mission
+	if progress.CurrentMissionID == nil || *progress.CurrentMissionID != mission.ID {
+		return errors.New("this operation is not part of the player's current mission")
+	}
+
+	// Check if already completed
+	if contains(progress.CompletedOperationIDs, operationID) {
+		return nil // Already completed
 	}
 
 	// Get or create operation record
@@ -1048,6 +771,31 @@ func (s *campaignService) CheckMissionCompletion(playerID, missionID string) (bo
 	return contains(progress.CompletedMissionIDs, missionID), nil
 }
 
+// GetMissionBranchesProgress gets the completion status of all branches for a mission
+func (s *campaignService) GetMissionBranchesProgress(playerID, missionID string) (map[string]bool, error) {
+	// Get all branches for the mission
+	branches, err := s.campaignRepo.GetBranchesByMissionID(missionID)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]bool)
+
+	// Check completion status for each branch
+	for _, branch := range branches {
+		complete, err := s.CheckBranchCompletion(playerID, branch.ID)
+		if err != nil {
+			// Log error but continue checking other branches
+			s.logger.Error().Err(err).Str("branchID", branch.ID).Msg("Failed to check branch completion")
+			result[branch.ID] = false
+			continue
+		}
+		result[branch.ID] = complete
+	}
+
+	return result, nil
+}
+
 // GetInjectedHotspots implements CustomHotspotProvider
 func (s *campaignService) GetInjectedHotspots(playerID string, regionID *string) ([]model.Hotspot, error) {
 	// If no region specified, return empty list
@@ -1069,68 +817,78 @@ func (s *campaignService) GetInjectedHotspots(playerID string, regionID *string)
 
 	// For each active campaign
 	for _, progress := range progresses {
-		// Skip if no current mission or branch
-		if progress.CurrentMissionID == nil || progress.CurrentBranchID == nil {
+		// Skip if no current mission
+		if progress.CurrentMissionID == nil {
 			continue
 		}
 
-		// Get POIs for current branch
-		pois, err := s.campaignRepo.GetPOIsByBranchID(*progress.CurrentBranchID)
+		// Get all branches for the current mission
+		branches, err := s.campaignRepo.GetBranchesByMissionID(*progress.CurrentMissionID)
 		if err != nil {
-			s.logger.Error().Err(err).Msg("Failed to get POIs for branch")
+			s.logger.Error().Err(err).Msg("Failed to get branches for mission")
 			continue
 		}
 
-		// Filter POIs by region and check if they're already completed
-		for _, poi := range pois {
-			// Get city to find region
-			city, err := s.territoryRepo.GetCityByID(poi.CityID)
+		// Get POIs for all branches of the current mission
+		for _, branch := range branches {
+			pois, err := s.campaignRepo.GetPOIsByBranchID(branch.ID)
 			if err != nil {
-				s.logger.Error().Err(err).Msg("Failed to get city for POI")
+				s.logger.Error().Err(err).Msg("Failed to get POIs for branch")
 				continue
 			}
 
-			district, err := s.territoryRepo.GetDistrictByID(city.DistrictID)
-			if err != nil {
-				s.logger.Error().Err(err).Msg("Failed to get district for city")
-				continue
-			}
+			// Filter POIs by region and check if they're already completed
+			for _, poi := range pois {
+				// Get city to find region
+				city, err := s.territoryRepo.GetCityByID(poi.CityID)
+				if err != nil {
+					s.logger.Error().Err(err).Msg("Failed to get city for POI")
+					continue
+				}
 
-			// Skip if not in the requested region
-			if district.RegionID != *regionID {
-				continue
-			}
+				district, err := s.territoryRepo.GetDistrictByID(city.DistrictID)
+				if err != nil {
+					s.logger.Error().Err(err).Msg("Failed to get district for city")
+					continue
+				}
 
-			// Skip if already completed
-			if contains(progress.CompletedPOIIDs, poi.ID) {
-				continue
-			}
+				// Skip if not in the requested region
+				if district.RegionID != *regionID {
+					continue
+				}
 
-			// Convert to regular hotspot
-			hotspot := model.Hotspot{
-				ID:                 poi.ID,
-				Name:               poi.Name,
-				CityID:             poi.CityID,
-				Type:               poi.Type,
-				BusinessType:       poi.BusinessType,
-				IsLegal:            poi.IsLegal,
-				Income:             0, // No income for campaign POIs
-				PendingCollection:  0,
-				LastCollectionTime: nil,
-				LastIncomeTime:     nil,
-				Crew:               0,
-				Weapons:            0,
-				Vehicles:           0,
-				DefenseStrength:    0,
-				Metadata: map[string]interface{}{
-					"isCampaignPOI": true,
-					"campaignID":    progress.CampaignID,
-					"missionID":     *progress.CurrentMissionID,
-					"branchID":      *progress.CurrentBranchID,
-				},
-			}
+				// Skip if already completed
+				if contains(progress.CompletedPOIIDs, poi.ID) {
+					continue
+				}
 
-			result = append(result, hotspot)
+				// Convert to regular hotspot
+				hotspot := model.Hotspot{
+					ID:                 poi.ID,
+					Name:               poi.Name,
+					CityID:             poi.CityID,
+					Type:               poi.Type,
+					BusinessType:       poi.BusinessType,
+					IsLegal:            poi.IsLegal,
+					Income:             0, // No income for campaign POIs
+					PendingCollection:  0,
+					LastCollectionTime: nil,
+					LastIncomeTime:     nil,
+					Crew:               0,
+					Weapons:            0,
+					Vehicles:           0,
+					DefenseStrength:    0,
+					Metadata: map[string]interface{}{
+						"isCampaignPOI": true,
+						"campaignID":    progress.CampaignID,
+						"missionID":     *progress.CurrentMissionID,
+						"branchID":      branch.ID,
+						"branchName":    branch.Name,
+					},
+				}
+
+				result = append(result, hotspot)
+			}
 		}
 	}
 
@@ -1153,64 +911,80 @@ func (s *campaignService) GetInjectedOperations(playerID string, regionID *strin
 
 	// For each active campaign
 	for _, progress := range progresses {
-		// Skip if no current mission or branch
-		if progress.CurrentMissionID == nil || progress.CurrentBranchID == nil {
+		// Skip if no current mission
+		if progress.CurrentMissionID == nil {
 			continue
 		}
 
-		// Get operations for current branch
-		operations, err := s.campaignRepo.GetOperationsByBranchID(*progress.CurrentBranchID)
+		// Get all branches for the current mission
+		branches, err := s.campaignRepo.GetBranchesByMissionID(*progress.CurrentMissionID)
 		if err != nil {
-			s.logger.Error().Err(err).Msg("Failed to get operations for branch")
+			s.logger.Error().Err(err).Msg("Failed to get branches for mission")
 			continue
 		}
 
-		// Filter operations and check if they're already completed
-		for _, operation := range operations {
-			// Skip if already completed
-			if contains(progress.CompletedOperationIDs, operation.ID) {
+		// Get operations for all branches of the current mission
+		for _, branch := range branches {
+			operations, err := s.campaignRepo.GetOperationsByBranchID(branch.ID)
+			if err != nil {
+				s.logger.Error().Err(err).Msg("Failed to get operations for branch")
 				continue
 			}
 
-			// If region specified, filter by region
-			if regionID != nil {
-				// Skip if not available in this region and not global
-				if len(operation.RegionIDs) > 0 && !contains(operation.RegionIDs, *regionID) {
+			// Filter operations and check if they're already completed
+			for _, operation := range operations {
+				// Skip if already completed
+				if contains(progress.CompletedOperationIDs, operation.ID) {
 					continue
 				}
+
+				// If region specified, filter by region
+				if regionID != nil {
+					// Skip if not available in this region and not global
+					if len(operation.RegionIDs) > 0 && !contains(operation.RegionIDs, *regionID) {
+						continue
+					}
+				}
+
+				// Convert to regular operation
+				availableUntil := time.Now().Add(24 * time.Hour) // 24 hours
+
+				op := model.Operation{
+					ID:             operation.ID,
+					Name:           operation.Name,
+					Description:    operation.Description,
+					Type:           operation.Type,
+					IsSpecial:      operation.IsSpecial,
+					IsActive:       true,
+					RegionIDs:      operation.RegionIDs,
+					Requirements:   operation.Requirements,
+					Resources:      operation.Resources,
+					Rewards:        operation.Rewards,
+					Risks:          operation.Risks,
+					Duration:       operation.Duration,
+					SuccessRate:    operation.SuccessRate,
+					AvailableUntil: availableUntil,
+					Metadata: map[string]interface{}{
+						"isCampaignOperation": true,
+						"campaignID":          progress.CampaignID,
+						"missionID":           *progress.CurrentMissionID,
+						"branchID":            branch.ID,
+						"branchName":          branch.Name,
+					},
+				}
+
+				result = append(result, op)
 			}
-
-			// Convert to regular operation
-			availableUntil := time.Now().Add(24 * time.Hour) // 24 hours
-
-			op := model.Operation{
-				ID:             operation.ID,
-				Name:           operation.Name,
-				Description:    operation.Description,
-				Type:           operation.Type,
-				IsSpecial:      operation.IsSpecial,
-				IsActive:       true,
-				RegionIDs:      operation.RegionIDs,
-				Requirements:   operation.Requirements,
-				Resources:      operation.Resources,
-				Rewards:        operation.Rewards,
-				Risks:          operation.Risks,
-				Duration:       operation.Duration,
-				SuccessRate:    operation.SuccessRate,
-				AvailableUntil: availableUntil,
-				Metadata: map[string]interface{}{
-					"isCampaignOperation": true,
-					"campaignID":          progress.CampaignID,
-					"missionID":           *progress.CurrentMissionID,
-					"branchID":            *progress.CurrentBranchID,
-				},
-			}
-
-			result = append(result, op)
 		}
 	}
 
 	return result, nil
+}
+
+// HandlePOITakeover handles when a campaign POI is taken over in the territory system
+func (s *campaignService) HandlePOITakeover(playerID, hotspotID string) error {
+	// The hotspotID is actually the POI ID
+	return s.CompletePOI(playerID, hotspotID)
 }
 
 // Helper function to check if a slice contains a string

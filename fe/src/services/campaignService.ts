@@ -153,6 +153,13 @@ export default {
   },
 
   /**
+   * Get branch completion progress for a mission
+   */
+  getMissionBranchesProgress(missionId: string) {
+    return api.get<Record<string, boolean>>(`${ENDPOINTS.MISSIONS}/${missionId}/branches-progress`);
+  },
+
+  /**
    * Interact with a POI
    */
   interactWithPOI(poiId: string, interactionType: InteractionType) {

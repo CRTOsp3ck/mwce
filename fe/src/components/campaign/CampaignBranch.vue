@@ -2,7 +2,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Branch, Mission, CampaignOperation, CampaignPOI, InteractionType } from '@/types/campaign';
+import { Branch, Mission, CampaignOperation, CampaignPOI } from '@/types/campaign';
 import { useCampaignStore } from '@/stores/modules/campaign';
 import BaseButton from '@/components/ui/BaseButton.vue';
 
@@ -13,7 +13,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'interactWithPOI', poiId: string, interactionType: InteractionType): void;
+  (e: 'completePOI', poiId: string): void;
   (e: 'completeBranch'): void;
 }>();
 
@@ -36,9 +36,6 @@ const completionPercentage = computed(() => {
   return totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
 });
 
-function interactWithPOI(poiId: string, interactionType: InteractionType) {
-  emit('interactWithPOI', poiId, interactionType);
-}
 
 function completeBranch() {
   emit('completeBranch');
@@ -182,17 +179,14 @@ function getOperationRegionsDisplay(operation: CampaignOperation): string {
                 <span class="status-icon">✅</span>
                 <span class="status-text">Complete</span>
               </div>
-              <div v-else class="interaction-buttons">
-                <BaseButton size="small" variant="text" @click="interactWithPOI(poi.id, InteractionType.Neutral)">
-                  Neutral
-                </BaseButton>
-                <BaseButton size="small" variant="text" @click="interactWithPOI(poi.id, InteractionType.Convince)">
-                  Convince
-                </BaseButton>
-                <BaseButton size="small" variant="text" @click="interactWithPOI(poi.id, InteractionType.Intimidate)">
-                  Intimidate
-                </BaseButton>
-              </div>
+              <BaseButton 
+                v-else 
+                size="small" 
+                variant="outline"
+                @click="$emit('completePOI', poi.id)"
+              >
+                Complete
+              </BaseButton>
             </div>
           </div>
         </div>

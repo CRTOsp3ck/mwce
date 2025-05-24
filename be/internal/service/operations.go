@@ -212,6 +212,8 @@ func (s *operationsService) filterOperationsByPlayerAttempts(operations []model.
 
 // GetOperationByID retrieves an operation by ID
 func (s *operationsService) GetOperationByID(id string) (*model.Operation, error) {
+	// Note: This method doesn't have access to playerID, so it can only check regular operations
+	// For campaign operations, use GetAvailableOperations instead
 	return s.operationsRepo.GetOperationByID(id)
 }
 
@@ -225,12 +227,37 @@ func (s *operationsService) GetCompletedOperations(playerID string) ([]model.Ope
 	return s.operationsRepo.GetCompletedOperations(playerID)
 }
 
+// getOperationByIDOrFromProviders attempts to get an operation from the repository, falling back to providers if not found
+func (s *operationsService) getOperationByIDOrFromProviders(playerID, operationID string) (*model.Operation, error) {
+	// First try to get the operation from the regular operations table
+	operation, err := s.operationsRepo.GetOperationByID(operationID)
+	if err == nil {
+		return operation, nil
+	}
+	
+	// If not found in regular operations, check if it's a campaign operation
+	// by getting all available operations (which includes injected campaign operations)
+	availableOps, availErr := s.GetAvailableOperations(playerID, true)
+	if availErr != nil {
+		return nil, errors.New("operation not found")
+	}
+	
+	// Look for the operation in available operations
+	for _, op := range availableOps {
+		if op.ID == operationID {
+			return &op, nil
+		}
+	}
+	
+	return nil, errors.New("operation not found")
+}
+
 // StartOperation starts a new operation
 func (s *operationsService) StartOperation(playerID, operationID string, resources model.OperationResources) (*model.OperationAttempt, error) {
-	// Get the operation
-	operation, err := s.operationsRepo.GetOperationByID(operationID)
+	// Get the operation (either from regular table or providers)
+	operation, err := s.getOperationByIDOrFromProviders(playerID, operationID)
 	if err != nil {
-		return nil, errors.New("operation not found")
+		return nil, err
 	}
 
 	// Check if operation is still available
@@ -412,7 +439,7 @@ func (s *operationsService) CancelOperation(playerID, attemptID string) error {
 	}
 
 	// Add notification
-	operation, _ := s.operationsRepo.GetOperationByID(attempt.OperationID)
+	operation, _ := s.getOperationByIDOrFromProviders(playerID, attempt.OperationID)
 	operationName := "Unknown operation"
 	if operation != nil {
 		operationName = operation.Name
@@ -443,9 +470,9 @@ func (s *operationsService) CollectOperation(playerID, attemptID string) (*model
 	}
 
 	// Get the operation
-	operation, err := s.operationsRepo.GetOperationByID(attempt.OperationID)
+	operation, err := s.getOperationByIDOrFromProviders(attempt.PlayerID, attempt.OperationID)
 	if err != nil {
-		return nil, errors.New("operation not found")
+		return nil, err
 	}
 
 	// Check if the operation has been running long enough
@@ -739,6 +766,21 @@ func (s *operationsService) CollectOperationReward(playerID, attemptID string) (
 	// Add notification
 	s.playerService.AddNotification(playerID, message, util.NotificationTypeOperation)
 
+	// Check if this was a campaign operation and notify the campaign service
+	operation, err := s.getOperationByIDOrFromProviders(playerID, attempt.OperationID)
+	if err == nil && operation != nil && operation.Metadata != nil {
+		if _, isCampaign := operation.Metadata["isCampaignOperation"]; isCampaign {
+			// Notify campaign service that the operation was completed
+			for _, provider := range s.customOperationsProviders {
+				if campaignProvider, ok := provider.(interface{ CompleteOperation(playerID, operationID, attemptID string) error }); ok {
+					if err := campaignProvider.CompleteOperation(playerID, attempt.OperationID, attemptID); err != nil {
+						s.logger.Error().Err(err).Msg("Failed to notify campaign service of operation completion")
+					}
+				}
+			}
+		}
+	}
+
 	return attempt.Result, nil
 }
 
@@ -757,7 +799,7 @@ func (s *operationsService) CheckAndCompleteOperations() error {
 
 	for _, attempt := range attempts {
 		// Get the operation
-		operation, err := s.operationsRepo.GetOperationByID(attempt.OperationID)
+		operation, err := s.getOperationByIDOrFromProviders(attempt.PlayerID, attempt.OperationID)
 		if err != nil {
 			s.logger.Error().Err(err).Str("operationID", attempt.OperationID).Msg("Failed to get operation")
 			continue

@@ -773,6 +773,20 @@ func (s *territoryService) handleTakeover(player *model.Player, hotspot *model.H
 			stats.TotalHotspotsControlled++
 			s.playerRepo.UpdatePlayerStats(stats)
 		}
+
+		// Check if this is a campaign POI and mark it as completed
+		if hotspot.Metadata != nil {
+			if isCampaignPOI, ok := hotspot.Metadata["isCampaignPOI"].(bool); ok && isCampaignPOI {
+				// This is a campaign POI, notify the campaign service
+				for _, provider := range s.customHotspotProviders {
+					if campaignProvider, ok := provider.(interface{ HandlePOITakeover(playerID, hotspotID string) error }); ok {
+						if err := campaignProvider.HandlePOITakeover(player.ID, hotspot.ID); err != nil {
+							s.logger.Error().Err(err).Msg("Failed to handle campaign POI takeover")
+						}
+					}
+				}
+			}
+		}
 	} else {
 		// On failure, lose resources and generate heat
 

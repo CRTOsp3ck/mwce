@@ -636,4 +636,32 @@ func (c *CampaignController) GetBranchesByMission(w http.ResponseWriter, r *http
 	util.RespondWithJSON(w, http.StatusOK, branches)
 }
 
+// GetMissionBranchesProgress handles getting the completion progress of all branches for a mission
+func (c *CampaignController) GetMissionBranchesProgress(w http.ResponseWriter, r *http.Request) {
+	// Get player ID from context
+	playerID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		util.RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	// Get mission ID from URL
+	missionID := chi.URLParam(r, "id")
+	if missionID == "" {
+		util.RespondWithError(w, http.StatusBadRequest, "Mission ID is required")
+		return
+	}
+
+	// Get branches progress
+	progress, err := c.campaignService.GetMissionBranchesProgress(playerID, missionID)
+	if err != nil {
+		c.logger.Error().Err(err).Str("playerID", playerID).Str("missionID", missionID).Msg("Failed to get branches progress")
+		util.RespondWithError(w, http.StatusInternalServerError, "Failed to get branches progress")
+		return
+	}
+
+	// Return success response
+	util.RespondWithJSON(w, http.StatusOK, progress)
+}
+
 

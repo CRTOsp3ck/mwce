@@ -8,7 +8,6 @@ import BaseCard from '@/components/ui/BaseCard.vue';
 import BaseModal from '@/components/ui/BaseModal.vue';
 import CampaignsList from '@/components/campaign/CampaignsList.vue';
 import CampaignMission from '@/components/campaign/CampaignMission.vue';
-import CampaignBranch from '@/components/campaign/CampaignBranch.vue';
 import { useCampaignStore } from '@/stores/modules/campaign';
 import { Campaign, Branch, Mission, InteractionType } from '@/types/campaign';
 
@@ -16,25 +15,19 @@ const router = useRouter();
 const campaignStore = useCampaignStore();
 
 // View state
-const activeView = ref<'list' | 'detail' | 'mission' | 'branch'>('list');
+const activeView = ref<'list' | 'detail' | 'mission'>('list');
 const isLoading = ref(false);
 
 // Modals
 const showStartModal = ref(false);
 const showCompleteModal = ref(false);
-const showDialogueModal = ref(false);
-const selectedInteractionType = ref<InteractionType | null>(null);
-const dialogueText = ref('');
-const dialogueResponse = ref('');
-const resourceEffects = ref<{ [key: string]: number }>({});
+const selectedBranch = ref<Branch | null>(null);
 
 // Computed properties
 const campaigns = computed(() => campaignStore.campaigns);
 const selectedCampaign = computed(() => campaignStore.selectedCampaign);
 const currentMission = computed(() => campaignStore.currentMission);
-const currentBranch = computed(() => campaignStore.selectedBranch);
 const hasCampaignStarted = computed(() => campaignStore.hasCampaignStarted);
-const isBranchCompletable = computed(() => campaignStore.isBranchCompletable);
 
 // Load campaigns on mount
 onMounted(async () => {
@@ -67,27 +60,28 @@ async function startCampaign() {
   }
 }
 
-// Handle branch selection
+// Handle branch selection (deprecated - branches are now automatically determined)
 async function selectBranch(mission: Mission, branch: Branch) {
-  isLoading.value = true;
-  const result = await campaignStore.selectBranch(mission.id, branch.id);
-  isLoading.value = false;
+  // No longer needed - all branches are visible
+}
 
-  if (result && result.success) {
-    activeView.value = 'branch';
-  }
+// Show branch completion modal
+function showCompleteBranchModal(branch: Branch) {
+  selectedBranch.value = branch;
+  showCompleteModal.value = true;
 }
 
 // Handle branch completion
 async function completeBranch() {
-  if (!currentMission.value || !currentBranch.value) return;
+  if (!currentMission.value || !selectedBranch.value) return;
 
   isLoading.value = true;
-  const result = await campaignStore.completeBranch(currentMission.value.id, currentBranch.value.id);
+  const result = await campaignStore.completeBranch(currentMission.value.id, selectedBranch.value.id);
   isLoading.value = false;
 
   if (result && result.success) {
     showCompleteModal.value = false;
+    selectedBranch.value = null;
 
     // If there's a new current mission, show it
     if (campaignStore.currentMission) {
@@ -99,33 +93,24 @@ async function completeBranch() {
   }
 }
 
-// Handle POI interaction
-async function interactWithPOI(poiId: string, interactionType: InteractionType) {
-  selectedInteractionType.value = interactionType;
+// Handle POI completion
+async function completePOI(poiId: string) {
   isLoading.value = true;
-
-  const result = await campaignStore.interactWithPOI(poiId, interactionType);
+  const result = await campaignStore.completePOI(poiId);
   isLoading.value = false;
 
-  if (result) {
-    dialogueText.value = result.dialogue.text;
-    dialogueResponse.value = "";
-
-    // If there are resource effects, show them
-    if (result.resourceEffect) {
-      resourceEffects.value = {};
-
-      if (result.resourceEffect.money) resourceEffects.value['money'] = result.resourceEffect.money;
-      if (result.resourceEffect.crew) resourceEffects.value['crew'] = result.resourceEffect.crew;
-      if (result.resourceEffect.weapons) resourceEffects.value['weapons'] = result.resourceEffect.weapons;
-      if (result.resourceEffect.vehicles) resourceEffects.value['vehicles'] = result.resourceEffect.vehicles;
-      if (result.resourceEffect.respect) resourceEffects.value['respect'] = result.resourceEffect.respect;
-      if (result.resourceEffect.influence) resourceEffects.value['influence'] = result.resourceEffect.influence;
-      if (result.resourceEffect.heat) resourceEffects.value['heat'] = result.resourceEffect.heat;
+  if (result && result.success) {
+    // Refresh the mission data
+    if (currentMission.value && selectedCampaign.value) {
+      await campaignStore.fetchCurrentMission(selectedCampaign.value.id);
     }
-
-    showDialogueModal.value = true;
   }
+}
+
+// Handle POI interaction (deprecated - POIs are now simple completion markers)
+async function interactWithPOI(poiId: string, interactionType: InteractionType) {
+  // Just complete the POI
+  await completePOI(poiId);
 }
 
 // Navigation
@@ -135,8 +120,6 @@ function goBack() {
     campaignStore.selectedCampaignId = null;
   } else if (activeView.value === 'mission') {
     activeView.value = 'detail';
-  } else if (activeView.value === 'branch') {
-    activeView.value = 'mission';
   }
 }
 </script>
@@ -208,25 +191,7 @@ function goBack() {
       <CampaignMission
         v-if="currentMission"
         :mission="currentMission"
-        @select-branch="selectBranch"
-      />
-    </div>
-
-    <!-- Branch Detail -->
-    <div v-else-if="activeView === 'branch'" class="branch-detail">
-      <div class="back-button">
-        <BaseButton variant="text" icon="arrow-left" @click="goBack">
-          Back to Mission
-        </BaseButton>
-      </div>
-
-      <CampaignBranch
-        v-if="currentBranch"
-        :branch="currentBranch"
-        :mission="currentMission"
-        @interact-with-poi="interactWithPOI"
-        @complete-branch="showCompleteModal = true"
-        :can-complete="isBranchCompletable"
+        @complete-branch="showCompleteBranchModal"
       />
     </div>
 
@@ -251,8 +216,8 @@ function goBack() {
 
     <!-- Complete Branch Modal -->
     <BaseModal v-model="showCompleteModal" title="Complete Branch">
-      <div v-if="currentBranch" class="complete-branch-modal">
-        <p>You have completed all objectives for the "{{ currentBranch.name }}" branch.</p>
+      <div v-if="selectedBranch" class="complete-branch-modal">
+        <p>You have completed all objectives for the "{{ selectedBranch.name }}" branch.</p>
         <p>Are you ready to move forward with your decision?</p>
         <p class="warning">Warning: This choice will be permanent and will affect your story progression.</p>
       </div>
@@ -269,36 +234,6 @@ function goBack() {
       </template>
     </BaseModal>
 
-    <!-- Dialogue Modal -->
-    <BaseModal v-model="showDialogueModal" :title="selectedInteractionType ? `${selectedInteractionType} Interaction` : 'Dialogue'">
-      <div class="dialogue-modal">
-        <div class="dialogue-text">
-          {{ dialogueText }}
-        </div>
-
-        <div v-if="Object.keys(resourceEffects).length > 0" class="resource-effects">
-          <h4>Effects:</h4>
-          <div class="effects-list">
-            <div v-for="(value, key) in resourceEffects" :key="key" class="effect-item" :class="{ 'positive': value > 0, 'negative': value < 0 }">
-              <span class="effect-icon">
-                {{ key === 'money' ? '💰' : key === 'crew' ? '👥' : key === 'weapons' ? '🔫' : key === 'vehicles' ? '🚗' :
-                   key === 'respect' ? '👊' : key === 'influence' ? '🏛️' : key === 'heat' ? '🔥' : '❓' }}
-              </span>
-              <span class="effect-label">{{ key }}:</span>
-              <span class="effect-value">{{ value > 0 ? '+' : '' }}{{ value }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <template #footer>
-        <div class="modal-footer-actions">
-          <BaseButton variant="primary" @click="showDialogueModal = false">
-            Continue
-          </BaseButton>
-        </div>
-      </template>
-    </BaseModal>
   </div>
 </template>
 
@@ -403,52 +338,6 @@ function goBack() {
     }
   }
 
-  .dialogue-modal {
-    .dialogue-text {
-      @include card;
-      padding: $spacing-md;
-      margin-bottom: $spacing-md;
-      line-height: 1.6;
-    }
-
-    .resource-effects {
-      h4 {
-        margin-bottom: $spacing-sm;
-      }
-
-      .effects-list {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: $spacing-sm;
-
-        .effect-item {
-          // @include flex-align-center;
-          gap: $spacing-xs;
-          padding: $spacing-xs;
-          border-radius: $border-radius-sm;
-
-          &.positive {
-            background-color: rgba($success-color, 0.1);
-            color: $success-color;
-          }
-
-          &.negative {
-            background-color: rgba($danger-color, 0.1);
-            color: $danger-color;
-          }
-
-          .effect-icon {
-            font-size: 1.2rem;
-          }
-
-          .effect-label {
-            font-weight: 500;
-            text-transform: capitalize;
-          }
-        }
-      }
-    }
-  }
 
   .modal-footer-actions {
     @include flex-between;

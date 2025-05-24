@@ -38,6 +38,7 @@ export interface Hotspot {
   weapons: number;
   vehicles: number;
   defenseStrength: number;
+  metadata?: Record<string, any>; // Additional metadata (e.g., for campaign POIs)
 }
 
 // Add these new interfaces
