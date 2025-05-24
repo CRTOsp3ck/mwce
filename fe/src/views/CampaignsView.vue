@@ -29,6 +29,18 @@ const selectedCampaign = computed(() => campaignStore.selectedCampaign);
 const currentMission = computed(() => campaignStore.currentMission);
 const hasCampaignStarted = computed(() => campaignStore.hasCampaignStarted);
 
+// Track if viewing a specific mission
+const viewingMissionId = ref<string | null>(null);
+const viewingMission = computed(() => {
+  if (!viewingMissionId.value || !selectedCampaign.value) return null;
+  
+  for (const chapter of selectedCampaign.value.chapters) {
+    const mission = chapter.missions.find(m => m.id === viewingMissionId.value);
+    if (mission) return mission;
+  }
+  return null;
+});
+
 // Load campaigns on mount and handle route params
 onMounted(async () => {
   isLoading.value = true;
@@ -42,6 +54,11 @@ onMounted(async () => {
     // Check if we're on the mission route
     if (route.name === 'CampaignMission') {
       activeView.value = 'mission';
+      
+      // Check if viewing a specific mission
+      if (route.query.missionId) {
+        viewingMissionId.value = route.query.missionId as string;
+      }
     } else {
       activeView.value = 'detail';
     }
@@ -64,6 +81,11 @@ watch(() => route.params.campaignId, async (newCampaignId) => {
     activeView.value = 'list';
     campaignStore.selectedCampaignId = null;
   }
+});
+
+// Watch for mission query changes
+watch(() => route.query.missionId, (newMissionId) => {
+  viewingMissionId.value = newMissionId as string | null;
 });
 
 // Handle campaign selection
@@ -127,8 +149,6 @@ async function completeBranch() {
   }
 }
 
-
-
 // Navigation
 function goBack() {
   if (activeView.value === 'detail') {
@@ -139,6 +159,60 @@ function goBack() {
       params: { campaignId: selectedCampaign.value.id } 
     });
   }
+}
+
+// Get current chapter and mission info
+const currentChapter = computed(() => {
+  if (!selectedCampaign.value || !currentMission.value) return null;
+  
+  for (const chapter of selectedCampaign.value.chapters) {
+    const mission = chapter.missions.find(m => m.id === currentMission.value!.id);
+    if (mission) {
+      return {
+        chapter,
+        missionIndex: chapter.missions.indexOf(mission),
+        totalMissions: chapter.missions.length
+      };
+    }
+  }
+  return null;
+});
+
+// Check if chapter is complete
+function isChapterComplete(chapter: any): boolean {
+  return chapter.missions.every((m: any) => m.is_completed);
+}
+
+// Get completed branch name for a mission
+function getCompletedBranch(mission: any): string | null {
+  const progress = campaignStore.currentCampaignProgress;
+  if (!progress || !mission.is_completed) return null;
+  
+  // Find which branch was completed for this mission
+  // This would need backend support to track which branch was chosen
+  // For now, return null
+  return null;
+}
+
+// View a specific mission (completed or current)
+function viewMission(mission: any) {
+  if (mission.is_completed || currentMission.value?.id === mission.id) {
+    // Navigate to mission view
+    router.push({ 
+      name: 'CampaignMission', 
+      params: { campaignId: selectedCampaign.value!.id },
+      query: { missionId: mission.id }
+    });
+  }
+}
+
+// Go back to current mission
+function backToCurrent() {
+  viewingMissionId.value = null;
+  router.push({ 
+    name: 'CampaignMission', 
+    params: { campaignId: selectedCampaign.value!.id }
+  });
 }
 </script>
 
@@ -187,11 +261,42 @@ function goBack() {
         </div>
 
         <div class="campaign-chapters">
-          <h4>Campaign Chapters</h4>
+          <h4>Campaign Progress</h4>
           <div class="chapters-list">
             <div v-for="chapter in selectedCampaign.chapters" :key="chapter.id" class="chapter-card">
-              <h5>{{ chapter.name }}</h5>
-              <p>{{ chapter.description }}</p>
+              <div class="chapter-header">
+                <h5>Chapter {{ chapter.order }}: {{ chapter.name }}</h5>
+                <span class="chapter-status" v-if="isChapterComplete(chapter)">
+                  <i class="fas fa-check-circle"></i> Complete
+                </span>
+              </div>
+              <p class="chapter-description">{{ chapter.description }}</p>
+              
+              <div class="missions-list">
+                <div 
+                  v-for="mission in chapter.missions" 
+                  :key="mission.id" 
+                  class="mission-item"
+                  :class="{
+                    'completed': mission.is_completed,
+                    'current': currentMission?.id === mission.id,
+                    'clickable': mission.is_completed || currentMission?.id === mission.id
+                  }"
+                  @click="viewMission(mission)"
+                >
+                  <div class="mission-status">
+                    <i v-if="mission.is_completed" class="fas fa-check-circle"></i>
+                    <i v-else-if="currentMission?.id === mission.id" class="fas fa-play-circle"></i>
+                    <i v-else class="fas fa-lock"></i>
+                  </div>
+                  <div class="mission-info">
+                    <span class="mission-name">Mission {{ mission.order }}: {{ mission.name }}</span>
+                    <span class="mission-path" v-if="getCompletedBranch(mission)">
+                      <i class="fas fa-route"></i> {{ getCompletedBranch(mission) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -206,9 +311,26 @@ function goBack() {
         </BaseButton>
       </div>
 
+      <div v-if="viewingMission" class="mission-context viewing-mode">
+        <p class="context-info">
+          <i class="fas fa-eye"></i> Viewing Past Mission
+        </p>
+        <BaseButton variant="text" size="small" @click="backToCurrent">
+          <i class="fas fa-arrow-left"></i> Back to Current Mission
+        </BaseButton>
+      </div>
+      <div v-else-if="currentChapter && currentMission" class="mission-context">
+        <p class="context-info">
+          {{ selectedCampaign?.name }} - Chapter {{ currentChapter.chapter.order }}: {{ currentChapter.chapter.name }}
+        </p>
+        <p class="mission-progress">
+          Mission {{ currentMission.order }} of {{ currentChapter.totalMissions }}
+        </p>
+      </div>
+
       <CampaignMission
-        v-if="currentMission"
-        :mission="currentMission"
+        v-if="viewingMission || currentMission"
+        :mission="viewingMission || currentMission!"
         @complete-branch="showCompleteBranchModal"
       />
     </div>
@@ -331,15 +453,133 @@ function goBack() {
         @include card;
         padding: $spacing-md;
 
-        h5 {
+        .chapter-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
           margin-bottom: $spacing-xs;
+
+          h5 {
+            margin: 0;
+          }
+
+          .chapter-status {
+            color: $success-color;
+            font-size: $font-size-sm;
+            display: flex;
+            align-items: center;
+            gap: $spacing-xs;
+          }
         }
 
-        p {
+        .chapter-description {
           color: $text-secondary;
           font-size: $font-size-sm;
+          margin-bottom: $spacing-md;
+        }
+
+        .missions-list {
+          display: flex;
+          flex-direction: column;
+          gap: $spacing-sm;
+
+          .mission-item {
+            display: flex;
+            align-items: center;
+            gap: $spacing-sm;
+            padding: $spacing-sm;
+            background: rgba($background-dark, 0.5);
+            border: 1px solid $border-color;
+            border-radius: $border-radius-sm;
+            transition: $transition-base;
+
+            &.completed {
+              opacity: 0.8;
+              
+              .mission-status {
+                color: $success-color;
+              }
+            }
+
+            &.current {
+              border-color: $gold-color;
+              background: rgba($gold-color, 0.1);
+              
+              .mission-status {
+                color: $gold-color;
+              }
+            }
+
+            &.clickable {
+              cursor: pointer;
+
+              &:hover {
+                background: rgba($gold-color, 0.15);
+                transform: translateX(4px);
+              }
+            }
+
+            .mission-status {
+              font-size: 16px;
+              color: $text-secondary;
+            }
+
+            .mission-info {
+              flex: 1;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+
+              .mission-name {
+                color: $text-primary;
+                font-size: $font-size-sm;
+              }
+
+              .mission-path {
+                color: $text-secondary;
+                font-size: $font-size-xs;
+                display: flex;
+                align-items: center;
+                gap: $spacing-xs;
+              }
+            }
+          }
         }
       }
+    }
+  }
+
+  .mission-context {
+    background: rgba($background-dark, 0.6);
+    border: 1px solid $border-color;
+    border-radius: $border-radius;
+    padding: $spacing-md;
+    margin-bottom: $spacing-md;
+
+    &.viewing-mode {
+      background: rgba($info-color, 0.1);
+      border-color: $info-color;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .context-info {
+        display: flex;
+        align-items: center;
+        gap: $spacing-sm;
+        margin: 0;
+        color: $info-color;
+      }
+    }
+
+    .context-info {
+      color: $text-primary;
+      margin-bottom: $spacing-xs;
+    }
+
+    .mission-progress {
+      color: $gold-color;
+      font-weight: 500;
     }
   }
 
@@ -355,7 +595,6 @@ function goBack() {
       }
     }
   }
-
 
   .modal-footer-actions {
     @include flex-between;

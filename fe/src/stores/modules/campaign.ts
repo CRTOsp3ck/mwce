@@ -52,7 +52,31 @@ export const useCampaignStore = defineStore('campaign', {
 
   getters: {
     selectedCampaign: (state): Campaign | null => {
-      return state.campaigns.find(c => c.id === state.selectedCampaignId) || null;
+      const campaign = state.campaigns.find(c => c.id === state.selectedCampaignId);
+      if (!campaign) return null;
+      
+      // Enrich with completion status
+      const progress = state.selectedCampaignId ? state.playerProgress[state.selectedCampaignId] : undefined;
+      if (progress) {
+        // Deep clone to avoid mutating state
+        const enrichedCampaign = JSON.parse(JSON.stringify(campaign)) as Campaign;
+        
+        // Add is_completed to missions
+        enrichedCampaign.chapters.forEach(chapter => {
+          chapter.missions.forEach(mission => {
+            mission.is_completed = progress.completedMissionIds.includes(mission.id);
+          });
+        });
+        
+        // Check if entire campaign is completed
+        enrichedCampaign.is_completed = enrichedCampaign.chapters.every(chapter => 
+          chapter.missions.every(mission => mission.is_completed)
+        );
+        
+        return enrichedCampaign;
+      }
+      
+      return campaign;
     },
 
     currentCampaignProgress: (state): PlayerCampaignProgress | undefined => {

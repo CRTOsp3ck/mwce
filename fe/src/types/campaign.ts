@@ -14,6 +14,7 @@ export interface Campaign {
   imageUrl?: string;
   isActive: boolean;
   chapters: Chapter[];
+  is_completed?: boolean;
 }
 
 export interface Chapter {
@@ -23,6 +24,7 @@ export interface Chapter {
   description: string;
   order: number;
   missions: Mission[];
+  requirement_level?: number;
 }
 
 export interface Mission {
@@ -33,6 +35,12 @@ export interface Mission {
   order: number;
   prerequisites: string[];
   branches: Branch[];
+  rewards?: {
+    cash?: number;
+    exp?: number;
+    reputation?: number;
+  };
+  is_completed?: boolean; // Added by frontend based on progress
 }
 
 export interface Branch {
