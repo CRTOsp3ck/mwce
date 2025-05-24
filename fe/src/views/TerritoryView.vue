@@ -181,7 +181,7 @@ const hasCollectableBusiness = computed(() => {
   return collectableBusinesses.value.length > 0;
 });
 
-// Regional distribution
+// Regional distribution - Shows ALL regions with their control status
 const regionsWithControlledHotspots = computed(() => {
   const result = [];
 
@@ -196,18 +196,29 @@ const regionsWithControlledHotspots = computed(() => {
     const legalBusinessesInRegion = hotspotsInRegion.filter(h => h.isLegal);
     const controlledHotspotsInRegion = legalBusinessesInRegion.filter(h => isPlayerControlled(h));
 
-    if (legalBusinessesInRegion.length > 0) {
-      result.push({
-        id: region.id,
-        name: region.name,
-        controlled: controlledHotspotsInRegion.length,
-        total: legalBusinessesInRegion.length,
-        controlPercentage: Math.round((controlledHotspotsInRegion.length / legalBusinessesInRegion.length) * 100)
-      });
-    }
+    // Show ALL regions, regardless of whether they have businesses or player control
+    result.push({
+      id: region.id,
+      name: region.name,
+      controlled: controlledHotspotsInRegion.length,
+      total: legalBusinessesInRegion.length,
+      controlPercentage: legalBusinessesInRegion.length > 0 
+        ? Math.round((controlledHotspotsInRegion.length / legalBusinessesInRegion.length) * 100)
+        : 0,
+      hasBusinesses: legalBusinessesInRegion.length > 0
+    });
   }
 
-  return result.sort((a, b) => b.controlPercentage - a.controlPercentage);
+  return result.sort((a, b) => {
+    // Sort by control percentage first, then by whether they have businesses, then by name
+    if (b.controlPercentage !== a.controlPercentage) {
+      return b.controlPercentage - a.controlPercentage;
+    }
+    if (b.hasBusinesses !== a.hasBusinesses) {
+      return b.hasBusinesses ? 1 : -1;
+    }
+    return a.name.localeCompare(b.name);
+  });
 });
 
 // Player resources
@@ -1355,12 +1366,15 @@ onBeforeUnmount(() => {
           <span class="help-text">Your territorial influence across the city</span>
         </div>
         <div class="regions-chart">
-          <div v-for="region in regionsWithControlledHotspots" :key="region.id" class="region-bar">
+          <div v-for="region in regionsWithControlledHotspots" :key="region.id" class="region-bar" 
+               :class="{ 'no-businesses': !region.hasBusinesses }">
             <div class="region-name">{{ region.name }}</div>
             <div class="bar-wrapper">
-              <div class="bar-fill" :style="{ width: `${region.controlPercentage}%` }"
-                :class="{ 'powerful': region.controlPercentage > 60 }"></div>
-              <span class="bar-value">{{ region.controlled }}/{{ region.total }}</span>
+              <div v-if="region.hasBusinesses" class="bar-fill" 
+                   :style="{ width: `${region.controlPercentage}%` }"
+                   :class="{ 'powerful': region.controlPercentage > 60 }"></div>
+              <span v-if="region.hasBusinesses" class="bar-value">{{ region.controlled }}/{{ region.total }}</span>
+              <span v-else class="bar-value no-data">No businesses</span>
             </div>
           </div>
 
@@ -1622,7 +1636,7 @@ onBeforeUnmount(() => {
           <div class="empty-icon">📜</div>
           <h4>No Recent Activity</h4>
           <p>You haven't performed any territory actions yet.</p>
-          <BaseButton @click="activeTab = 'explore'">Explore Territory</BaseButton>
+          <BaseButton @click="navigateToTab('explore')">Explore Territory</BaseButton>
         </div>
       </div>
     </div>
@@ -2197,8 +2211,16 @@ onBeforeUnmount(() => {
           align-items: center;
           gap: $spacing-md;
 
+          &.no-businesses {
+            opacity: 0.6;
+            
+            .bar-wrapper {
+              background-color: rgba($background-darker, 0.5);
+            }
+          }
+
           .region-name {
-            width: 100px;
+            width: 120px;
             font-weight: 500;
           }
 
@@ -2229,6 +2251,11 @@ onBeforeUnmount(() => {
               font-weight: 500;
               color: $text-color;
               text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+
+              &.no-data {
+                color: $text-secondary;
+                font-style: italic;
+              }
             }
           }
         }
@@ -2912,6 +2939,39 @@ onBeforeUnmount(() => {
               }
             }
           }
+        }
+      }
+
+      // Empty state styling for Recent Activity tab
+      .empty-state {
+        text-align: center;
+        padding: $spacing-xl;
+        margin: $spacing-lg 0;
+        background: linear-gradient(135deg, rgba($background-lighter, 0.8) 0%, rgba($background-darker, 0.9) 100%);
+        border-radius: $border-radius-md;
+        border: 1px dashed rgba($border-color, 0.5);
+        min-height: 200px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+
+        .empty-icon {
+          font-size: 48px;
+          margin-bottom: $spacing-md;
+          opacity: 0.7;
+        }
+
+        h4 {
+          margin: 0 0 $spacing-sm 0;
+          @include gold-accent;
+        }
+
+        p {
+          color: $text-secondary;
+          margin-bottom: $spacing-md;
+          line-height: 1.6;
+          max-width: 80%;
         }
       }
     }
