@@ -167,8 +167,9 @@ func (c *TerritoryController) GetHotspots(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Check if city ID is provided as a query parameter
+	// Check query parameters
 	cityID := r.URL.Query().Get("cityId")
+	allRegions := r.URL.Query().Get("allRegions") == "true"
 
 	var hotspots []model.Hotspot
 	var err error
@@ -176,6 +177,9 @@ func (c *TerritoryController) GetHotspots(w http.ResponseWriter, r *http.Request
 	if cityID != "" {
 		// Get hotspots in the specified city (including injected ones)
 		hotspots, err = c.territoryService.GetHotspotsByCityWithInjected(playerID, cityID)
+	} else if allRegions {
+		// Get ALL hotspots across all regions (no POI injection)
+		hotspots, err = c.territoryService.GetAllHotspots()
 	} else {
 		// Get hotspots in player's current region (includes injected POIs)
 		hotspots, err = c.territoryService.GetHotspotsInCurrentRegion(playerID)

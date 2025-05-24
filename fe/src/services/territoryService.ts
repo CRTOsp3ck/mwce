@@ -93,8 +93,9 @@ export default {
   /**
    * Get all hotspots
    */
-  getHotspots() {
-    return api.get<Hotspot[]>(ENDPOINTS.HOTSPOTS);
+  getHotspots(allRegions = false) {
+    const url = allRegions ? `${ENDPOINTS.HOTSPOTS}?allRegions=true` : ENDPOINTS.HOTSPOTS;
+    return api.get<Hotspot[]>(url);
   },
 
   /**

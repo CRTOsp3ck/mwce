@@ -19,6 +19,7 @@ interface TerritoryState {
   districts: District[];
   cities: City[];
   hotspots: Hotspot[];
+  allHotspots: Hotspot[]; // All hotspots across all regions
   allControlledHotspots: Hotspot[]; // All controlled hotspots across all regions
   selectedRegionId: string | null;
   selectedDistrictId: string | null;
@@ -39,6 +40,7 @@ export const useTerritoryStore = defineStore('territory', {
     districts: [],
     cities: [],
     hotspots: [],
+    allHotspots: [],
     allControlledHotspots: [],
     selectedRegionId: null,
     selectedDistrictId: null,
@@ -279,10 +281,16 @@ export const useTerritoryStore = defineStore('territory', {
           this.cities = citiesResponse.data;
         }
 
-        // Get hotspots - now filtered by current region on the backend
+        // Get hotspots - filtered by current region on the backend
         const hotspotsResponse = await territoryService.getHotspots();
         if (hotspotsResponse.success && hotspotsResponse.data) {
           this.hotspots = hotspotsResponse.data;
+        }
+
+        // Get ALL hotspots across all regions for statistics
+        const allHotspotsResponse = await territoryService.getHotspots(true);
+        if (allHotspotsResponse.success && allHotspotsResponse.data) {
+          this.allHotspots = allHotspotsResponse.data;
         }
 
         // Also get ALL controlled hotspots across all regions
@@ -843,6 +851,24 @@ export const useTerritoryStore = defineStore('territory', {
         }
       }
 
+      // Also update in allHotspots if present
+      const allIndex = this.allHotspots.findIndex(h => h.id === hotspotData.id);
+      if (allIndex !== -1) {
+        this.allHotspots[allIndex] = {
+          ...this.allHotspots[allIndex],
+          ...hotspotData
+        };
+      }
+
+      // Also update in allControlledHotspots if present
+      const controlledIndex = this.allControlledHotspots.findIndex(h => h.id === hotspotData.id);
+      if (controlledIndex !== -1) {
+        this.allControlledHotspots[controlledIndex] = {
+          ...this.allControlledHotspots[controlledIndex],
+          ...hotspotData
+        };
+      }
+
       // Force timer refresh
       this.timerRefreshCounter++;
     },
@@ -852,6 +878,7 @@ export const useTerritoryStore = defineStore('territory', {
       this.districts = [];
       this.cities = [];
       this.hotspots = [];
+      this.allHotspots = [];
       this.allControlledHotspots = [];
       this.selectedRegionId = null;
       this.selectedDistrictId = null;
