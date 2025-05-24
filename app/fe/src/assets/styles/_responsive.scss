@@ -1,0 +1,967 @@
+// src/assets/styles/_responsive.scss
+
+// Mobile Game Layout
+// This file contains responsive adjustments for the game's layout
+// to create a mobile-friendly experience that still feels game-like
+
+// Main layout transformations
+.app-container {
+  // Mobile-first approach
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  position: relative;
+
+  // Mobile: Adjust for bottom navigation
+  padding-bottom: 60px; // Space for the mobile navigation bar
+
+  @include respond-to(md) {
+    padding-bottom: 0; // No padding on desktop
+  }
+}
+
+// Header responsive adjustments
+.app-header {
+  padding: $spacing-sm $spacing-md;
+
+  // Mobile optimizations
+  .logo {
+    h1 {
+      font-size: 20px; // Smaller font on mobile
+
+      @include respond-to(md) {
+        font-size: 24px;
+      }
+
+      @include respond-to(lg) {
+        font-size: 28px;
+      }
+    }
+  }
+
+  // Mobile navigation in header (hamburger menu)
+  .mobile-nav-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: none;
+    border: none;
+    color: $text-color;
+    font-size: 24px;
+    cursor: pointer;
+
+    @include respond-to(md) {
+      display: none; // Hide on desktop
+    }
+  }
+
+  // Regular navigation menu - hide on mobile, show on desktop
+  .main-nav {
+    display: none; // Hide by default on mobile
+
+    @include respond-to(md) {
+      display: flex; // Show on desktop
+    }
+  }
+
+  // Mobile drawer menu (appears when hamburger is clicked)
+  .mobile-drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 80%;
+    max-width: 300px;
+    height: 100vh;
+    background-color: $background-card;
+    z-index: $z-index-modal + 1;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    box-shadow: $shadow-lg;
+    display: flex;
+    flex-direction: column;
+
+    &.open {
+      transform: translateX(0);
+    }
+
+    .drawer-header {
+      @include flex-between;
+      padding: $spacing-md;
+      border-bottom: 1px solid $border-color;
+
+      .close-drawer {
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: $text-color;
+      }
+    }
+
+    .drawer-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: $spacing-md;
+    }
+
+    // Drawer backdrop (darkens the rest of the screen)
+    &-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: $z-index-modal;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+
+      &.open {
+        opacity: 1;
+        visibility: visible;
+      }
+    }
+
+    @include respond-to(md) {
+      display: none; // Hide drawer on desktop
+
+      &-backdrop {
+        display: none; // Hide backdrop on desktop
+      }
+    }
+  }
+
+  // Region indicator - make more compact on mobile
+  .region-indicator {
+    padding: $spacing-xs $spacing-sm;
+    margin: 0 $spacing-sm;
+
+    @include respond-to(md) {
+      padding: $spacing-sm $spacing-md;
+      margin: 0 $spacing-md;
+    }
+
+    .region-name {
+      @include respond-to(xs) {
+        max-width: 100px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+  }
+
+  // User controls adjustments
+  .user-controls {
+    .notification-bell {
+      .notifications-dropdown {
+        right: -10px; // Adjust position on mobile
+        width: 290px; // Narrower on mobile
+
+        @include respond-to(md) {
+          right: 0;
+          width: 320px;
+        }
+      }
+    }
+  }
+}
+
+// Main content area
+.main-content {
+  display: flex;
+  flex: 1;
+  position: relative;
+
+  // Content adjustments
+  .content {
+    flex: 1;
+    padding: $spacing-md;
+    transition: padding-left 0.3s ease;
+
+    @include respond-to(md) {
+      padding: $spacing-lg;
+    }
+  }
+}
+
+// Sidebar transformation for mobile
+.app-sidebar {
+  // On mobile, hide the sidebar completely
+  display: none;
+
+  @include respond-to(md) {
+    display: flex; // Show on desktop
+    width: 280px;
+    border-right: 1px solid $border-color;
+  }
+}
+
+// Mobile bottom navigation bar (replaces sidebar on mobile)
+.mobile-nav-bar {
+  display: flex;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background-color: $background-lighter;
+  border-top: 1px solid $border-color;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+
+  .nav-items-container {
+    display: flex;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+
+    .scroll-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 36px;
+      height: 50px;
+      background: none;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      color: $text-color;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      padding: 0;
+
+      &.visible {
+        opacity: 1;
+      }
+
+      &.left-arrow {
+        left: 0;
+        background: linear-gradient(to right, $background-lighter, transparent);
+        padding-right: 12px;
+      }
+
+      &.right-arrow {
+        right: 0;
+        background: linear-gradient(to left, $background-lighter, transparent);
+        padding-left: 12px;
+      }
+
+      &:hover {
+        opacity: 1 !important;
+        color: $secondary-color;
+      }
+
+      svg {
+        filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.5));
+      }
+    }
+
+    .nav-items-wrapper {
+      flex: 1;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-behavior: smooth;
+      scrollbar-width: none; /* Firefox */
+      -ms-overflow-style: none; /* IE and Edge */
+
+      &::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, and Opera */
+      }
+
+      .nav-items {
+        display: flex;
+        min-width: max-content;
+        white-space: nowrap;
+        padding: 0 40px; /* Space for arrows */
+
+        .nav-item {
+          flex: 0 0 auto;
+          min-width: 65px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: $spacing-xs $spacing-sm;
+          color: $text-secondary;
+          text-decoration: none;
+          position: relative;
+          transition: $transition-base;
+          cursor: pointer;
+
+          &.active {
+            color: $secondary-color;
+
+            &:after {
+              content: '';
+              position: absolute;
+              bottom: 0;
+              width: 40%;
+              height: 2px;
+              background-color: $secondary-color;
+              box-shadow: 0 0 8px rgba($secondary-color, 0.5);
+            }
+          }
+
+          &.disabled {
+            opacity: 0.6;
+          }
+
+          // Stats button styling
+          &.stats-btn {
+            .nav-icon {
+              position: relative;
+
+              .stats-badge {
+                position: absolute;
+                top: -5px;
+                right: -5px;
+                width: 14px;
+                height: 14px;
+                background-color: $secondary-color;
+                border-radius: 50%;
+              }
+            }
+          }
+
+          .nav-icon {
+            font-size: 20px;
+            margin-bottom: 2px;
+          }
+
+          .nav-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+        }
+      }
+    }
+  }
+
+  @include respond-to(md) {
+    display: none; // Hide on desktop
+  }
+}
+
+// Player stats overlay (shown when stats button is clicked on mobile)
+.player-stats-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 60px;
+  z-index: 101;
+
+  .overlay-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+  }
+
+  .overlay-content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-height: 70vh;
+    background-color: $background-card;
+    border-top: 1px solid $border-color;
+    box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.3);
+    overflow-y: auto;
+    padding: $spacing-md;
+
+    .close-overlay {
+      position: absolute;
+      top: $spacing-sm;
+      right: $spacing-sm;
+      background: none;
+      border: none;
+      color: $text-secondary;
+      font-size: 20px;
+      z-index: 10;
+      cursor: pointer;
+
+      &:hover {
+        color: $text-color;
+      }
+    }
+
+    .overlay-header {
+      @include flex-between;
+      margin-bottom: $spacing-md;
+      padding-right: 30px; // Space for close button
+
+      h3 {
+        margin: 0;
+        @include gold-accent;
+        font-size: $font-size-lg;
+      }
+
+      > div {
+        color: $text-secondary;
+        font-size: $font-size-sm;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+    }
+
+    .player-attributes {
+      @include flex-column;
+      gap: $spacing-sm;
+      margin-bottom: $spacing-lg;
+      padding: $spacing-sm;
+      background-color: rgba(255, 255, 255, 0.03);
+      border-radius: $border-radius-md;
+
+      .attribute {
+        @include flex-between;
+        padding: $spacing-xs 0;
+
+        .attribute-label {
+          display: flex;
+          align-items: center;
+          gap: $spacing-sm;
+          color: $text-secondary;
+
+          .icon {
+            font-size: 20px;
+            width: 24px;
+            text-align: center;
+          }
+        }
+
+        .attribute-value {
+          font-weight: 600;
+          color: $text-color;
+        }
+      }
+    }
+
+    .player-stats {
+      @include flex-column;
+      gap: $spacing-md;
+      margin-bottom: $spacing-lg;
+
+      .stat {
+        .stat-label {
+          @include flex-between;
+          margin-bottom: $spacing-xs;
+          font-size: $font-size-sm;
+          color: $text-secondary;
+        }
+
+        .progress-bar {
+          height: 10px;
+          background-color: rgba(255, 255, 255, 0.1);
+          border-radius: 5px;
+          overflow: hidden;
+          margin-bottom: 4px;
+
+          .progress-fill {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 0.3s ease;
+
+            &.respect {
+              background-color: $success-color;
+              box-shadow: 0 0 8px rgba($success-color, 0.5);
+            }
+
+            &.influence {
+              background-color: $info-color;
+              box-shadow: 0 0 8px rgba($info-color, 0.5);
+            }
+
+            &.heat {
+              background-color: $danger-color;
+              box-shadow: 0 0 8px rgba($danger-color, 0.5);
+            }
+          }
+        }
+
+        .stat-value {
+          text-align: right;
+          font-size: $font-size-sm;
+          font-weight: 600;
+        }
+      }
+    }
+
+    .territory-control {
+      padding: $spacing-md;
+      background-color: rgba(255, 255, 255, 0.03);
+      border-radius: $border-radius-md;
+
+      h4 {
+        margin-top: 0;
+        margin-bottom: $spacing-md;
+        color: $secondary-color;
+        font-size: $font-size-md;
+      }
+
+      .control-stats {
+        @include flex-column;
+        gap: $spacing-sm;
+        margin-bottom: $spacing-md;
+
+        .control-stat {
+          @include flex-between;
+
+          .control-label {
+            font-size: $font-size-sm;
+            color: $text-secondary;
+          }
+
+          .control-value {
+            font-weight: 600;
+            color: $text-color;
+          }
+        }
+      }
+
+      .sidebar-actions {
+        .action-btn {
+          @include button-base;
+          width: 100%;
+          background-color: $secondary-color;
+          color: $background-color;
+          padding: $spacing-md;
+          position: relative;
+          border-radius: $border-radius-md;
+
+          &:hover {
+            background-color: lighten($secondary-color, 5%);
+          }
+
+          &:active {
+            background-color: darken($secondary-color, 5%);
+          }
+
+          &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+
+            &:hover {
+              background-color: $secondary-color;
+            }
+          }
+
+          > div {
+            text-align: center;
+          }
+        }
+      }
+    }
+  }
+
+  @include respond-to(md) {
+    display: none; // Hide on desktop
+  }
+}
+
+// Slide up animations
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-up-enter-from,
+.slide-up-leave-to {
+  .overlay-content {
+    transform: translateY(100%);
+  }
+  .overlay-backdrop {
+    opacity: 0;
+  }
+}
+
+.slide-up-enter-to,
+.slide-up-leave-from {
+  .overlay-content {
+    transform: translateY(0);
+  }
+  .overlay-backdrop {
+    opacity: 1;
+  }
+}
+
+// Dashboard/Home view responsive adjustments
+.home-view {
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: $spacing-md;
+
+    @include respond-to(sm) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @include respond-to(lg) {
+      grid-template-columns: repeat(3, 1fr);
+      gap: $spacing-lg;
+    }
+
+    .overview-card {
+      grid-column: 1 / -1;
+    }
+
+    .recent-actions-card {
+      @include respond-to(sm) {
+        grid-column: span 2;
+      }
+    }
+  }
+}
+
+// Card adjustments for mobile
+.base-card {
+  .card-header {
+    padding-bottom: $spacing-sm;
+    margin-bottom: $spacing-sm;
+
+    @include respond-to(md) {
+      padding-bottom: $spacing-md;
+      margin-bottom: $spacing-md;
+    }
+  }
+
+  .card-body {
+    padding: $spacing-sm 0;
+
+    @include respond-to(md) {
+      padding: 0;
+    }
+  }
+}
+
+// Modal adjustments for mobile
+.modal-container {
+  width: 95%;
+  max-width: 450px;
+
+  @include respond-to(md) {
+    width: 500px;
+  }
+
+  .modal-body {
+    max-height: 50vh;
+
+    @include respond-to(md) {
+      max-height: 60vh;
+    }
+  }
+}
+
+// Game-specific animation for route transitions
+.page-transition-enter-active,
+.page-transition-leave-active {
+  transition: all 0.3s ease;
+}
+
+.page-transition-enter-from {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.page-transition-leave-to {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+
+// Hover effects only on desktop devices
+/*
+// Complete hover effects for desktop devices
+@media (hover: hover) {
+  .nav-item:hover {
+    color: $secondary-color;
+    background-color: rgba($secondary-color, 0.1);
+    transform: translateY(-2px);
+  }
+
+  .region-indicator:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .base-button:hover {
+    transform: translateY(-2px);
+
+    // Variant-specific hover effects
+    &.variant-primary {
+      background-color: lighten($primary-color, 5%);
+      box-shadow: 0 4px 8px rgba($primary-color, 0.3);
+    }
+
+    &.variant-secondary {
+      background-color: lighten($secondary-color, 5%);
+      box-shadow: 0 4px 8px rgba($secondary-color, 0.3);
+    }
+
+    &.variant-danger {
+      background-color: lighten($danger-color, 5%);
+      box-shadow: 0 4px 8px rgba($danger-color, 0.3);
+    }
+
+    &.variant-success {
+      background-color: lighten($success-color, 5%);
+      box-shadow: 0 4px 8px rgba($success-color, 0.3);
+    }
+
+    &.variant-warning {
+      background-color: lighten($warning-color, 5%);
+      box-shadow: 0 4px 8px rgba($warning-color, 0.3);
+    }
+
+    &.variant-info {
+      background-color: lighten($info-color, 5%);
+      box-shadow: 0 4px 8px rgba($info-color, 0.3);
+    }
+
+    &.variant-outline {
+      background-color: rgba($secondary-color, 0.1);
+      border-color: lighten($secondary-color, 10%);
+    }
+
+    &.variant-text {
+      background-color: rgba($secondary-color, 0.1);
+      color: lighten($secondary-color, 10%);
+    }
+  }
+
+  // Additional hover effects for specific components
+  .menu-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-left: 3px solid $secondary-color;
+    padding-left: calc($spacing-md - 3px);
+  }
+
+  .notification-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    transform: translateX(5px);
+  }
+
+  .more-menu-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    transform: translateX(5px);
+  }
+
+  .game-card:hover {
+    transform: translateY(-5px);
+    box-shadow: $shadow-lg;
+  }
+
+  .scroll-arrow:hover {
+    opacity: 1 !important;
+    color: $secondary-color;
+    transform: translateY(-50%) scale(1.1);
+  }
+
+  .close-overlay:hover,
+  .close-more-menu:hover,
+  .modal-close:hover {
+    color: $text-color;
+    transform: scale(1.1);
+  }
+
+  .mark-read-btn:hover {
+    text-decoration: underline;
+    color: lighten($secondary-color, 10%);
+  }
+
+  .action-btn:hover {
+    background-color: lighten($secondary-color, 5%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba($secondary-color, 0.3);
+  }
+
+  .tab-btn:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  .dropdown-menu .menu-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-left: 3px solid transparent;
+  }
+
+  .user-controls .profile-link:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  .user-controls .notification-bell .bell-icon:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+
+    .notification-icon {
+      color: $secondary-color;
+    }
+  }
+
+  .login-btn:hover {
+    background-color: rgba($secondary-color, 0.1);
+    border-color: lighten($secondary-color, 10%);
+  }
+
+  .register-btn:hover {
+    background-color: lighten($secondary-color, 5%);
+  }
+
+  // Sidebar specific hover effects
+  .app-sidebar {
+    .nav-item:hover {
+      background-color: rgba($background-lighter, 0.2);
+    }
+
+    .player-avatar:hover {
+      box-shadow: 0 0 15px rgba($secondary-color, 0.7);
+    }
+  }
+
+  // Header specific hover effects
+  .app-header {
+    .nav-item:hover {
+      &.active:after {
+        box-shadow: 0 0 12px rgba($secondary-color, 0.7);
+      }
+    }
+  }
+}
+*/
+
+// Touch active state for mobile
+@media (hover: none) {
+  // For touch devices, apply active state on touch
+  .nav-item:active,
+  .region-indicator:active,
+  .base-button:active {
+    transform: scale(0.97);
+  }
+
+  .mobile-nav-bar {
+    .nav-item {
+      min-width: 70px;
+      padding: $spacing-sm;
+
+      &:active {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+    }
+
+    .scroll-arrow {
+      &:active {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+    }
+  }
+
+  .stats-overlay {
+    .close-overlay:active,
+    .action-btn:active,
+    .attribute:active {
+      transform: scale(0.95);
+    }
+  }
+}
+
+// Game-like pulsing effect for important elements
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.pulse {
+  animation: pulse 2s infinite;
+}
+
+// Add slightly more 3D effect to buttons on mobile for a game-like feel
+.base-button {
+  @media (hover: none) {
+    box-shadow: 0 4px 0 darken($primary-color, 10%);
+
+    &:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 darken($primary-color, 10%);
+    }
+
+    &.variant-secondary {
+      box-shadow: 0 4px 0 darken($secondary-color, 10%);
+
+      &:active {
+        box-shadow: 0 2px 0 darken($secondary-color, 10%);
+      }
+    }
+  }
+}
+
+// Enhanced backdrop for stats overlay
+.stats-overlay-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 60px;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 98;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+
+  &.open {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+// Improved mobile sidebar styling
+.app-sidebar {
+  display: none;
+
+  @include respond-to(md) {
+    display: flex;
+    width: 280px;
+    border-right: 1px solid $border-color;
+  }
+}
+
+// Mobile header specific adjustments
+.mobile-header {
+  .region-indicator {
+    padding: $spacing-xs $spacing-sm;
+    margin: 0 $spacing-sm;
+
+    .region-name {
+      max-width: 100px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .notification-bell {
+    .notifications-dropdown {
+      right: -10px;
+      width: calc(100vw - 20px);
+      max-width: 290px;
+
+      @include respond-to(md) {
+        right: 0;
+        width: 320px;
+      }
+    }
+  }
+}
+
+// Smooth scrolling for stats overlay
+.player-stats-overlay {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}

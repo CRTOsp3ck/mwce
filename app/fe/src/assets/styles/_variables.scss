@@ -1,0 +1,69 @@
+// src/assets/styles/_variables.scss
+
+// Color Theme - Dark gangster/mafia theme with gold accents
+$primary-color: #8b0000; // Dark blood red
+$secondary-color: #d4af37; // Gold
+$tertiary-color: #333333; // Dark gray
+$background-color: #121212; // Nearly black
+$background-lighter: #1e1e1e; // Slightly lighter than background
+$background-dark: #1e1e1e; // Slightly lighter than background
+$background-darker: #1e1e1e; // Slightly lighter than background
+$background-card: #252525; // Card background
+$text-color: #ffffff; // White text
+$text-primary: #ffffff; // Primary text (white)
+$text-secondary: #bbbbbb; // Lighter gray for secondary text
+$text-tertiary: #888888; // Even lighter gray for tertiary text
+$danger-color: #ff4444; // Red for danger/heat
+$success-color: #00c851; // Green for success
+$warning-color: #ffbb33; // Amber for warnings
+$info-color: #33b5e5; // Blue for info
+$gold-color: #FFD700;
+
+// Typography
+$font-family-base: 'Roboto', sans-serif;
+$font-family-heading: 'Playfair Display', serif;
+// $font-size-base: 16px;
+$font-size-base: 15px;
+// $font-size-base: 13px;
+$font-size-xs: 12px;
+$font-size-sm: 14px;
+$font-size-md: 16px;
+$font-size-lg: 18px;
+$font-size-xl: 24px;
+$font-size-xxl: 32px;
+
+// Spacing
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 16px;
+$spacing-lg: 24px;
+$spacing-xl: 32px;
+$spacing-xxl: 48px;
+
+// Borders
+$border-radius: 8px; // Default border radius
+$border-radius-sm: 4px;
+$border-radius-md: 8px;
+$border-radius-lg: 12px;
+$border-color: rgba(255, 255, 255, 0.1);
+
+// Shadows
+$shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.5);
+$shadow-md: 0 4px 8px rgba(0, 0, 0, 0.5);
+$shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
+
+// Z-index
+$z-index-dropdown: 1000;
+$z-index-modal: 2000;
+$z-index-tooltip: 3000;
+
+// Breakpoints
+$breakpoint-sm: 576px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 992px;
+$breakpoint-xl: 1200px;
+
+// Transitions
+$transition-base: all 0.3s ease;
+$transition-fast: all 0.15s ease;
+$transition-slow: all 0.5s ease;

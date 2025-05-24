@@ -1,0 +1,942 @@
+# configs/territory.yaml
+
+# Territory Structure Configuration for Mafia Wars: Criminal Empire
+
+# City structure
+regions:
+  - id: "3e0b1d62-f74e-4a9f-9cf9-4a1b9f7b2a4e" # north
+    name: North
+    districts:
+      - id: "6f3a5923-df6e-4141-b084-042a3b7c1e54" # downtown
+        name: Downtown
+        cities:
+          - id: "a25fec6a-20c8-4ef2-b9c0-2e376e37b0fa" # central
+            name: Central
+            hotspots:
+              - id: "ff58b944-7c4a-42d0-ba66-4ecc117ec8a8"
+                name: The Golden Speakeasy
+                type: bar
+                business_type: entertainment
+                is_legal: true
+                income: 500
+              - id: "0d5c5e8f-5e8c-4a7b-9f34-15d2e8f6a8f9"
+                name: King's Casino
+                type: casino
+                business_type: gambling
+                is_legal: true
+                income: 800
+              - id: "72a3b9c1-3e1d-4f2e-a9b0-5c7e8d6a9f2b"
+                name: Sky Lounge
+                type: club
+                business_type: entertainment
+                is_legal: true
+                income: 600
+              - id: "3a5b7c9d-1e3f-4a5b-7c9d-1e3f2a4b6c8d"
+                name: Loan Shark Office
+                type: shop
+                business_type: loan_sharking
+                is_legal: false
+                income: 400
+          - id: "b1c3d5e7-f9a8-4d2e-8c6b-4a2e6f8a0c2e" # financial
+            name: Financial District
+            hotspots:
+              - id: "c5d7e9f1-3a5b-7c9d-1e3f-5a7b9c1d3e5f"
+                name: Grand Hotel
+                type: hotel
+                business_type: entertainment
+                is_legal: true
+                income: 700
+              - id: "e7f9a1b3-5c7d-9e1f-3a5b-7c9d1e3f5a7b"
+                name: First Bank
+                type: shop
+                business_type: protection
+                is_legal: true
+                income: 500
+              - id: "9c1d3e5f-7a9b-1c3d-5e7f-9a1b3c5d7e9f"
+                name: Luxury Apartments
+                type: hotel
+                business_type: protection
+                is_legal: true
+                income: 550
+              - id: "1e3f5a7b-9c1d-3e5f-7a9b-1c3d5e7f9a1b"
+                name: Counterfeiting Operation
+                type: shop
+                business_type: counterfeiting
+                is_legal: false
+                income: 750
+      - id: "2a4b6c8d-0e2f-4a6b-8c0d-2e4f6a8c0e2f" # uptown
+        name: Uptown
+        cities:
+          - id: "4a6b8c0d-2e4f-6a8c-0e2f-4a6b8c0d2e4f" # nightlife
+            name: Nightlife District
+            hotspots:
+              - id: "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"
+                name: Royal Casino
+                type: casino
+                business_type: gambling
+                is_legal: true
+                income: 1200
+              - id: "b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e"
+                name: Velvet Lounge
+                type: club
+                business_type: entertainment
+                is_legal: true
+                income: 550
+              - id: "c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f"
+                name: High Stakes Poker Room
+                type: casino
+                business_type: gambling
+                is_legal: true
+                income: 650
+              - id: "d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9a"
+                name: Blackmarket Dealer
+                type: shop
+                business_type: blackmarket
+                is_legal: false
+                income: 700
+          - id: "e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0b"
+            name: Arts District
+            hotspots:
+              - id: "f6a7b8c9-d0e1-2f3a-4b5c-6d7e8f9a0b1c"
+                name: Opera House
+                type: club
+                business_type: entertainment
+                is_legal: true
+                income: 400
+              - id: "a7b8c9d0-e1f2-3a4b-5c6d-7e8f9a0b1c2d"
+                name: Art Gallery
+                type: shop
+                business_type: protection
+                is_legal: true
+                income: 350
+              - id: "b8c9d0e1-f2a3-4b5c-6d7e-8f9a0b1c2d3e"
+                name: Cultural Center
+                type: club
+                business_type: entertainment
+                is_legal: true
+                income: 300
+              - id: "c9d0e1f2-a3b4-5c6d-7e8f-9a0b1c2d3e4f"
+                name: Forgery Studio
+                type: shop
+                business_type: counterfeiting
+                is_legal: false
+                income: 550
+  - id: "5c7d9e1f-3a5b-7c9d-1e3f-5a7b9c1d3e5f" # south
+    name: South
+    districts:
+      - id: "7a9b1c3d-5e7f-9a1b-3c5d-7e9f1a3b5c7d" # harbor
+        name: Harbor District
+        cities:
+          - id: "d0e1f2a3-b4c5-6d7e-8f9a-0b1c2d3e4f5a"
+            name: Dockside
+            hotspots:
+              - id: "e1f2a3b4-c5d6-7e8f-9a0b-1c2d3e4f5a6b"
+                name: Dockside Warehouse
+                type: warehouse
+                business_type: smuggling
+                is_legal: true
+                income: 800
+              - id: "f2a3b4c5-d6e7-8f9a-0b1c-2d3e4f5a6b7c"
+                name: Fishing Company
+                type: dock
+                business_type: smuggling
+                is_legal: true
+                income: 650
+              - id: "a3b4c5d6-e7f8-9a0b-1c2d-3e4f5a6b7c8d"
+                name: Waterfront Bar
+                type: bar
+                business_type: entertainment
+                is_legal: true
+                income: 450
+              - id: "b4c5d6e7-f8a9-0b1c-2d3e-4f5a6b7c8d9e"
+                name: Smuggling Operation
+                type: dock
+                business_type: smuggling
+                is_legal: false
+                income: 900
+          - id: "c5d6e7f8-a9b0-1c2d-3e4f-5a6b7c8d9e0f"
+            name: Port
+            hotspots:
+              - id: "d6e7f8a9-b0c1-2d3e-4f5a-6b7c8d9e0f1a"
+                name: Cargo Terminal
+                type: dock
+                business_type: smuggling
+                is_legal: true
+                income: 750
+              - id: "e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2b"
+                name: Shipyard
+                type: dock
+                business_type: protection
+                is_legal: true
+                income: 550
+              - id: "f8a9b0c1-d2e3-4f5a-6b7c-8d9e0f1a2b3c"
+                name: Customs Office
+                type: shop
+                business_type: protection
+                is_legal: true
+                income: 500
+              - id: "a9b0c1d2-e3f4-5a6b-7c8d-9e0f1a2b3c4d"
+                name: Stolen Goods Fence
+                type: warehouse
+                business_type: blackmarket
+                is_legal: false
+                income: 650
+      - id: "b0c1d2e3-f4a5-6b7c-8d9e-0f1a2b3c4d5e"
+        name: Industrial Zone
+        cities:
+          - id: "c1d2e3f4-a5b6-7c8d-9e0f-1a2b3c4d5e6f"
+            name: Factory Row
+            hotspots:
+              - id: "d2e3f4a5-b6c7-8d9e-0f1a-2b3c4d5e6f7a"
+                name: Textile Factory
+                type: factory
+                business_type: protection
+                is_legal: true
+                income: 600
+              - id: "e3f4a5b6-c7d8-9e0f-1a2b-3c4d5e6f7a8b"
+                name: Steel Mill
+                type: factory
+                business_type: protection
+                is_legal: true
+                income: 700
+              - id: "f4a5b6c7-d8e9-0f1a-2b3c-4d5e6f7a8b9c"
+                name: Auto Parts Factory
+                type: factory
+                business_type: protection
+                is_legal: true
+                income: 550
+              - id: "a5b6c7d8-e9f0-1a2b-3c4d-5e6f7a8b9c0d"
+                name: Moonshine Distillery
+                type: factory
+                business_type: blackmarket
+                is_legal: false
+                income: 700
+          - id: "b6c7d8e9-f0a1-2b3c-4d5e-6f7a8b9c0d1e"
+            name: Warehouse District
+            hotspots:
+              - id: "c7d8e9f0-a1b2-3c4d-5e6f-7a8b9c0d1e2f"
+                name: Distribution Center
+                type: warehouse
+                business_type: smuggling
+                is_legal: true
+                income: 650
+              - id: "d8e9f0a1-b2c3-4d5e-6f7a-8b9c0d1e2f3a"
+                name: Cold Storage Facility
+                type: warehouse
+                business_type: smuggling
+                is_legal: true
+                income: 500
+              - id: "e9f0a1b2-c3d4-5e6f-7a8b-9c0d1e2f3a4b"
+                name: Trucking Company
+                type: warehouse
+                business_type: smuggling
+                is_legal: true
+                income: 600
+              - id: "f0a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5c"
+                name: Drug Lab
+                type: factory
+                business_type: blackmarket
+                is_legal: false
+                income: 1000
+  - id: "9d1e3f5a-7b9c-1d3e-5f7a-9b1c3d5e7f9a" # east
+    name: East
+    districts:
+      - id: "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6e"
+        name: Chinatown
+        cities:
+          - id: "b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7f"
+            name: Cultural District
+            hotspots:
+              - id: "c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8a"
+                name: Golden Dragon Restaurant
+                type: restaurant
+                business_type: protection
+                is_legal: true
+                income: 400
+              - id: "d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9b"
+                name: Traditional Tea House
+                type: restaurant
+                business_type: entertainment
+                is_legal: true
+                income: 350
+              - id: "e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0c"
+                name: Cultural Center East
+                type: club
+                business_type: entertainment
+                is_legal: true
+                income: 300
+              - id: "f6a7b8c9-d0e1-2f3a-4b5c-6d7e8f9a0b1d"
+                name: Illegal Gambling Den
+                type: casino
+                business_type: gambling
+                is_legal: false
+                income: 800
+          - id: "a7b8c9d0-e1f2-3a4b-5c6d-7e8f9a0b1c2e"
+            name: Market District
+            hotspots:
+              - id: "b8c9d0e1-f2a3-4b5c-6d7e-8f9a0b1c2d3f"
+                name: Fish Market
+                type: shop
+                business_type: protection
+                is_legal: true
+                income: 350
+              - id: "c9d0e1f2-a3b4-5c6d-7e8f-9a0b1c2d3e4a"
+                name: Electronics Store
+                type: shop
+                business_type: protection
+                is_legal: true
+                income: 400
+              - id: "d0e1f2a3-b4c5-6d7e-8f9a-0b1c2d3e4f5b"
+                name: Import/Export Business
+                type: warehouse
+                business_type: smuggling
+                is_legal: true
+                income: 500
+              - id: "e1f2a3b4-c5d6-7e8f-9a0b-1c2d3e4f5a6c"
+                name: Opium Den
+                type: club
+                business_type: blackmarket
+                is_legal: false
+                income: 700
+      - id: "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5" # little_italy
+        name: Little Italy
+        cities:
+          - id: "f2a3b4c5-d6e7-8f9a-0b1c-2d3e4f5a6b7d"
+            name: Restaurant Row
+            hotspots:
+              - id: "a3b4c5d6-e7f8-9a0b-1c2d-3e4f5a6b7c8e"
+                name: Bella Cucina
+                type: restaurant
+                business_type: protection
+                is_legal: true
+                income: 450
+              - id: "b4c5d6e7-f8a9-0b1c-2d3e-4f5a6b7c8d9f"
+                name: Mama's Kitchen
+                type: restaurant
+                business_type: protection
+                is_legal: true
+                income: 400
+              - id: "c5d6e7f8-a9b0-1c2d-3e4f-5a6b7c8d9e0a"
+                name: Fine Wine Bar
+                type: bar
+                business_type: entertainment
+                is_legal: true
+                income: 500
+              - id: "d6e7f8a9-b0c1-2d3e-4f5a-6b7c8d9e0f1b"
+                name: Numbers Racket
+                type: shop
+                business_type: gambling
+                is_legal: false
+                income: 650
+          - id: "e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2c"
+            name: Italian Plaza
+            hotspots:
+              - id: "f8a9b0c1-d2e3-4f5a-6b7c-8d9e0f1a2b3d"
+                name: Social Club
+                type: club
+                business_type: entertainment
+                is_legal: true
+                income: 450
+              - id: "a9b0c1d2-e3f4-5a6b-7c8d-9e0f1a2b3c4e"
+                name: Old World Bakery
+                type: restaurant
+                business_type: protection
+                is_legal: true
+                income: 350
+              - id: "b0c1d2e3-f4a5-6b7c-8d9e-0f1a2b3c4d5f"
+                name: Tailor Shop
+                type: shop
+                business_type: protection
+                is_legal: true
+                income: 300
+              - id: "c1d2e3f4-a5b6-7c8d-9e0f-1a2b3c4d5e6a"
+                name: Protection Racket
+                type: shop
+                business_type: racketeering
+                is_legal: false
+                income: 550
+  - id: "b3c5d7e9-f1a3-b5c7-d9e1-f3a5b7c9d1e3" # west
+    name: West
+    districts:
+      - id: "d2e3f4a5-b6c7-8d9e-0f1a-2b3c4d5e6f7b"
+        name: Riverside
+        cities:
+          - id: "e3f4a5b6-c7d8-9e0f-1a2b-3c4d5e6f7a8c"
+            name: Waterfront
+            hotspots:
+              - id: "f4a5b6c7-d8e9-0f1a-2b3c-4d5e6f7a8b9d"
+                name: Marina Club
+                type: club
+                business_type: entertainment
+                is_legal: true
+                income: 550
+              - id: "a5b6c7d8-e9f0-1a2b-3c4d-5e6f7a8b9c0e"
+                name: Riverside Café
+                type: restaurant
+                business_type: entertainment
+                is_legal: true
+                income: 400
+              - id: "b6c7d8e9-f0a1-2b3c-4d5e-6f7a8b9c0d1f"
+                name: Boat Rental Service
+                type: dock
+                business_type: entertainment
+                is_legal: true
+                income: 350
+              - id: "c7d8e9f0-a1b2-3c4d-5e6f-7a8b9c0d1e2a"
+                name: Smuggling Point
+                type: dock
+                business_type: smuggling
+                is_legal: false
+                income: 700
+          - id: "d8e9f0a1-b2c3-4d5e-6f7a-8b9c0d1e2f3b"
+            name: Park District
+            hotspots:
+              - id: "e9f0a1b2-c3d4-5e6f-7a8b-9c0d1e2f3a4c"
+                name: Outdoor Concert Venue
+                type: club
+                business_type: entertainment
+                is_legal: true
+                income: 600
+              - id: "f0a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5d"
+                name: Food Vendor Row
+                type: restaurant
+                business_type: protection
+                is_legal: true
+                income: 300
+              - id: "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6f"
+                name: Sports Complex
+                type: club
+                business_type: entertainment
+                is_legal: true
+                income: 500
+              - id: "b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7a"
+                name: Drug Dealing Spot
+                type: shop
+                business_type: blackmarket
+                is_legal: false
+                income: 650
+      - id: "c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8b"
+        name: Suburbs
+        cities:
+          - id: "d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9c"
+            name: Residential Area
+            hotspots:
+              - id: "e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0d"
+                name: Local Bar & Grill
+                type: bar
+                business_type: entertainment
+                is_legal: true
+                income: 350
+              - id: "f6a7b8c9-d0e1-2f3a-4b5c-6d7e8f9a0b1e"
+                name: Community Center
+                type: club
+                business_type: protection
+                is_legal: true
+                income: 300
+              - id: "a7b8c9d0-e1f2-3a4b-5c6d-7e8f9a0b1c2f"
+                name: 24-Hour Convenience Store
+                type: shop
+                business_type: protection
+                is_legal: true
+                income: 250
+              - id: "b8c9d0e1-f2a3-4b5c-6d7e-8f9a0b1c2d3a"
+                name: Chop Shop
+                type: warehouse
+                business_type: blackmarket
+                is_legal: false
+                income: 500
+          - id: "c9d0e1f2-a3b4-5c6d-7e8f-9a0b1c2d3e4b"
+            name: Shopping District
+            hotspots:
+              - id: "d0e1f2a3-b4c5-6d7e-8f9a-0b1c2d3e4f5c"
+                name: Shopping Mall
+                type: shop
+                business_type: protection
+                is_legal: true
+                income: 550
+              - id: "e1f2a3b4-c5d6-7e8f-9a0b-1c2d3e4f5a6d"
+                name: Department Store
+                type: shop
+                business_type: protection
+                is_legal: true
+                income: 500
+              - id: "f2a3b4c5-d6e7-8f9a-0b1c-2d3e4f5a6b7e"
+                name: Movie Theater
+                type: club
+                business_type: entertainment
+                is_legal: true
+                income: 450
+              - id: "a3b4c5d6-e7f8-9a0b-1c2d-3e4f5a6b7c8f"
+                name: Fencing Operation
+                type: warehouse
+                business_type: blackmarket
+                is_legal: false
+                income: 600
+  - id: "d5e7f9a1-b3c5-d7e9-f1a3-b5c7d9e1f3a5" # southeast
+    name: Southeast
+    districts:
+      - id: "b4c5d6e7-f8a9-0b1c-2d3e-4f5a6b7c8d9a"
+        name: Old Town
+        cities:
+          - id: "c5d6e7f8-a9b0-1c2d-3e4f-5a6b7c8d9e0b"
+            name: Historic District
+            hotspots:
+              - id: "d6e7f8a9-b0c1-2d3e-4f5a-6b7c8d9e0f1c"
+                name: Antique Shop
+                type: shop
+                business_type: protection
+                is_legal: true
+                income: 400
+              - id: "e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2d"
+                name: Historic Hotel
+                type: hotel
+                business_type: entertainment
+                is_legal: true
+                income: 550
+              - id: "f8a9b0c1-d2e3-4f5a-6b7c-8d9e0f1a2b3e"
+                name: Tourist Café
+                type: restaurant
+                business_type: entertainment
+                is_legal: true
+                income: 350
+              - id: "a9b0c1d2-e3f4-5a6b-7c8d-9e0f1a2b3c4f"
+                name: Underground Casino
+                type: casino
+                business_type: gambling
+                is_legal: false
+                income: 750
+          - id: "b0c1d2e3-f4a5-6b7c-8d9e-0f1a2b3c4d5a"
+            name: Museum Quarter
+            hotspots:
+              - id: "c1d2e3f4-a5b6-7c8d-9e0f-1a2b3c4d5e6b"
+                name: Art Museum
+                type: club
+                business_type: entertainment
+                is_legal: true
+                income: 300
+              - id: "d2e3f4a5-b6c7-8d9e-0f1a-2b3c4d5e6f7c"
+                name: Rare Books Store
+                type: shop
+                business_type: protection
+                is_legal: true
+                income: 250
+              - id: "e3f4a5b6-c7d8-9e0f-1a2b-3c4d5e6f7a8d"
+                name: Souvenir Shop
+                type: shop
+                business_type: protection
+                is_legal: true
+                income: 200
+              - id: "f4a5b6c7-d8e9-0f1a-2b3c-4d5e6f7a8b9e"
+                name: Art Forgery Studio
+                type: shop
+                business_type: counterfeiting
+                is_legal: false
+                income: 600
+      - id: "a5b6c7d8-e9f0-1a2b-3c4d-5e6f7a8b9c0f"
+        name: Red Light District
+        cities:
+          - id: "b6c7d8e9-f0a1-2b3c-4d5e-6f7a8b9c0d1a"
+            name: Adult Entertainment
+            hotspots:
+              - id: "c7d8e9f0-a1b2-3c4d-5e6f-7a8b9c0d1e2b"
+                name: Burlesque Club
+                type: club
+                business_type: entertainment
+                is_legal: true
+                income: 700
+              - id: "d8e9f0a1-b2c3-4d5e-6f7a-8b9c0d1e2f3c"
+                name: Gentlemen's Club
+                type: club
+                business_type: entertainment
+                is_legal: true
+                income: 800
+              - id: "e9f0a1b2-c3d4-5e6f-7a8b-9c0d1e2f3a4d"
+                name: Cabaret
+                type: club
+                business_type: entertainment
+                is_legal: true
+                income: 600
+              - id: "f0a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5e"
+                name: Prostitution Ring
+                type: hotel
+                business_type: blackmarket
+                is_legal: false
+                income: 900
+          - id: "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6a"
+            name: Nightlife Zone
+            hotspots:
+              - id: "b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7b"
+                name: Jazz Club
+                type: club
+                business_type: entertainment
+                is_legal: true
+                income: 550
+              - id: "c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8c"
+                name: Dive Bar
+                type: bar
+                business_type: entertainment
+                is_legal: true
+                income: 450
+              - id: "d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9d"
+                name: Dance Hall
+                type: club
+                business_type: entertainment
+                is_legal: true
+                income: 500
+              - id: "e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0e"
+                name: Drug Dealing Operation
+                type: shop
+                business_type: blackmarket
+                is_legal: false
+                income: 800
+  - id: "f7a9b1c3-d5e7-f9a1-b3c5-d7e9f1a3b5c7" # southwest
+    name: Southwest
+    districts:
+      - id: "f6a7b8c9-d0e1-2f3a-4b5c-6d7e8f9a0b1f"
+        name: Slums
+        cities:
+          - id: "a7b8c9d0-e1f2-3a4b-5c6d-7e8f9a0b1c2a"
+            name: Tenement District
+            hotspots:
+              - id: "b8c9d0e1-f2a3-4b5c-6d7e-8f9a0b1c2d3b"
+                name: Pawn Shop
+                type: shop
+                business_type: loan_sharking
+                is_legal: true
+                income: 350
+              - id: "c9d0e1f2-a3b4-5c6d-7e8f-9a0b1c2d3e4c"
+                name: Liquor Store
+                type: shop
+                business_type: protection
+                is_legal: true
+                income: 300
+              - id: "d0e1f2a3-b4c5-6d7e-8f9a-0b1c2d3e4f5d"
+                name: Cheap Bar
+                type: bar
+                business_type: entertainment
+                is_legal: true
+                income: 250
+              - id: "e1f2a3b4-c5d6-7e8f-9a0b-1c2d3e4f5a6e"
+                name: Loan Shark
+                type: shop
+                business_type: loan_sharking
+                is_legal: false
+                income: 550
+          - id: "f2a3b4c5-d6e7-8f9a-0b1c-2d3e4f5a6b7f"
+            name: Black Market
+            hotspots:
+              - id: "a3b4c5d6-e7f8-9a0b-1c2d-3e4f5a6b7c8a"
+                name: Flea Market
+                type: shop
+                business_type: protection
+                is_legal: true
+                income: 200
+              - id: "b4c5d6e7-f8a9-0b1c-2d3e-4f5a6b7c8d9b"
+                name: Secondhand Store
+                type: shop
+                business_type: protection
+                is_legal: true
+                income: 180
+              - id: "c5d6e7f8-a9b0-1c2d-3e4f-5a6b7c8d9e0c"
+                name: Street Food Vendors
+                type: restaurant
+                business_type: protection
+                is_legal: true
+                income: 150
+              - id: "d6e7f8a9-b0c1-2d3e-4f5a-6b7c8d9e0f1d"
+                name: Stolen Goods Market
+                type: shop
+                business_type: blackmarket
+                is_legal: false
+                income: 500
+      - id: "e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2e"
+        name: Construction Zone
+        cities:
+          - id: "f8a9b0c1-d2e3-4f5a-6b7c-8d9e0f1a2b3f"
+            name: New Development
+            hotspots:
+              - id: "a9b0c1d2-e3f4-5a6b-7c8d-9e0f1a2b3c4a"
+                name: Construction Site A
+                type: construction
+                business_type: racketeering
+                is_legal: true
+                income: 600
+              - id: "b0c1d2e3-f4a5-6b7c-8d9e-0f1a2b3c4d5b"
+                name: Construction Site B
+                type: construction
+                business_type: racketeering
+                is_legal: true
+                income: 550
+              - id: "c1d2e3f4-a5b6-7c8d-9e0f-1a2b3c4d5e6c"
+                name: Workers' Bar
+                type: bar
+                business_type: entertainment
+                is_legal: true
+                income: 400
+              - id: "d2e3f4a5-b6c7-8d9e-0f1a-2b3c4d5e6f7d"
+                name: Construction Fraud Operation
+                type: construction
+                business_type: racketeering
+                is_legal: false
+                income: 750
+          - id: "e3f4a5b6-c7d8-9e0f-1a2b-3c4d5e6f7a8e"
+            name: Materials Yard
+            hotspots:
+              - id: "f4a5b6c7-d8e9-0f1a-2b3c-4d5e6f7a8b9f"
+                name: Materials Warehouse
+                type: warehouse
+                business_type: protection
+                is_legal: true
+                income: 450
+              - id: "a5b6c7d8-e9f0-1a2b-3c4d-5e6f7a8b9c0a"
+                name: Equipment Rental
+                type: warehouse
+                business_type: protection
+                is_legal: true
+                income: 400
+              - id: "b6c7d8e9-f0a1-2b3c-4d5e-6f7a8b9c0d1b"
+                name: Cement Factory
+                type: factory
+                business_type: protection
+                is_legal: true
+                income: 500
+              - id: "c7d8e9f0-a1b2-3c4d-5e6f-7a8b9c0d1e2c"
+                name: Cement Shoes Operation
+                type: factory
+                business_type: racketeering
+                is_legal: false
+                income: 600
+  - id: "19c3d5e7-f9a1-b3c5-d7e9-f1a3b5c7d9e1" # northeast
+    name: Northeast
+    districts:
+      - id: "d8e9f0a1-b2c3-4d5e-6f7a-8b9c0d1e2f3d"
+        name: University District
+        cities:
+          - id: "e9f0a1b2-c3d4-5e6f-7a8b-9c0d1e2f3a4e"
+            name: Campus Area
+            hotspots:
+              - id: "f0a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5f"
+                name: College Bar
+                type: bar
+                business_type: entertainment
+                is_legal: true
+                income: 450
+              - id: "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6b"
+                name: University Bookstore
+                type: shop
+                business_type: protection
+                is_legal: true
+                income: 300
+              - id: "b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7c"
+                name: Coffee Shop
+                type: restaurant
+                business_type: entertainment
+                is_legal: true
+                income: 250
+              - id: "c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8d"
+                name: Fake ID Operation
+                type: shop
+                business_type: counterfeiting
+                is_legal: false
+                income: 500
+          - id: "d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9e"
+            name: Research Park
+            hotspots:
+              - id: "e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0f"
+                name: Tech Startup
+                type: shop
+                business_type: protection
+                is_legal: true
+                income: 400
+              - id: "f6a7b8c9-d0e1-2f3a-4b5c-6d7e8f9a0b1a"
+                name: Research Laboratory
+                type: factory
+                business_type: protection
+                is_legal: true
+                income: 350
+              - id: "a7b8c9d0-e1f2-3a4b-5c6d-7e8f9a0b1c2b"
+                name: Innovation Center
+                type: shop
+                business_type: protection
+                is_legal: true
+                income: 300
+              - id: "b8c9d0e1-f2a3-4b5c-6d7e-8f9a0b1c2d3c"
+                name: Illegal Drug Research Lab
+                type: factory
+                business_type: blackmarket
+                is_legal: false
+                income: 700
+      - id: "c9d0e1f2-a3b4-5c6d-7e8f-9a0b1c2d3e4d"
+        name: Medical District
+        cities:
+          - id: "d0e1f2a3-b4c5-6d7e-8f9a-0b1c2d3e4f5e"
+            name: Hospital Area
+            hotspots:
+              - id: "e1f2a3b4-c5d6-7e8f-9a0b-1c2d3e4f5a6f"
+                name: Private Clinic
+                type: shop
+                business_type: protection
+                is_legal: true
+                income: 550
+              - id: "f2a3b4c5-d6e7-8f9a-0b1c-2d3e4f5a6b7a"
+                name: Pharmacy
+                type: shop
+                business_type: protection
+                is_legal: true
+                income: 450
+              - id: "a3b4c5d6-e7f8-9a0b-1c2d-3e4f5a6b7c8b"
+                name: Medical Supplies
+                type: warehouse
+                business_type: protection
+                is_legal: true
+                income: 400
+              - id: "b4c5d6e7-f8a9-0b1c-2d3e-4f5a6b7c8d9c"
+                name: Prescription Fraud Ring
+                type: shop
+                business_type: blackmarket
+                is_legal: false
+                income: 750
+          - id: "c5d6e7f8-a9b0-1c2d-3e4f-5a6b7c8d9e0d"
+            name: Medical Research
+            hotspots:
+              - id: "d6e7f8a9-b0c1-2d3e-4f5a-6b7c8d9e0f1e"
+                name: Pharmaceutical Company
+                type: factory
+                business_type: protection
+                is_legal: true
+                income: 600
+              - id: "e7f8a9b0-c1d2-3e4f-5a6b-7c8d9e0f1a2f"
+                name: Biotech Firm
+                type: factory
+                business_type: protection
+                is_legal: true
+                income: 550
+              - id: "f8a9b0c1-d2e3-4f5a-6b7c-8d9e0f1a2b3a"
+                name: Medical Waste Disposal
+                type: warehouse
+                business_type: protection
+                is_legal: true
+                income: 500
+              - id: "a9b0c1d2-e3f4-5a6b-7c8d-9e0f1a2b3c4b"
+                name: Experimental Drugs Lab
+                type: factory
+                business_type: blackmarket
+                is_legal: false
+                income: 850
+  - id: "3b5c7d9e-1f3a-5b7c-9d1e-3f5a7b9c1d3e" # northwest
+    name: Northwest
+    districts:
+      - id: "b0c1d2e3-f4a5-6b7c-8d9e-0f1a2b3c4d5c"
+        name: Entertainment District
+        cities:
+          - id: "c1d2e3f4-a5b6-7c8d-9e0f-1a2b3c4d5e6d"
+            name: Theater District
+            hotspots:
+              - id: "d2e3f4a5-b6c7-8d9e-0f1a-2b3c4d5e6f7e"
+                name: Grand Theater
+                type: club
+                business_type: entertainment
+                is_legal: true
+                income: 500
+              - id: "e3f4a5b6-c7d8-9e0f-1a2b-3c4d5e6f7a8f"
+                name: Comedy Club
+                type: club
+                business_type: entertainment
+                is_legal: true
+                income: 450
+              - id: "f4a5b6c7-d8e9-0f1a-2b3c-4d5e6f7a8b9a"
+                name: Dinner Theater
+                type: restaurant
+                business_type: entertainment
+                is_legal: true
+                income: 400
+              - id: "a5b6c7d8-e9f0-1a2b-3c4d-5e6f7a8b9c0b"
+                name: Ticket Scalping Operation
+                type: shop
+                business_type: blackmarket
+                is_legal: false
+                income: 550
+          - id: "b6c7d8e9-f0a1-2b3c-4d5e-6f7a8b9c0d1c"
+            name: Sports Complex
+            hotspots:
+              - id: "c7d8e9f0-a1b2-3c4d-5e6f-7a8b9c0d1e2d"
+                name: Sports Stadium
+                type: club
+                business_type: entertainment
+                is_legal: true
+                income: 700
+              - id: "d8e9f0a1-b2c3-4d5e-6f7a-8b9c0d1e2f3e"
+                name: Sports Bar
+                type: bar
+                business_type: entertainment
+                is_legal: true
+                income: 500
+              - id: "e9f0a1b2-c3d4-5e6f-7a8b-9c0d1e2f3a4f"
+                name: Sports Memorabilia Shop
+                type: shop
+                business_type: protection
+                is_legal: true
+                income: 350
+              - id: "f0a1b2c3-d4e5-6f7a-8b9c-0d1e2f3a4b5a"
+                name: Illegal Sports Betting
+                type: shop
+                business_type: gambling
+                is_legal: false
+                income: 800
+      - id: "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6c"
+        name: Commercial District
+        cities:
+          - id: "b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7d"
+            name: Business District
+            hotspots:
+              - id: "c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8e"
+                name: Office Building
+                type: shop
+                business_type: protection
+                is_legal: true
+                income: 500
+              - id: "d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9f"
+                name: Executive Club
+                type: club
+                business_type: entertainment
+                is_legal: true
+                income: 650
+              - id: "e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0a"
+                name: Business Hotel
+                type: hotel
+                business_type: entertainment
+                is_legal: true
+                income: 600
+              - id: "f6a7b8c9-d0e1-2f3a-4b5c-6d7e8f9a0b1b"
+                name: Money Laundering Operation
+                type: shop
+                business_type: loan_sharking
+                is_legal: false
+                income: 900
+          - id: "a7b8c9d0-e1f2-3a4b-5c6d-7e8f9a0b1c2c"
+            name: Tech Hub
+            hotspots:
+              - id: "b8c9d0e1-f2a3-4b5c-6d7e-8f9a0b1c2d3d"
+                name: Tech Company HQ
+                type: shop
+                business_type: protection
+                is_legal: true
+                income: 550
+              - id: "c9d0e1f2-a3b4-5c6d-7e8f-9a0b1c2d3e4e"
+                name: Innovation Hub
+                type: shop
+                business_type: protection
+                is_legal: true
+                income: 500
+              - id: "d0e1f2a3-b4c5-6d7e-8f9a-0b1c2d3e4f5f"
+                name: High-Tech Bar
+                type: bar
+                business_type: entertainment
+                is_legal: true
+                income: 450
+              - id: "e1f2a3b4-c5d6-7e8f-9a0b-1c2d3e4f5a6a"
+                name: Cyber Crime Operation
+                type: shop
+                business_type: counterfeiting
+                is_legal: false
+                income: 800

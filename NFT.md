@@ -1,1 +1,0 @@
-- Each Hotspot will have an NFT. If you control said hotspot and said NFT, you will get bonus income generation + bonus resource generation as well as a prime location status for said hotspot (harder to takeover)
