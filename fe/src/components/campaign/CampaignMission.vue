@@ -51,10 +51,10 @@ onMounted(async () => {
   // For completed missions, find which branch was completed
   if (props.mission.is_completed && branches.value.length > 0) {
     // Check which branch was completed by looking at completedBranchIds
-    const completedBranch = branches.value.find(branch => 
+    const completedBranch = branches.value.find(branch =>
       campaignStore.isBranchComplete(branch.id)
     );
-    
+
     if (completedBranch) {
       selectedBranchId.value = completedBranch.id;
     } else {
@@ -77,7 +77,7 @@ async function selectBranch(branch: Branch) {
 
 async function loadBranchData(branch: Branch) {
   loadingBranchData.value[branch.id] = true;
-  
+
   try {
     // Load operations
     const opsResponse = await campaignService.getOperationsByBranchId(branch.id);
@@ -110,7 +110,7 @@ function getBranchProgress(branchId: string): { completed: number; total: number
   const operations = branchOperations.value[branchId] || [];
   const pois = branchPOIs.value[branchId] || [];
   const total = operations.length + pois.length;
-  
+
   if (total === 0) {
     return { completed: 0, total: 0, percentage: 0 };
   }
@@ -118,7 +118,7 @@ function getBranchProgress(branchId: string): { completed: number; total: number
   const completedOps = operations.filter(op => campaignStore.isOperationComplete(op.id)).length;
   const completedPOIs = pois.filter(poi => campaignStore.isPOIComplete(poi.id)).length;
   const completed = completedOps + completedPOIs;
-  
+
   return {
     completed,
     total,
@@ -158,11 +158,11 @@ function getOperationRegionsDisplay(operation: CampaignOperation): string {
       <div class="branch-selector" v-if="branches.length > 1">
         <h4>Choose Your Approach</h4>
         <div class="branch-tabs">
-          <button 
-            v-for="(branch, index) in branches" 
+          <button
+            v-for="(branch, index) in branches"
             :key="branch.id"
             class="branch-tab"
-            :class="{ 
+            :class="{
               active: selectedBranch?.id === branch.id,
               completed: isBranchCompleted(branch.id)
             }"
@@ -175,8 +175,8 @@ function getOperationRegionsDisplay(operation: CampaignOperation): string {
             </span>
             <div class="branch-progress-mini">
               <div class="progress-bar-mini">
-                <div 
-                  class="progress-fill-mini" 
+                <div
+                  class="progress-fill-mini"
                   :style="{ width: `${getBranchProgress(branch.id).percentage}%` }"
                 ></div>
               </div>
@@ -192,7 +192,7 @@ function getOperationRegionsDisplay(operation: CampaignOperation): string {
             <h4 class="branch-title">{{ selectedBranch.name }}</h4>
             <p class="branch-description">{{ selectedBranch.description }}</p>
           </div>
-          
+
           <div class="branch-progress">
             <div class="progress-text">
               <span>Progress: {{ getBranchProgress(selectedBranch.id).completed }} / {{ getBranchProgress(selectedBranch.id).total }} Complete</span>
@@ -204,9 +204,9 @@ function getOperationRegionsDisplay(operation: CampaignOperation): string {
             </div>
           </div>
 
-          <BaseButton 
-            v-if="branchesProgress[selectedBranch.id] && !mission.is_completed" 
-            variant="primary" 
+          <BaseButton
+            v-if="branchesProgress[selectedBranch.id] && !mission.is_completed"
+            variant="primary"
             @click="completeBranch(selectedBranch)"
           >
             Complete This Path
@@ -227,8 +227,8 @@ function getOperationRegionsDisplay(operation: CampaignOperation): string {
             <h5><i class="fas fa-tasks"></i> Operations to Complete</h5>
             <p class="section-hint">Complete these operations from the Operations menu.</p>
             <div class="activities-grid">
-              <div v-for="operation in branchOperations[selectedBranch.id]" :key="operation.id" 
-                class="activity-card operation-card" 
+              <div v-for="operation in branchOperations[selectedBranch.id]" :key="operation.id"
+                class="activity-card operation-card"
                 :class="{ 'completed': campaignStore.isOperationComplete(operation.id) }">
                 <div class="activity-icon">🎯</div>
                 <div class="activity-info">
@@ -253,8 +253,8 @@ function getOperationRegionsDisplay(operation: CampaignOperation): string {
             <h5><i class="fas fa-map-marker-alt"></i> Locations to Control</h5>
             <p class="section-hint">Visit these locations in the Territory view and take them over.</p>
             <div class="activities-grid">
-              <div v-for="poi in branchPOIs[selectedBranch.id]" :key="poi.id" 
-                class="activity-card poi-card" 
+              <div v-for="poi in branchPOIs[selectedBranch.id]" :key="poi.id"
+                class="activity-card poi-card"
                 :class="{ 'completed': campaignStore.isPOIComplete(poi.id) }">
                 <div class="activity-icon">📍</div>
                 <div class="activity-info">
@@ -348,7 +348,7 @@ function getOperationRegionsDisplay(operation: CampaignOperation): string {
           background: rgba($gold-color, 0.1);
 
           &::before {
-            content: 'Selected';
+            content: 'Viewing';
             position: absolute;
             top: -10px;
             right: $spacing-md;
