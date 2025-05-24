@@ -149,7 +149,7 @@ async function collectOperation(operationId: string) {
           const metadata = JSON.parse(campaignOpMetadata);
           if (metadata.isCampaignOperation) {
             // If it's a campaign operation, notify the campaign store
-            await campaignStore.completeOperation(operationId, result.data?.id || '');
+            await campaignStore.completeOperation(operationId, result.result?.message || '');
 
             // Remove the stored metadata
             localStorage.removeItem(`campaign_operation_${operationId}`);
@@ -166,7 +166,7 @@ async function collectOperation(operationId: string) {
 
       if (operation && operation.metadata && operation.metadata.isCampaignOperation) {
         // If it's a campaign operation, notify the campaign store
-        await campaignStore.completeOperation(operationId, result.data?.id || '');
+        await campaignStore.completeOperation(operationId, result.result?.message || '');
       }
 
       // Switch to completed tab to show the completed operation
@@ -446,8 +446,8 @@ function getOperationWarning(operation: Operation): string {
 }
 
 function getOperationName(operationAttempt: OperationAttempt): string {
-  // First check if the operation is in the cache
-  const operation = operationsStore.getOperationById(operationAttempt.operationId);
+  // First try operationDetail from attempt, then fall back to cache
+  const operation = operationAttempt.operationDetail || operationsStore.getOperationById(operationAttempt.operationId);
 
   if (operation) {
     return operation.name;
@@ -461,8 +461,8 @@ function getOperationName(operationAttempt: OperationAttempt): string {
 }
 
 function getOperationType(operationAttempt: OperationAttempt): string {
-  // First check if the operation is in the cache
-  const operation = operationsStore.getOperationById(operationAttempt.operationId);
+  // First try operationDetail from attempt, then fall back to cache
+  const operation = operationAttempt.operationDetail || operationsStore.getOperationById(operationAttempt.operationId);
 
   if (operation) {
     return formatOperationType(operation.type);
@@ -483,8 +483,8 @@ function getProgressPercentage(operationAttempt: OperationAttempt): number {
     return 100;
   }
 
-  // Use operationsStore.getOperationById instead of availableOperations.value.find
-  const operation = operationsStore.getOperationById(operationAttempt.operationId);
+  // First try operationDetail from attempt, then fall back to cache
+  const operation = operationAttempt.operationDetail || operationsStore.getOperationById(operationAttempt.operationId);
   if (!operation) return 0;
 
   const startTime = new Date(operationAttempt.timestamp);
@@ -509,8 +509,8 @@ function isOperationReady(operationAttempt: OperationAttempt): boolean {
     return false;
   }
 
-  // Use operationsStore.getOperationById instead of availableOperations.value.find
-  const operation = operationsStore.getOperationById(operationAttempt.operationId);
+  // First try operationDetail from attempt, then fall back to cache
+  const operation = operationAttempt.operationDetail || operationsStore.getOperationById(operationAttempt.operationId);
   if (!operation) return false;
 
   const startTime = new Date(operationAttempt.timestamp);
@@ -578,14 +578,14 @@ async function confirmStartOperation() {
 
     // If this is a campaign operation, store the attempt ID for completion tracking
     if (selectedOperation.value.metadata && selectedOperation.value.metadata.isCampaignOperation &&
-      result && result.success && result.data) {
+      result && result.operation) {
       // Store the operation attempt ID with the campaign metadata
       const metadata = {
         campaignId: selectedOperation.value.metadata.campaignId,
         missionId: selectedOperation.value.metadata.missionId,
         branchId: selectedOperation.value.metadata.branchId,
         isCampaignOperation: true,
-        attemptId: result.data.id
+        attemptId: result.operation.id
       };
       localStorage.setItem(`campaign_operation_${selectedOperation.value.id}`, JSON.stringify(metadata));
     }
@@ -911,11 +911,13 @@ function hasInsufficientTimeRemaining(operation: Operation): boolean {
     <!-- In Progress Operations Tab -->
     <div v-else-if="activeTab === 'in-progress'" class="operations-list in-progress-operations">
       <BaseCard v-for="operation in inProgressOperations" :key="operation.id" class="operation-card in-progress" :class="{
-        'campaign-operation': operation.metadata && operation.metadata.isCampaignOperation
+        'campaign-operation': (operation.operationDetail?.metadata && operation.operationDetail.metadata.isCampaignOperation) || 
+                            (operationsStore.getOperationById(operation.operationId)?.metadata?.isCampaignOperation)
       }">
 
         <!-- Add campaign indicator -->
-        <div class="campaign-indicator" v-if="operation.metadata && operation.metadata.isCampaignOperation">
+        <div class="campaign-indicator" v-if="(operation.operationDetail?.metadata && operation.operationDetail.metadata.isCampaignOperation) || 
+                                               (operationsStore.getOperationById(operation.operationId)?.metadata?.isCampaignOperation)">
           <span class="campaign-icon">📋</span>
           <span class="campaign-text">Campaign Mission</span>
         </div>
@@ -1013,11 +1015,13 @@ function hasInsufficientTimeRemaining(operation: Operation): boolean {
       <BaseCard v-for="operation in completedOperations" :key="operation.id" class="operation-card" :class="{
         'success': isSuccessfulOperation(operation),
         'failure': isFailedOperation(operation),
-        'campaign-operation': operation.metadata && operation.metadata.isCampaignOperation
+        'campaign-operation': (operation.operationDetail?.metadata && operation.operationDetail.metadata.isCampaignOperation) || 
+                            (operationsStore.getOperationById(operation.operationId)?.metadata?.isCampaignOperation)
       }">
 
         <!-- Add campaign completion indicator -->
-        <div class="campaign-completion" v-if="operation.metadata && operation.metadata.isCampaignOperation">
+        <div class="campaign-completion" v-if="(operation.operationDetail?.metadata && operation.operationDetail.metadata.isCampaignOperation) || 
+                                                (operationsStore.getOperationById(operation.operationId)?.metadata?.isCampaignOperation)">
           <span class="completion-icon">🏆</span>
           <span class="completion-text">Campaign Mission Completed</span>
         </div>

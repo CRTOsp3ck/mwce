@@ -59,11 +59,23 @@ func (c *OperationsController) GetOperation(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Get the operation
-	operation, err := c.operationsService.GetOperationByID(operationID)
+	// Try to get player ID from context to check campaign operations
+	playerID, hasPlayerID := middleware.GetUserID(r.Context())
+	
+	var operation *model.Operation
+	var err error
+	
+	if hasPlayerID {
+		// If we have player context, use the method that checks both regular and campaign operations
+		operation, err = c.operationsService.GetOperationByIDWithPlayer(operationID, playerID)
+	} else {
+		// Otherwise, just check regular operations
+		operation, err = c.operationsService.GetOperationByID(operationID)
+	}
+
 	if err != nil {
-		c.logger.Error().Err(err).Msg("Failed to get operation")
-		util.RespondWithError(w, http.StatusInternalServerError, "Failed to get operation")
+		c.logger.Error().Err(err).Str("operationID", operationID).Msg("Failed to get operation")
+		util.RespondWithError(w, http.StatusNotFound, "Operation not found")
 		return
 	}
 

@@ -71,6 +71,7 @@ export interface OperationAttempt {
   result?: OperationResult;
   completionTime?: string;
   status: OperationStatus;
+  operationDetail?: Operation;
 }
 
 export interface OperationResult {

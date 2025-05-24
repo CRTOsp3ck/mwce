@@ -159,8 +159,8 @@ export const useOperationsStore = defineStore('operations', {
         return 'Completed';
       }
 
-      // Use operationsCache instead of availableOperations
-      const operation = state.operationsCache[inProgressOp.operationId];
+      // First try to use operationDetail from attempt, then fall back to cache
+      const operation = inProgressOp.operationDetail || state.operationsCache[inProgressOp.operationId];
       if (!operation) return 'Unknown';
 
       const startTime = new Date(inProgressOp.timestamp);
@@ -181,7 +181,10 @@ export const useOperationsStore = defineStore('operations', {
       const inProgressOp = state.currentOperations.find(op => op.id === operationId);
       if (!inProgressOp || inProgressOp.status !== OperationStatus.IN_PROGRESS) return false;
 
-      const operation = state.availableOperations.find(op => op.id === inProgressOp.operationId);
+      // First try to use operationDetail from attempt, then fall back to cache or available operations
+      const operation = inProgressOp.operationDetail || 
+                       state.operationsCache[inProgressOp.operationId] ||
+                       state.availableOperations.find(op => op.id === inProgressOp.operationId);
       if (!operation) return false;
 
       const startTime = new Date(inProgressOp.timestamp);
@@ -328,12 +331,19 @@ export const useOperationsStore = defineStore('operations', {
           // Update the inProgressOperationIds
           this.inProgressOperationIds = currentResponse.data.map(op => op.operationId);
 
+          // Cache operation details that come with the attempts
+          for (const attempt of currentResponse.data) {
+            if (attempt.operationDetail) {
+              this.operationsCache[attempt.operationId] = attempt.operationDetail;
+            }
+          }
+
           // Create an array to hold all promises for fetching operation details
           const operationDetailPromises = [];
 
           // Queue up fetches for any operations not in cache
           for (const attempt of currentResponse.data) {
-            if (!this.operationsCache[attempt.operationId]) {
+            if (!this.operationsCache[attempt.operationId] && !attempt.operationDetail) {
               operationDetailPromises.push(this.fetchOperationDetails(attempt.operationId));
             }
           }
@@ -349,12 +359,19 @@ export const useOperationsStore = defineStore('operations', {
         if (completedResponse.success && completedResponse.data) {
           this.completedOperations = completedResponse.data;
 
+          // Cache operation details that come with the attempts
+          for (const attempt of completedResponse.data) {
+            if (attempt.operationDetail) {
+              this.operationsCache[attempt.operationId] = attempt.operationDetail;
+            }
+          }
+
           // Create an array to hold all promises for fetching operation details
           const operationDetailPromises = [];
 
           // Queue up fetches for any operations not in cache
           for (const attempt of completedResponse.data) {
-            if (!this.operationsCache[attempt.operationId]) {
+            if (!this.operationsCache[attempt.operationId] && !attempt.operationDetail) {
               operationDetailPromises.push(this.fetchOperationDetails(attempt.operationId));
             }
           }
@@ -614,7 +631,9 @@ export const useOperationsStore = defineStore('operations', {
       this.currentOperations.forEach(operation => {
         if (operation.status === OperationStatus.IN_PROGRESS) {
           // Get the operation details to determine duration
-          const operationDetails = this.availableOperations.find(o => o.id === operation.operationId);
+          const operationDetails = operation.operationDetail || 
+                                 this.operationsCache[operation.operationId] ||
+                                 this.availableOperations.find(o => o.id === operation.operationId);
 
           if (operationDetails) {
             // Calculate completion time

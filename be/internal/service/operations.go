@@ -24,6 +24,7 @@ import (
 type OperationsService interface {
 	GetAvailableOperations(playerID string, validOnly bool) ([]model.Operation, error)
 	GetOperationByID(id string) (*model.Operation, error)
+	GetOperationByIDWithPlayer(operationID, playerID string) (*model.Operation, error)
 	GetCurrentOperations(playerID string) ([]model.OperationAttempt, error)
 	GetCompletedOperations(playerID string) ([]model.OperationAttempt, error)
 	StartOperation(playerID, operationID string, resources model.OperationResources) (*model.OperationAttempt, error)
@@ -217,14 +218,55 @@ func (s *operationsService) GetOperationByID(id string) (*model.Operation, error
 	return s.operationsRepo.GetOperationByID(id)
 }
 
+// GetOperationByIDWithPlayer retrieves an operation by ID, including campaign operations
+func (s *operationsService) GetOperationByIDWithPlayer(operationID, playerID string) (*model.Operation, error) {
+	return s.getOperationByIDOrFromProviders(playerID, operationID)
+}
+
 // GetCurrentOperations retrieves in-progress operations for a player
 func (s *operationsService) GetCurrentOperations(playerID string) ([]model.OperationAttempt, error) {
-	return s.operationsRepo.GetCurrentOperations(playerID)
+	attempts, err := s.operationsRepo.GetCurrentOperations(playerID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Populate operation details for each attempt
+	for i := range attempts {
+		operation, err := s.getOperationByIDOrFromProviders(playerID, attempts[i].OperationID)
+		if err == nil {
+			attempts[i].OperationDetail = operation
+			s.logger.Debug().
+				Str("operationID", attempts[i].OperationID).
+				Str("operationName", operation.Name).
+				Bool("isCampaign", operation.Metadata != nil && operation.Metadata["isCampaignOperation"] == true).
+				Msg("Populated operation detail for current operation")
+		} else {
+			s.logger.Warn().
+				Str("operationID", attempts[i].OperationID).
+				Err(err).
+				Msg("Failed to get operation detail for current operation")
+		}
+	}
+
+	return attempts, nil
 }
 
 // GetCompletedOperations retrieves completed operations for a player
 func (s *operationsService) GetCompletedOperations(playerID string) ([]model.OperationAttempt, error) {
-	return s.operationsRepo.GetCompletedOperations(playerID)
+	attempts, err := s.operationsRepo.GetCompletedOperations(playerID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Populate operation details for each attempt
+	for i := range attempts {
+		operation, err := s.getOperationByIDOrFromProviders(playerID, attempts[i].OperationID)
+		if err == nil {
+			attempts[i].OperationDetail = operation
+		}
+	}
+
+	return attempts, nil
 }
 
 // getOperationByIDOrFromProviders attempts to get an operation from the repository, falling back to providers if not found
@@ -232,22 +274,54 @@ func (s *operationsService) getOperationByIDOrFromProviders(playerID, operationI
 	// First try to get the operation from the regular operations table
 	operation, err := s.operationsRepo.GetOperationByID(operationID)
 	if err == nil {
+		s.logger.Debug().
+			Str("operationID", operationID).
+			Str("operationName", operation.Name).
+			Msg("Found operation in regular operations table")
 		return operation, nil
 	}
 	
+	s.logger.Debug().
+		Str("operationID", operationID).
+		Msg("Operation not found in regular table, checking campaign providers")
+	
 	// If not found in regular operations, check if it's a campaign operation
-	// by getting all available operations (which includes injected campaign operations)
-	availableOps, availErr := s.GetAvailableOperations(playerID, true)
-	if availErr != nil {
-		return nil, errors.New("operation not found")
+	// We need to get operations directly from providers without filtering
+	player, err := s.playerRepo.GetPlayerByID(playerID)
+	if err != nil {
+		return nil, err
 	}
 	
-	// Look for the operation in available operations
-	for _, op := range availableOps {
-		if op.ID == operationID {
-			return &op, nil
+	// Check each custom operations provider directly
+	for _, provider := range s.customOperationsProviders {
+		injectedOps, err := provider.GetInjectedOperations(playerID, player.CurrentRegionID)
+		if err != nil {
+			s.logger.Error().Err(err).Msg("Failed to get injected operations from provider")
+			continue
+		}
+		
+		s.logger.Debug().
+			Int("count", len(injectedOps)).
+			Msg("Got injected operations from provider")
+		
+		// Look for the operation in injected operations
+		for i := range injectedOps {
+			if injectedOps[i].ID == operationID {
+				// Return a copy to avoid shared state issues
+				opCopy := injectedOps[i]
+				s.logger.Debug().
+					Str("operationID", operationID).
+					Str("operationName", opCopy.Name).
+					Bool("isCampaign", opCopy.Metadata != nil && opCopy.Metadata["isCampaignOperation"] == true).
+					Msg("Found operation in campaign provider")
+				return &opCopy, nil
+			}
 		}
 	}
+	
+	s.logger.Warn().
+		Str("operationID", operationID).
+		Msg("Operation not found in any provider")
 	
 	return nil, errors.New("operation not found")
 }
@@ -391,6 +465,9 @@ func (s *operationsService) StartOperation(playerID, operationID string, resourc
 	message := fmt.Sprintf("Operation '%s' started. Check back in %s for results.",
 		operation.Name, formatDuration(operation.Duration))
 	s.playerService.AddNotification(playerID, message, util.NotificationTypeOperation)
+
+	// Include operation details in the response
+	attempt.OperationDetail = operation
 
 	return attempt, nil
 }

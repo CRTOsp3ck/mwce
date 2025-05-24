@@ -82,17 +82,18 @@ type OperationRisks struct {
 
 // OperationAttempt represents a player's attempt at an operation
 type OperationAttempt struct {
-	ID             string             `json:"id" gorm:"type:uuid;primary_key"`
-	OperationID    string             `json:"operationId" gorm:"type:uuid;not null;references:operations.id"`
-	PlayerID       string             `json:"playerId" gorm:"type:uuid;not null;references:players.id"`
-	Timestamp      time.Time          `json:"timestamp" gorm:"not null"`
-	Resources      OperationResources `json:"resources" gorm:"embedded"`
-	Result         *OperationResult   `json:"result,omitempty" gorm:"embedded"`
-	CompletionTime *time.Time         `json:"completionTime,omitempty"`
-	Status         string             `json:"status" gorm:"not null"` // in_progress, completed, failed, cancelled
-	Notified       bool               `json:"notified" gorm:"default:false"`
-	CreatedAt      time.Time          `json:"-" gorm:"not null"`
-	UpdatedAt      time.Time          `json:"-" gorm:"not null"`
+	ID              string             `json:"id" gorm:"type:uuid;primary_key"`
+	OperationID     string             `json:"operationId" gorm:"type:uuid;not null;references:operations.id"`
+	PlayerID        string             `json:"playerId" gorm:"type:uuid;not null;references:players.id"`
+	Timestamp       time.Time          `json:"timestamp" gorm:"not null"`
+	Resources       OperationResources `json:"resources" gorm:"embedded"`
+	Result          *OperationResult   `json:"result,omitempty" gorm:"embedded"`
+	CompletionTime  *time.Time         `json:"completionTime,omitempty"`
+	Status          string             `json:"status" gorm:"not null"` // in_progress, completed, failed, cancelled
+	Notified        bool               `json:"notified" gorm:"default:false"`
+	CreatedAt       time.Time          `json:"-" gorm:"not null"`
+	UpdatedAt       time.Time          `json:"-" gorm:"not null"`
+	OperationDetail *Operation         `json:"operationDetail,omitempty" gorm:"-"` // Not stored in DB, populated when needed
 }
 
 // BeforeCreate is a GORM hook to generate UUID before creating a new operation attempt
