@@ -43,6 +43,11 @@ onMounted(async () => {
     console.error('Failed to load branch progress:', error);
   }
 
+  // Load data for ALL branches to ensure progress bars show correctly
+  if (branches.value.length > 0) {
+    await Promise.all(branches.value.map(branch => loadBranchData(branch)));
+  }
+
   // For completed missions, find which branch was completed
   if (props.mission.is_completed && branches.value.length > 0) {
     // Check which branch was completed by looking at completedBranchIds
@@ -52,21 +57,19 @@ onMounted(async () => {
     
     if (completedBranch) {
       selectedBranchId.value = completedBranch.id;
-      await loadBranchData(completedBranch);
     } else {
       // Fallback to first branch if we can't determine which was completed
       selectedBranchId.value = branches.value[0].id;
-      await loadBranchData(branches.value[0]);
     }
   } else if (branches.value.length > 0) {
     // For current mission or if not completed, load first branch by default
     selectedBranchId.value = branches.value[0].id;
-    await loadBranchData(branches.value[0]);
   }
 });
 
 async function selectBranch(branch: Branch) {
   selectedBranchId.value = branch.id;
+  // Data should already be loaded on mount, but load if missing
   if (!branchOperations.value[branch.id] && !branchPOIs.value[branch.id]) {
     await loadBranchData(branch);
   }
