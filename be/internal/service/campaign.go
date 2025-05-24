@@ -52,7 +52,7 @@ type CampaignService interface {
 
 	// Provider implementations
 	GetInjectedHotspots(playerID string, regionID *string) ([]model.Hotspot, error)
-	GetInjectedOperations(playerID string, regionID *string) ([]model.Operation, error)
+	GetInjectedOperations(playerID string, regionID *string, includeCompleted bool) ([]model.Operation, error)
 	HandlePOITakeover(playerID, hotspotID string) error
 }
 
@@ -427,7 +427,7 @@ func (s *campaignService) InteractWithPOI(playerID, poiID string, interactionTyp
 	if err != nil {
 		return nil, nil, err
 	}
-	
+
 	// Return empty dialogue and effect
 	return &model.Dialogue{
 		Text: "POI completed successfully",
@@ -896,7 +896,7 @@ func (s *campaignService) GetInjectedHotspots(playerID string, regionID *string)
 }
 
 // GetInjectedOperations implements CustomOperationsProvider
-func (s *campaignService) GetInjectedOperations(playerID string, regionID *string) ([]model.Operation, error) {
+func (s *campaignService) GetInjectedOperations(playerID string, regionID *string, includeCompleted bool) ([]model.Operation, error) {
 	// Get all player campaign progress
 	progresses, err := s.campaignRepo.GetAllPlayerCampaignProgress(playerID)
 	if err != nil {
@@ -933,8 +933,8 @@ func (s *campaignService) GetInjectedOperations(playerID string, regionID *strin
 
 			// Filter operations and check if they're already completed
 			for _, operation := range operations {
-				// Skip if already completed
-				if contains(progress.CompletedOperationIDs, operation.ID) {
+				// Skip if already completed (unless includeCompleted is true)
+				if !includeCompleted && contains(progress.CompletedOperationIDs, operation.ID) {
 					continue
 				}
 
@@ -980,6 +980,7 @@ func (s *campaignService) GetInjectedOperations(playerID string, regionID *strin
 
 	return result, nil
 }
+
 
 // HandlePOITakeover handles when a campaign POI is taken over in the territory system
 func (s *campaignService) HandlePOITakeover(playerID, hotspotID string) error {

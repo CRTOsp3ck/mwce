@@ -15,5 +15,6 @@ type CustomHotspotProvider interface {
 // CustomOperationsProvider defines an interface for services that can inject custom operations
 type CustomOperationsProvider interface {
 	// GetInjectedOperations returns custom operations for a player in a specific region
-	GetInjectedOperations(playerID string, regionID *string) ([]model.Operation, error)
+	// includeCompleted: if true, includes operations that the player has already completed
+	GetInjectedOperations(playerID string, regionID *string, includeCompleted bool) ([]model.Operation, error)
 }

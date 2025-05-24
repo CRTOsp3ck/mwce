@@ -132,7 +132,7 @@ func (s *operationsService) GetAvailableOperations(playerID string, validOnly bo
 
 	// Get injected operations from providers
 	for _, provider := range s.customOperationsProviders {
-		injectedOps, err := provider.GetInjectedOperations(playerID, player.CurrentRegionID)
+		injectedOps, err := provider.GetInjectedOperations(playerID, player.CurrentRegionID, false) // false = exclude completed
 		if err != nil {
 			s.logger.Error().Err(err).Msg("Failed to get injected operations from provider")
 			continue // Skip this provider if there's an error
@@ -286,15 +286,15 @@ func (s *operationsService) getOperationByIDOrFromProviders(playerID, operationI
 		Msg("Operation not found in regular table, checking campaign providers")
 	
 	// If not found in regular operations, check if it's a campaign operation
-	// We need to get operations directly from providers without filtering
+	// Include completed operations since we need to fetch details for any operation
 	player, err := s.playerRepo.GetPlayerByID(playerID)
 	if err != nil {
 		return nil, err
 	}
 	
-	// Check each custom operations provider directly
+	// Check each custom operations provider with includeCompleted=true
 	for _, provider := range s.customOperationsProviders {
-		injectedOps, err := provider.GetInjectedOperations(playerID, player.CurrentRegionID)
+		injectedOps, err := provider.GetInjectedOperations(playerID, player.CurrentRegionID, true) // true = include completed
 		if err != nil {
 			s.logger.Error().Err(err).Msg("Failed to get injected operations from provider")
 			continue
@@ -302,7 +302,7 @@ func (s *operationsService) getOperationByIDOrFromProviders(playerID, operationI
 		
 		s.logger.Debug().
 			Int("count", len(injectedOps)).
-			Msg("Got injected operations from provider")
+			Msg("Got injected operations from provider (including completed)")
 		
 		// Look for the operation in injected operations
 		for i := range injectedOps {

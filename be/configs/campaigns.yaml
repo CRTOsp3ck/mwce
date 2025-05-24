@@ -53,7 +53,8 @@ campaigns:
                       money_loss: 500
                       heat_increase: 5
                       respect_loss: 2
-                    duration: 1800
+                    duration: 60
+                    # duration: 1800
                     success_rate: 85
                 pois:
                   - id: "e845f17c-d82a-4198-b03e-327a99182541"
@@ -134,7 +135,8 @@ campaigns:
                       money_loss: 1000
                       heat_increase: 15
                       respect_loss: 0
-                    duration: 2700
+                    duration: 60
+                    # duration: 2700
                     success_rate: 75
                 pois:
                   - id: "c9d0e1f2-a3b4-45c6-d7e8-f9a0b1c2d3e4"
@@ -290,7 +292,8 @@ campaigns:
                       money_loss: 0
                       heat_increase: 30
                       respect_loss: 10
-                    duration: 5400
+                    duration: 60
+                    # duration: 5400
                     success_rate: 60
                 pois:
                   - id: "b6c7d8e9-f0a1-62b3-c4d5-e6f7a8b9c0d1"
@@ -371,7 +374,8 @@ campaigns:
                       money_loss: 10000
                       heat_increase: 50
                       respect_loss: 20
-                    duration: 7200
+                    # duration: 7200
+                    duration: 60
                     success_rate: 65
                 pois:
                   - id: "e5f6a7b8-c9d0-71e2-f3a4-b5c6d7e8f9a0"
